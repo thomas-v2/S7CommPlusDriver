@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{781951D8-80DE-4E2F-92CA-A5FEF0059415}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>S7CommPlusDriver</RootNamespace>
+    <AssemblyName>S7CommPlusDriver</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ClientApi\Browser.cs" />
+    <Compile Include="Core\IS7pSerialize.cs" />
+    <Compile Include="Core\ProtocolVersion.cs" />
+    <Compile Include="Net\MsgSocket.cs" />
+    <Compile Include="Net\S7Client.cs" />
+    <Compile Include="Net\S7Consts.cs" />
+    <Compile Include="OpenSSL\Native.cs" />
+    <Compile Include="OpenSSL\OpenSSLConnector.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Core\Ids.cs" />
+    <Compile Include="Core\CreateObjectRequest.cs" />
+    <Compile Include="Core\CreateObjectResponse.cs" />
+    <Compile Include="Core\Datatype.cs" />
+    <Compile Include="Core\DeleteObjectRequest.cs" />
+    <Compile Include="Core\DeleteObjectResponse.cs" />
+    <Compile Include="Core\ElementID.cs" />
+    <Compile Include="Core\ExploreRequest.cs" />
+    <Compile Include="Core\ExploreResponse.cs" />
+    <Compile Include="Core\Functioncode.cs" />
+    <Compile Include="Core\GetMultiVariablesRequest.cs" />
+    <Compile Include="Core\GetMultiVariablesResponse.cs" />
+    <Compile Include="Core\InitSslRequest.cs" />
+    <Compile Include="Core\InitSslResponse.cs" />
+    <Compile Include="Core\IS7pSendableObject.cs" />
+    <Compile Include="ClientApi\ItemAddress.cs" />
+    <Compile Include="Core\Opcode.cs" />
+    <Compile Include="Core\PObject.cs" />
+    <Compile Include="Core\POffsetInfoType.cs" />
+    <Compile Include="Core\PValue.cs" />
+    <Compile Include="Core\PVarnameList.cs" />
+    <Compile Include="Core\PVartypeList.cs" />
+    <Compile Include="Core\S7p.cs" />
+    <Compile Include="Core\SetMultiVariablesRequest.cs" />
+    <Compile Include="Core\SetMultiVariablesResponse.cs" />
+    <Compile Include="Core\Softdatatype.cs" />
+    <Compile Include="Core\Utils.cs" />
+    <Compile Include="S7CommPlusConnection.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
