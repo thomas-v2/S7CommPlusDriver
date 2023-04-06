@@ -44,20 +44,20 @@ Mit folgenden Geräten wurde bisher erfolgreich getestet:
 ## Analyse mit Wireshark
 Aufgrund der Verschlüsselung können die übertragenen Daten ohne weitere Informationen mit Wireshark nicht mehr eingesehen werden.
 Zur Treiberentwicklung ist im Projekt eine Funktion integriert, welche die ausgehandelten Secrets in eine Textdatei
-(key_YYYYMMDD_hhmmss.log) ausgibt. Mit dieser Information es Wireshark möglich die Kommunikation zu entschlüsseln und darzustellen.
+(key_YYYYMMDD_hhmmss.log) ausgibt. Mit diesen Informationen ist es Wireshark möglich die Kommunikation zu entschlüsseln und darzustellen.
 
-Um Wireshark diese Information verfügbar zu machen, exstieren zwei Möglichkeiten:
-1. Die Log-Datei in ein Verzeichnis abzulegen und Wireshark diese bekannt zu machen. Dazu in Wireshark *Menü* → *Einstellungen* aufrufen.
+Um Wireshark diese Information verfügbar zu machen, existieren zwei Möglichkeiten:
+1. Die Log-Datei in ein Verzeichnis abzulegen und Wireshark dieses bekannt zu machen. Dazu in Wireshark *Menü* → *Einstellungen* aufrufen.
 Unter *Protocols* den Punkt *TLS* anwählen, und im Feld *(Pre)-Master-Secret log filename* die entsprechende Datei auswählen
-2. Die Sectrets direkt in die Wireshark Aufzeichnung integrieren
+2. Die Secrets direkt in die Wireshark-Aufzeichnung integrieren
 
-Zur Weitergabe an andere Personen zur Analyse, ist Punkt 2 zu bevorzugen, da alles notwendige in einer Afzeichnung vorhanden ist.
+Zur Weitergabe an andere Personen zur Analyse, ist Punkt 2 zu bevorzugen, da alles notwendige in einer Aufzeichnung vorhanden ist.
 Die Integration geschieht über das Programm "editcap.exe" im Wireshark Installationsverzeichnis. Dazu muss eine Aufzeichnung in
 Wireshark mit der Endung *.pcapng* gespeichert werden.
 
-Über die Eingabeaufforderung werden mit folgener Anweisung in die Aufzeichnung "test-capture.pcapng" die Sectrets aus "key.log"
-integriert und in die Datei "test-capture-with-keys.pcapng" gespeichert. Wird letztere Datei dann in Wireshark geöffnet, kann die
-Kommunikation dort entschlüsselt und entsprechend dekodiert und dem Protokoll entsprechend dargestellt werden.
+Über die Eingabeaufforderung werden mit folgender Anweisung in die Aufzeichnung "test-capture.pcapng" die Secrets aus "key.log"
+integriert, und in der Datei "test-capture-with-keys.pcapng" gespeichert. Wird letztere Datei dann in Wireshark geöffnet, kann die
+Kommunikation dort entschlüsselt, dekodiert und dem Protokoll entsprechend dargestellt werden.
 Die key.log kann bei Bedarf anschließend gelöscht werden.
 ```
 "C:\Program Files\Wireshark\editcap.exe" --inject-secrets tls,key.log test-capture.pcapng test-capture-with-keys.pcapng
