@@ -170,10 +170,6 @@ namespace S7CommPlusDriver
                     {
                         POffsetInfoType_ArrayMDim oit = (POffsetInfoType_ArrayMDim)vte.OffsetInfoType;
                         Console.WriteLine("AddSubNodes: POffsetInfoType_ArrayMDim");
-                        // TODO:
-                        // Arrays of Bool scheinen ein Padding bei der Berechnung der Zugriffs-IDs zu besitzen.
-                        // Es scheint so, dass immer mit einem Vielfachen von 8 gerechnet wird.
-                        // Zu prüfen wäre auch, ob das unterschiedlich ist je nach "optimiert" oder "nicht optimiert".
 
                         // Feststellen wie viele Dimensionen das Array besitzt
                         int actdimensions = 0;
@@ -185,30 +181,23 @@ namespace S7CommPlusDriver
                             }
                         }
 
-                        int[] aidx = new int[6];
-                        // Faktoren für die jeweilige Array-Dimension vorberechnen.
-                        // Könnte auch in der j-Schleife unten berechnet werden, dann muss diese aber vorwärts laufen.
-                        int[] fac = new int[6];
-                        fac[0] = 1;
-                        for (int i = 0; i < 5; i++)
-                        {
-                            fac[i + 1] = fac[i] * (int)(oit.MdimArrayElementCount[i]);
-                        }
                         string aname = "";
-                        for (uint i = 0; i < oit.ArrayElementCount; i++)
+                        int n = 1;
+                        uint id = 0;
+                        uint[] xx = new uint[6] { 0, 0, 0, 0, 0, 0 };
+                        do
                         {
                             aname = "[";
                             for (int j = actdimensions - 1; j >= 0; j--)
                             {
-                                aidx[j] = (int)((i / fac[j]) % oit.MdimArrayElementCount[j]);
-                                aidx[j] += oit.MdimArrayLowerBounds[j]; // Offset von Lowerbounds
+                                aname += (xx[j] + oit.MdimArrayLowerBounds[j]).ToString();
                                 if (j > 0)
                                 {
-                                    aname += aidx[j] + ",";
+                                    aname += ",";
                                 }
                                 else
                                 {
-                                    aname += aidx[j] + "]";
+                                    aname += "]";
                                 }
                             }
 
@@ -217,10 +206,30 @@ namespace S7CommPlusDriver
                                 NodeType = eNodeType.Array,
                                 Name = aname,
                                 Softdatatype = vte.Softdatatype,
-                                AccessId = i
+                                AccessId = id
                             };
                             subnode.Childs.Add(arraynode);
-                        }
+
+                            xx[0]++;
+                            // Bei BBOOL-Arrays wird die ID bei Überlauf des kleinsten Array-Index immer auf ein Vielfaches von 8 gerundet.
+                            if (subnode.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL && xx[0] >= oit.MdimArrayElementCount[0])
+                            {
+                                if (oit.MdimArrayElementCount[0] % 8 != 0)
+                                {
+                                    id += 8 - (xx[0] % 8);
+                                }
+                            }
+                            for (int dim = 0; dim < 5; dim++)
+                            {
+                                if (xx[dim] >= oit.MdimArrayElementCount[dim])
+                                {
+                                    xx[dim] = 0;
+                                    xx[dim + 1]++;
+                                }
+                            }
+                            id++;
+                            n++;
+                        } while (n <= oit.ArrayElementCount);
                     }
 
                     if (subnode.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_STRUCT)
