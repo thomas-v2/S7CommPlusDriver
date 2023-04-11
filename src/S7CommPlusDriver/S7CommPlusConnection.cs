@@ -117,10 +117,15 @@ namespace S7CommPlusDriver
             int curSize;
             int sourcePos = 0;
             int sendLen;
-            int NegotiatedIsoPduSize = 1020;// TODO: Ausgehandelte TPDU auswerten
+            int NegotiatedIsoPduSize = 1024;// TODO: Ausgehandelte TPDU auswerten
             byte[] packet = new byte[NegotiatedIsoPduSize];
 
-            int MaxSize = NegotiatedIsoPduSize - 4 - 3 - 4 - 4;
+            // 4 Byte TPKT Header
+            // 3 Byte ISO-Header
+            // 5 Byte TLS Header + 17 Bytes Zusatz durch TLS
+            // 4 Byte S7CommPlus Header
+            // 4 Byte S7CommPlus Trailer (muss bei letzter mit hineinpassen)
+            int MaxSize = NegotiatedIsoPduSize - 4 - 3 - 5 - 17 - 4 - 4;
 
             while (bytesToSend > 0)
             {
