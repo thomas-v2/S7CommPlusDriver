@@ -125,6 +125,16 @@ namespace S7CommPlusDriver
 				}
 				m_ptr_ssl_method = Native.ExpectNonNull(Native.TLS_client_method());
 				m_ptr_ctx = Native.ExpectNonNull(Native.SSL_CTX_new(m_ptr_ssl_method));
+				// TLS 1.3 forcieren, da wegen TLS on IsoOnTCP bekannt sein muss, um wie viele Bytes sich die verschlüsselten
+				// Daten verlängern um die Pakete auf S7CommPlus-Ebene entsprechend zu fragmentieren.
+				// Die Verlängerung geschieht z.B. durch Padding und HMAC. Bei TLS 1.3 existiert mit GCM kein Padding und verlängert sich immer
+				// um 16 Bytes. Da auch TLS_CHACHA20_POLY1305_SHA256 zu den TLS 1.3  CipherSuite zählt, explizit die anderen setzen.
+				Native.SSL_CTX_ctrl(m_ptr_ctx, Native.SSL_CTRL_SET_MIN_PROTO_VERSION, Native.TLS1_3_VERSION, IntPtr.Zero);
+				ret = Native.SSL_CTX_set_ciphersuites(m_ptr_ctx, "TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256");
+				if (ret != 1)
+                {
+					return S7Consts.errOpenSSL;
+				}
 				m_sslconn = new OpenSSLConnector(m_ptr_ctx, this);
 				m_sslconn.ExpectConnect();
 
