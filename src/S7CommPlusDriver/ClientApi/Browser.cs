@@ -15,9 +15,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace S7CommPlusDriver
 {
@@ -90,6 +87,12 @@ namespace S7CommPlusDriver
                     names += node.Name;
                     accessIds += "." + String.Format("{0:X}", node.AccessId);
                     break;
+                case eNodeType.StructArray:
+                    names += node.Name;
+                    // TODO: Hier Besonderheit: Zwischen Array-Index und Zugriffs-ID steht noch eine 1.
+                    // Unklar ob die 1 fix ist, oder sich aus einem weiteren Wert ergibt.
+                    accessIds += "." + String.Format("{0:X}", node.AccessId + ".1");
+                    break;
                 default:
                     names += "." + node.Name;
                     accessIds += "." + String.Format("{0:X}", node.AccessId);
@@ -134,6 +137,11 @@ namespace S7CommPlusDriver
 
         private void AddSubNodes(ref Node node, PObject o)
         {
+            uint ArrayElementCount;
+            int ArrayLowerBounds;
+            uint[] MdimArrayElementCount;
+            int[] MdimArrayLowerBounds;
+
             int element_index = 0;
             // Sind in einem Bereich überhaupt keine Variablen vorhanden, dann ist diese Liste auch nicht vorhanden.
             if (o.VartypeList != null)
@@ -149,33 +157,73 @@ namespace S7CommPlusDriver
                     node.Childs.Add(subnode);
                     // Arrays verarbeiten
                     // TODO: Besonderheiten der Übersichtlichkeit wegen in eigene Methoden auslagern.
-                    if (vte.OffsetInfoType.GetType() == typeof(POffsetInfoType_Array1Dim))
+
+                    if (vte.OffsetInfoType.Is1Dim())
                     {
-                        POffsetInfoType_Array1Dim oit = (POffsetInfoType_Array1Dim)vte.OffsetInfoType;
-                        Console.WriteLine("AddSubNodes: POffsetInfoType_Array1Dim");
-                        // Die Zugriffs-ID beginnt hier immer bei 0, unabhängig vom Inter
-                        for (uint i = 0; i < oit.ArrayElementCount; i++)
+                        #region Struct/UDT oder flaches Array mit einer Dimension
+
+                        var ioit = (IOffsetInfoType_1Dim)vte.OffsetInfoType;
+                        ArrayElementCount = ioit.GetArrayElementCount();
+                        ArrayLowerBounds = ioit.GetArrayLowerBounds();
+
+                        // Die Zugriffs-ID beginnt hier immer bei 0, unabhängig von Lowerbounds
+                        for (uint i = 0; i < ArrayElementCount; i++)
                         {
-                            var arraynode = new Node
+                            // Struct Array gesondert behandeln/kennzeichnen. Hier ist noch eine zusätzliche ID hinter Array Index
+                            // und Zugriffs-LID vorhanden.
+
+                            if (vte.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_STRUCT)
                             {
-                                NodeType = eNodeType.Array,
-                                Name = "[" + (i + oit.ArrayLowerBounds) + "]",
-                                Softdatatype = vte.Softdatatype,
-                                AccessId = i
-                            };
-                            subnode.Childs.Add(arraynode);
+                                var arraynode = new Node
+                                {
+                                    NodeType = eNodeType.StructArray,
+                                    Name = "[" + (i + ArrayLowerBounds) + "]",
+                                    Softdatatype = vte.Softdatatype,
+                                    AccessId = i
+                                };
+                                subnode.Childs.Add(arraynode);
+
+                                // Alle OffsetInfoTypes die hier kommen, sollten eine Relation Id besitzen.
+                                var ioit2 = (IOffsetInfoType_Relation)vte.OffsetInfoType;
+
+                                foreach (var ob in m_objs)
+                                {
+                                    if (ob.RelationId == ioit2.GetRelationId())
+                                    {
+                                        AddSubNodes(ref arraynode, ob);
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                var arraynode = new Node
+                                {
+                                    NodeType = eNodeType.Array,
+                                    Name = "[" + (i + ArrayLowerBounds) + "]",
+                                    Softdatatype = vte.Softdatatype,
+                                    AccessId = i
+                                };
+                                subnode.Childs.Add(arraynode);
+                            }
                         }
+                        #endregion
                     }
-                    else if (vte.OffsetInfoType.GetType() == typeof(POffsetInfoType_ArrayMDim))
+                    else if (vte.OffsetInfoType.IsMDim())
                     {
-                        POffsetInfoType_ArrayMDim oit = (POffsetInfoType_ArrayMDim)vte.OffsetInfoType;
-                        Console.WriteLine("AddSubNodes: POffsetInfoType_ArrayMDim");
+                        #region Struct/UDT oder flaches Array mehr als einer Dimension
+
+                        var ioit = (IOffsetInfoType_MDim)vte.OffsetInfoType;
+                        ArrayElementCount = ioit.GetArrayElementCount();
+                        ArrayLowerBounds = ioit.GetArrayLowerBounds();
+                        MdimArrayElementCount = ioit.GetMdimArrayElementCount();
+                        MdimArrayLowerBounds = ioit.GetMdimArrayLowerBounds();
 
                         // Feststellen wie viele Dimensionen das Array besitzt
                         int actdimensions = 0;
                         for (int d = 0; d < 6; d++)
                         {
-                            if (oit.MdimArrayElementCount[d] > 0)
+                            if (MdimArrayElementCount[d] > 0)
                             {
                                 actdimensions++;
                             }
@@ -190,7 +238,7 @@ namespace S7CommPlusDriver
                             aname = "[";
                             for (int j = actdimensions - 1; j >= 0; j--)
                             {
-                                aname += (xx[j] + oit.MdimArrayLowerBounds[j]).ToString();
+                                aname += (xx[j] + MdimArrayLowerBounds[j]).ToString();
                                 if (j > 0)
                                 {
                                     aname += ",";
@@ -201,27 +249,52 @@ namespace S7CommPlusDriver
                                 }
                             }
 
-                            var arraynode = new Node
+                            if (vte.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_STRUCT)
                             {
-                                NodeType = eNodeType.Array,
-                                Name = aname,
-                                Softdatatype = vte.Softdatatype,
-                                AccessId = id
-                            };
-                            subnode.Childs.Add(arraynode);
+                                var arraynode = new Node
+                                {
+                                    NodeType = eNodeType.StructArray,
+                                    Name = aname,
+                                    Softdatatype = vte.Softdatatype,
+                                    AccessId = id
+                                };
+                                subnode.Childs.Add(arraynode);
 
+                                // Alle OffsetInfoTypes die hier kommen, sollten eine Relation Id besitzen.
+                                var ioit2 = (IOffsetInfoType_Relation)vte.OffsetInfoType;
+
+                                foreach (var ob in m_objs)
+                                {
+                                    if (ob.RelationId == ioit2.GetRelationId())
+                                    {
+                                        AddSubNodes(ref arraynode, ob);
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                var arraynode = new Node
+                                {
+                                    NodeType = eNodeType.Array,
+                                    Name = aname,
+                                    Softdatatype = vte.Softdatatype,
+                                    AccessId = id
+                                };
+                                subnode.Childs.Add(arraynode);
+                            }
                             xx[0]++;
                             // Bei BBOOL-Arrays wird die ID bei Überlauf des kleinsten Array-Index immer auf ein Vielfaches von 8 gerundet.
-                            if (subnode.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL && xx[0] >= oit.MdimArrayElementCount[0])
+                            if (subnode.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL && xx[0] >= MdimArrayElementCount[0])
                             {
-                                if (oit.MdimArrayElementCount[0] % 8 != 0)
+                                if (MdimArrayElementCount[0] % 8 != 0)
                                 {
                                     id += 8 - (xx[0] % 8);
                                 }
                             }
                             for (int dim = 0; dim < 5; dim++)
                             {
-                                if (xx[dim] >= oit.MdimArrayElementCount[dim])
+                                if (xx[dim] >= MdimArrayElementCount[dim])
                                 {
                                     xx[dim] = 0;
                                     xx[dim + 1]++;
@@ -229,22 +302,29 @@ namespace S7CommPlusDriver
                             }
                             id++;
                             n++;
-                        } while (n <= oit.ArrayElementCount);
+                        } while (n <= ArrayElementCount);
+                        #endregion
                     }
-
-                    if (subnode.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_STRUCT)
+                    else
                     {
-                        POffsetInfoType_Struct oit = (POffsetInfoType_Struct)vte.OffsetInfoType;
-                        foreach (var ob in m_objs)
+                        #region Struct/UDT aber keine Art von Array
+                        if (subnode.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_STRUCT)
                         {
-                            if (ob.RelationId == oit.RelationId)
+                            // Alle OffsetInfoTypes die hier kommen, sollten eine Relation Id besitzen.
+                            var ioit = (IOffsetInfoType_Relation)vte.OffsetInfoType;
+
+                            foreach (var ob in m_objs)
                             {
-                                AddSubNodes(ref subnode, ob);
-                                break;
+                                if (ob.RelationId == ioit.GetRelationId())
+                                {
+                                    AddSubNodes(ref subnode, ob);
+                                    break;
+                                }
                             }
+                            // Es kann durchaus vorkommen, dass kein Eintrag gefunden wird, z.B. wenn ein Bereich wie Merker oder
+                            // Ausgänge leer ist. Darum nicht weiter als Fehler auswerten.
                         }
-                        // Es kann durchaus vorkommen, dass kein Eintrag gefunden wird, z.B. wenn ein Bereich wie Merker oder
-                        // Ausgänge leer ist. Darum nicht weiter als Fehler auswerten.
+                        #endregion
                     }
                     element_index++;
                 }
@@ -284,6 +364,7 @@ namespace S7CommPlusDriver
         Undefined = 0,
         Root,
         Var,
-        Array
+        Array,
+        StructArray
     }
 }
