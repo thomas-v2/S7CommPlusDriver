@@ -336,7 +336,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"USIntArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -438,7 +438,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"UIntArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -540,7 +540,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"UDIntArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -709,7 +709,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"ULIntArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -811,7 +811,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"SIntArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -915,7 +915,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"IntArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -1017,7 +1017,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"DIntArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -1186,7 +1186,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"LIntArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -1236,7 +1236,7 @@ namespace S7CommPlusDriver
 
         public override string ToString()
         {
-            return String.Format("<Value type=\"Byte\">0x{0:X2}</Value>", Value);
+            return String.Format("<Value type=\"Byte\">{0}</Value>", Value);
         }
 
         public static ValueByte Deserialize(Stream buffer, byte flags)
@@ -1288,7 +1288,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"ByteArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">0x{1:X2}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -1338,7 +1338,7 @@ namespace S7CommPlusDriver
 
         public override string ToString()
         {
-            return String.Format("<Value type=\"Word\">0x{0:X4}</Value>", Value);
+            return String.Format("<Value type=\"Word\">{0}</Value>", Value);
         }
 
         public static ValueWord Deserialize(Stream buffer, byte flags)
@@ -1390,7 +1390,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"WordArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">0x{1:X4}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -1440,7 +1440,7 @@ namespace S7CommPlusDriver
 
         public override string ToString()
         {
-            return String.Format("<Value type=\"DWord\">0x{0:X8}</Value>", Value);
+            return String.Format("<Value type=\"DWord\">{0}</Value>", Value);
         }
 
         public static ValueDWord Deserialize(Stream buffer, byte flags)
@@ -1492,7 +1492,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"DWordArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">0x{1:X8}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -1542,7 +1542,7 @@ namespace S7CommPlusDriver
 
         public override string ToString()
         {
-            return String.Format("<Value type=\"LWord\">0x{0:X16}</Value>", Value);
+            return String.Format("<Value type=\"LWord\">{0}</Value>", Value);
         }
 
         public static ValueLWord Deserialize(Stream buffer, byte flags)
@@ -1594,7 +1594,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"LWordArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">0x{1:X16}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -1696,7 +1696,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"RealArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -1798,7 +1798,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"LRealArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -1892,7 +1892,6 @@ namespace S7CommPlusDriver
         public override string ToString()
         {
             string str;
-            string sval;
             long[] divs = { 86400000000000, 3600000000000, 60000000000, 1000000000, 1000000, 1000, 1 };
             string[] vfmt = { "{0}d", "{0:00}h", "{0:00}m", "{0:00}s", "{0:000}ms", "{0:000}us", "{0:000}ns" };
             long val;
@@ -1920,16 +1919,15 @@ namespace S7CommPlusDriver
                     timespan -= val * divs[i];
                     if (val > 0)
                     {
-                        sval = String.Format(vfmt[i], (Int32)val);
-                        str = str + sval;
+                        str += String.Format(vfmt[i], (Int32)val);
                         if (timespan > 0)
                         {
-                            str = str + "_";
+                            str += "_";
                         }
                     }
                 }
             }
-            return ("<Value type=\"Timestamp\">" + str + "</Value>");
+            return ("<Value type=\"Timespan\">" + str + "</Value>");
         }
 
         public static ValueTimespan Deserialize(Stream buffer, byte flags)
@@ -2022,7 +2020,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"RIDArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">0x{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -2124,7 +2122,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"AIDArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -2368,7 +2366,7 @@ namespace S7CommPlusDriver
             string s = "<Value type =\"WStringArray\" size=\"" + Value.Length.ToString() + "\">";
             for (int i = 0; i < Value.Length; i++)
             {
-                s += String.Format("<Value index=\"{0}\">{1}</Value>", i, Value[i]);
+                s += String.Format("<Value>{0}</Value>", Value[i]);
             }
             s += "</Value>";
             return s;
@@ -2526,19 +2524,54 @@ namespace S7CommPlusDriver
         public static ValueStruct Deserialize(System.IO.Stream buffer, byte flags)
         {
             UInt32 value;
-            PValue elem;
+            ValueStruct stru;
+
             S7p.DecodeUInt32(buffer, out value);
-            ValueStruct stru = new ValueStruct(value);
-            S7p.DecodeUInt32Vlq(buffer, out value);
-            while (value > 0)
+            // Special handling of datatype struct and some specific ID ranges:
+            // Some struct elements aren't transmitted as single elements. Instead they are packed (e.g. DTL-Struct).
+            // The ID number range where this is used is only guessed (Type Info).
+            if ((value > 0x90000000 && value < 0x9fffffff) || (value > 0x02000000 && value < 0x02ffffff))
             {
-                elem = PValue.Deserialize(buffer);
+                // Packed Struct
+                // TODO: 
+                // Es handelt sich hierbei um System-Datentypen. Entweder es muss der Aufbau online aus der CPU angefragt werden,
+                // oder vorher bekannt sein. Erkennung ist anhand value des ValueStruct möglich.
+                // Daten vorerst hier als Bytearray abglegen, so werden sie auch übertragen. Interpretation bei Bedarf später.
+                stru = new ValueStruct(value);
+
+                UInt64 interfaceTimestamp;
+                S7p.DecodeUInt64(buffer, out interfaceTimestamp);
+                UInt32 transp_flags;
+                S7p.DecodeUInt32Vlq(buffer, out transp_flags);
+                UInt32 elementcount;
+                S7p.DecodeUInt32Vlq(buffer, out elementcount);
+                if ((transp_flags & 0x400) != 0)
+                {
+                    // Hier gibt es eine zusätzliche Zählung, warum auch immer...
+                    S7p.DecodeUInt32Vlq(buffer, out elementcount);
+                }
+                
+                byte[] barr = new byte[elementcount];
+                for (int i = 0; i < elementcount; i++)
+                {
+                    S7p.DecodeByte(buffer, out barr[i]);
+                }
+                ValueByteArray elem = new ValueByteArray(barr);
                 stru.AddStructElement(value, elem);
+            }
+            else
+            {
+                PValue elem;
+                stru = new ValueStruct(value);
                 S7p.DecodeUInt32Vlq(buffer, out value);
+                while (value > 0)
+                {
+                    elem = PValue.Deserialize(buffer);
+                    stru.AddStructElement(value, elem);
+                    S7p.DecodeUInt32Vlq(buffer, out value);
+                }
             }
             return stru;
         }
     }
-
-    // TODO: S7String
 }

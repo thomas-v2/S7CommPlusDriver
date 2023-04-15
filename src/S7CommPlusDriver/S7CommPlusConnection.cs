@@ -333,13 +333,14 @@ namespace S7CommPlusDriver
             }
             if (requestSequenceNumber != responseSequenceNumber)
             {
-                Console.WriteLine("checkResponseWithIntegrity: FEHLER! SeqenceNumber von Response passt nicht zum Request!");
+                Console.WriteLine(String.Format("checkResponseWithIntegrity: FEHLER! SeqenceNumber von Response ({0}) passt nicht zum Request ({1})", responseSequenceNumber, requestSequenceNumber));
                 return S7Consts.errIsoInvalidPDU;
             }
             // Hier kann ein Overflow vorkommen, ist aber erlaubt und Ergebnis wird akzeptiert.
-            if (responseIntegrity != (UInt32)requestSequenceNumber + requestIntegrity)
-            {
-                Console.WriteLine("checkResponseWithIntegrity: FEHLER! Integrity der Response passt nicht zum Request");
+            UInt32 reqIntegCheck = (UInt32)requestSequenceNumber + requestIntegrity;
+            if (responseIntegrity != reqIntegCheck)
+            {  
+                Console.WriteLine(String.Format("checkResponseWithIntegrity: FEHLER! Integrity der Response ({0}) passt nicht zum Request ({1})", responseIntegrity, reqIntegCheck));
                 // Vorerst nicht als Fehler zurückgeben
             }
             return 0;
@@ -354,7 +355,7 @@ namespace S7CommPlusDriver
             }
             if (requestSequenceNumber != responseSequenceNumber)
             {
-                Console.WriteLine("checkResponse: FEHLER! SeqenceNumber von Response passt nicht zum Request!");
+                Console.WriteLine(String.Format("checkResponse: FEHLER! SeqenceNumber von Response ({0}) passt nicht zum Request ({1})", responseSequenceNumber, requestSequenceNumber));
                 return S7Consts.errIsoInvalidPDU;
             }
             return 0;
