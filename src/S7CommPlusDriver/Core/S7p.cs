@@ -182,8 +182,10 @@ namespace S7CommPlusDriver
                 value = 0;
                 return 0;
             }
-            value = (UInt64)((buffer.ReadByte() << 56) | (buffer.ReadByte() << 48) | (buffer.ReadByte() << 40) | (buffer.ReadByte() << 32) |
-                             (buffer.ReadByte() << 24) | (buffer.ReadByte() << 16) | (buffer.ReadByte() << 8) | buffer.ReadByte());
+            byte[] b = new byte[8];
+            buffer.Read(b, 0, 8);
+            Array.Reverse(b, 0, 8);
+            value = BitConverter.ToUInt64(b, 0);
             return 8;
         }
 
@@ -194,8 +196,10 @@ namespace S7CommPlusDriver
                 value = 0;
                 return 0;
             }
-            value = (Int64)((buffer.ReadByte() << 56) | (buffer.ReadByte() << 48) | (buffer.ReadByte() << 40) | (buffer.ReadByte() << 32) |
-                            (buffer.ReadByte() << 24) | (buffer.ReadByte() << 16) | (buffer.ReadByte() << 8) | buffer.ReadByte());
+            byte[] b = new byte[8];
+            buffer.Read(b, 0, 8);
+            Array.Reverse(b, 0, 8);
+            value = BitConverter.ToInt64(b, 0);
             return 8;
         }
 
@@ -466,7 +470,7 @@ namespace S7CommPlusDriver
             v[2] = (byte)buffer.ReadByte();
             v[1] = (byte)buffer.ReadByte();
             v[0] = (byte)buffer.ReadByte();
-            value = BitConverter.ToDouble(v, 0); ;
+            value = BitConverter.ToDouble(v, 0);
             return 8;
         }
 
