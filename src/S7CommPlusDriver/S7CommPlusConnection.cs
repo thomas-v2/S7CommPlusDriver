@@ -642,6 +642,45 @@ namespace S7CommPlusDriver
             return m_LastError;
         }
 
+        public int SetPlcOperatingState(Int32 state)
+        {
+            int res;
+
+            SetVariableRequest setVariableRequest = new SetVariableRequest(ProtocolVersion.V2);
+            setVariableRequest.SessionId = m_SessionId;
+            setVariableRequest.SequenceNumber = GetNextSequenceNumber();
+            setVariableRequest.IntegrityId = GetNextIntegrityId();
+
+            setVariableRequest.InObjectId = 52; // NativeObjects.theCPUexecUnit_Rid
+            setVariableRequest.Address = 2167; // CPUexecUnit.operatingStateREQ
+            setVariableRequest.Value = new ValueDInt(state);
+
+            res = SendS7plusFunctionObject(setVariableRequest);
+            if (res != 0)
+            {
+                m_client.Disconnect();
+                return res;
+            }
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                m_client.Disconnect();
+                return m_LastError;
+            }
+
+            SetVariableResponse setVariableResponse;
+            setVariableResponse = SetVariableResponse.DeserializeFromPdu(m_ReceivedStream);
+            if (setVariableResponse == null)
+            {
+                Console.WriteLine("S7CommPlusConnection - Connect: SetVariableResponse fehlerhaft");
+                m_client.Disconnect();
+                return S7Consts.errIsoInvalidPDU;
+            }
+            m_LastIntegrityId = setVariableResponse.IntegrityId;
+            return 0;
+        }
+
         public int Browse(out List<VarInfo> varInfoList)
         {
             //Console.WriteLine("S7CommPlusConnection - Browse: Start");
