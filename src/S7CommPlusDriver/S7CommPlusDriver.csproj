@@ -49,6 +49,8 @@
     <Compile Include="ClientApi\Browser.cs" />
     <Compile Include="Core\IS7pSerialize.cs" />
     <Compile Include="Core\ProtocolVersion.cs" />
+    <Compile Include="Core\SetVariableResponse.cs" />
+    <Compile Include="Core\SetVariableRequest.cs" />
     <Compile Include="Net\MsgSocket.cs" />
     <Compile Include="Net\S7Client.cs" />
     <Compile Include="Net\S7Consts.cs" />
