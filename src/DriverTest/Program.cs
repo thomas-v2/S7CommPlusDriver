@@ -99,7 +99,41 @@ namespace DriverTest
 
                 #endregion
                 */
-                
+
+
+                #region Test: Absolutadressen lesen
+                // Daten aus nicht "optimierten" Datenbausteinen lesen
+                readlist.Clear();
+                ItemAddress absAdr = new ItemAddress();
+                absAdr.SetAccessAreaToDatablock(100); // DB 100
+                absAdr.SymbolCrc = 0;
+
+                absAdr.AccessSubArea = Ids.DB_ValueActual;
+                absAdr.LID.Add(3);  // LID_OMS_STB_ClassicBlob
+                absAdr.LID.Add(0);  // Blob Start Offset, Anfangsadresse
+                absAdr.LID.Add(20); // 20 Bytes
+
+                readlist.Add(absAdr);
+
+                values.Clear();
+                errors.Clear();
+
+                res = conn.ReadValues(readlist, out values, out errors);
+                Console.WriteLine(values.ToString());
+
+                #endregion
+
+
+                #region Test: SPS in Stopp setzen
+                Console.WriteLine("Setze SPS in STOP...");
+                conn.SetPlcOperatingState(1);
+                Console.WriteLine("Taste drücken um wieder in RUN zu setzen...");
+                Console.ReadKey();
+                Console.WriteLine("Setze SPS in RUN...");
+                conn.SetPlcOperatingState(3);
+
+                #endregion
+
                 conn.Disconnect();
             }
             else
