@@ -62,6 +62,12 @@ Die key.log kann bei Bedarf anschließend gelöscht werden.
 ```
 "C:\Program Files\Wireshark\editcap.exe" --inject-secrets tls,key.log test-capture.pcapng test-capture-with-keys.pcapng
 ```
+
+Zur Vereinfachung habe ich ein kleines Hilfsprogramm mit einer grafischen Oberfläche geschrieben, auf das die Dateien per Drag&Drop
+gezogen werden können, und das auf Tastendruck editcap aufruft. Das Programm ist hier verfügbar:
+
+https://github.com/thomas-v2/PcapKeyInjector
+
 Damit Wireshark das S7comm-Plus Protokoll dekodieren kann, ist die entsprechende dll in das Wireshark Installationsverzeichnis abzulegen.
 Näheres dazu und Download der dll bei Sourceforge unter:
 
