@@ -389,6 +389,14 @@ namespace S7CommPlusDriver
                     break;
                 }
             }
+            if (cont > 0)
+            {
+                // 8*7 bit + 8 bit = 64 bit -> Sonderfall im letzten Octett!
+                octet = (byte)buffer.ReadByte();
+                length++;
+                val <<= 8;
+                val += octet;
+            }
             value = val;
             return length;
         }
