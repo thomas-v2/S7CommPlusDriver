@@ -1896,7 +1896,7 @@ namespace S7CommPlusDriver
             string[] vfmt = { "{0}d", "{0:00}h", "{0:00}m", "{0:00}s", "{0:000}ms", "{0:000}us", "{0:000}ns" };
             long val;
             long timespan = Value;
-
+            bool time_negative = false;
             if (timespan == 0)
             {
                 str = "LT#000ns";
@@ -1906,7 +1906,11 @@ namespace S7CommPlusDriver
                 if (timespan < 0)
                 {
                     str = "LT#-";
-                    timespan *= -1;
+                    time_negative = true;
+                    for (int i = 0; i < 7; i++)
+                    {
+                        divs[i] = -divs[i];
+                    }
                 }
                 else
                 {
@@ -1920,7 +1924,7 @@ namespace S7CommPlusDriver
                     if (val > 0)
                     {
                         str += String.Format(vfmt[i], (Int32)val);
-                        if (timespan > 0)
+                        if ((!time_negative && timespan > 0) || (time_negative && timespan < 0))
                         {
                             str += "_";
                         }
