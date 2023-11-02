@@ -1821,7 +1821,6 @@ namespace S7CommPlusDriver
     public class ValueTimestamp : PValue
     {
         UInt64 Value;
-        static UInt64 bias = 621355968000000000;
 
         public ValueTimestamp(UInt64 value) : this(value, 0)
         {
@@ -1849,8 +1848,34 @@ namespace S7CommPlusDriver
 
         public override string ToString()
         {
-            DateTime dt = new DateTime((long)(bias + (Value / 100)));
-            return "<Value type=\"Timestamp\">" + dt.ToString() + "." + dt.Millisecond + "</Value>";
+            DateTime dt = new DateTime(1970, 1, 1);
+            ulong v, ns;
+            string fmt;
+            v = Value;
+            ns = v % 1000000000;
+            v /= 1000000000;
+
+            dt = dt.AddSeconds(v);
+
+            if ((ns % 1000) > 0)
+            {
+                fmt = "{0}.{1:D09}";
+            }
+            else if ((ns % 1000000) > 0)
+            {
+                fmt = "{0}.{1:D06}";
+                ns /= 1000;
+            }
+            else if ((ns % 1000000000) > 0)
+            {
+                fmt = "{0}.{1:D03}";
+                ns /= 1000000;
+            }
+            else
+            {
+                return "<Value type=\"Timestamp\">" + dt.ToString() + "</Value>";
+            }
+            return "<Value type=\"Timestamp\">" + String.Format(fmt, dt.ToString(), ns) + "</Value>";
         }
 
         public static ValueTimestamp Deserialize(Stream buffer, byte flags)
