@@ -765,15 +765,10 @@ namespace S7CommPlusDriver
             // die Typinformationen abgefragt werden können.
             // Das ist notwendig, weil z.B. bei Instanz-DBs (z.B. TON) an die Typinformationen
             // nicht über die RID des DBs sondern des TONs gelangt werden muss
-            GetMultiVariablesRequest getMultiVariablesReq = new GetMultiVariablesRequest(ProtocolVersion.V2);
-            getMultiVariablesReq.SessionId = m_SessionId;
-            getMultiVariablesReq.SequenceNumber = GetNextSequenceNumber();
-            getMultiVariablesReq.IntegrityId = GetNextIntegrityId();
+            List<ItemAddress> readlist = new List<ItemAddress>();
+            List<object> values = new List<object>();
+            List<UInt64> errors = new List<UInt64>();
 
-
-            // TODO: WICHTIG!
-            // Hier kann auch nur die maximale Anzahl an Variablen pro Read Request gelesen werden!
-            // Es kann eigentlich direkt ReadValues verwendet werden.
             foreach (var data in exploreData)
             {
                 if (data.db_number > 0)        // Merker usw. nicht abfragen
@@ -783,41 +778,36 @@ namespace S7CommPlusDriver
                     adr1.AccessArea = data.db_block_relid;
                     adr1.AccessSubArea = Ids.DB_ValueActual;
                     adr1.LID.Add(1);
-                    // Variablenadresse dem Request hinzufügen
-                    getMultiVariablesReq.AddressList.Add(adr1);
+                    readlist.Add(adr1);
                 }
             }
-            res = SendS7plusFunctionObject(getMultiVariablesReq);
+            res = ReadValues(readlist, out values, out errors);
             if (res != 0)
             {
                 return res;
-            }
-            m_LastError = 0;
-            WaitForNewS7plusReceived(m_ReadTimeout);
-            if (m_LastError != 0)
-            {
-                return m_LastError;
-            }
-            // Antwort auswerten
-            GetMultiVariablesResponse getMultiVariablesRes = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
-            if ((getMultiVariablesRes == null) ||
-                (getMultiVariablesRes.SequenceNumber != getMultiVariablesReq.SequenceNumber) ||
-                (getMultiVariablesRes.ReturnValue != 0))
-            {
-                return S7Consts.errIsoInvalidPDU;
             }
             #endregion
 
             #region Vorabinformationen zur Kombination an ExploreSymbols übergeben
 
             // Antworten in Liste eintragen
-            foreach (var val in getMultiVariablesRes.Values)
+            for (int i = 0; i < values.Count; i++)
             {
-                int key = (int)(val.Key) - 1;
-                ValueRID rid = (ValueRID)val.Value;
-                var data = exploreData[key];
-                data.db_block_ti_relid = rid.GetValue();
-                exploreData[key] = data;
+                if (errors[i] == 0)
+                {
+                    ValueRID rid = (ValueRID)values[i];
+                    var data = exploreData[i];
+                    data.db_block_ti_relid = rid.GetValue();
+                    exploreData[i] = data;
+                }
+                else
+                {
+                    // Bei Fehler relid=0 einfügen, wird unten aus der Liste komplett entfernt
+                    // TODO: Fehler melden
+                    var data = exploreData[i];
+                    data.db_block_ti_relid = 0;
+                    exploreData[i] = data;
+                }
             }
 
             // Elemente mit db_block_ti_relid == 0 aus Liste löschen
