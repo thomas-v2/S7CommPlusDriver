@@ -305,25 +305,21 @@ namespace S7CommPlusDriver
                         } while (n <= ArrayElementCount);
                         #endregion
                     }
-                    else
+                    if (vte.OffsetInfoType.HasRelation())
                     {
-                        #region Struct/UDT aber keine Art von Array
-                        if (subnode.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_STRUCT)
-                        {
-                            // Alle OffsetInfoTypes die hier kommen, sollten eine Relation Id besitzen.
-                            var ioit = (IOffsetInfoType_Relation)vte.OffsetInfoType;
+                        #region Struct / UDT / System-Biliotheks-Strukturen (DTL, IEC_TIMER, ...) aber keine Art von Array
+                        var ioit = (IOffsetInfoType_Relation)vte.OffsetInfoType;
 
-                            foreach (var ob in m_objs)
+                        foreach (var ob in m_objs)
+                        {
+                            if (ob.RelationId == ioit.GetRelationId())
                             {
-                                if (ob.RelationId == ioit.GetRelationId())
-                                {
-                                    AddSubNodes(ref subnode, ob);
-                                    break;
-                                }
+                                AddSubNodes(ref subnode, ob);
+                                break;
                             }
-                            // Es kann durchaus vorkommen, dass kein Eintrag gefunden wird, z.B. wenn ein Bereich wie Merker oder
-                            // Ausgänge leer ist. Darum nicht weiter als Fehler auswerten.
                         }
+                        // Es kann durchaus vorkommen, dass kein Eintrag gefunden wird, z.B. wenn ein Bereich wie Merker oder
+                        // Ausgänge leer ist. Darum nicht weiter als Fehler auswerten.
                         #endregion
                     }
                     element_index++;
