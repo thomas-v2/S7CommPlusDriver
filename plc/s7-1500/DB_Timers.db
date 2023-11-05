@@ -1,0 +1,37 @@
+﻿DATA_BLOCK "DB_Timers"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Time_Min_n24D_20H_31M_23S_648MS : Time;   // Time: Min
+      Time_Max_24D_20H_31M_23S_647MS : Time;   // Time: Max
+      Time_12S_345MS : Time;   // Time: Testvalue 1
+      Time_n20M_34S : Time;   // Time: Testvalue 2
+      S5Time_Min_0MS : S5Time;   // S5Time: Min
+      S5Time_Max_2H46M30S : S5Time;   // S5Time: Max
+      S5Time_120MS : S5Time;   // S5Time: Testvalue 1
+      S5Time_12S300MS : S5Time;   // S5Time: Testvalue 2
+      LTime_12S345NS : LTime;   // LTime: Min
+      LTime_Min_n106751D_23H_47M_16S_854MS_775US_808NS : LTime;   // LTime: Max
+      LTime_Max_106751D_23H_47M_16S_854MS_775US_807NS : LTime;   // LTime: Testvalue 1
+      LTime_n12H_345US : LTime;   // LTime: Testvalue 2
+      LTime_23H_456US : LTime;   // LTime: Testvalue 3
+   END_VAR
+
+
+BEGIN
+   Time_Min_n24D_20H_31M_23S_648MS := T#-24D_20H_31M_23S_648MS;
+   Time_Max_24D_20H_31M_23S_647MS := T#24D_20H_31M_23S_647MS;
+   Time_12S_345MS := T#12S_345MS;
+   Time_n20M_34S := T#-20M_34S;
+   S5Time_Max_2H46M30S := S5T#2H_46M_30S;
+   S5Time_120MS := S5T#120MS;
+   S5Time_12S300MS := S5T#12S_300MS;
+   LTime_12S345NS := LT#12S_345NS;
+   LTime_Min_n106751D_23H_47M_16S_854MS_775US_808NS := LT#-106751D_23H_47M_16S_854MS_775US_808NS;
+   LTime_Max_106751D_23H_47M_16S_854MS_775US_807NS := LT#106751D_23H_47M_16S_854MS_775US_807NS;
+   LTime_n12H_345US := LT#-12H_345US;
+   LTime_23H_456US := LT#23H_456US;
+
+END_DATA_BLOCK
+

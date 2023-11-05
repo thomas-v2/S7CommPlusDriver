@@ -1,0 +1,14 @@
+﻿FUNCTION_BLOCK "FB_ParameterTypes"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Block_FB_1234 : Block_FB := FB 1234;   // Block_FB
+      Block_FC_5678 : Block_FC := FC 5678;   // Block_FC
+      Counter_321 : Counter := 321;   // Counter
+      Timer_654 : Timer := 654;   // Timer
+   END_VAR
+
+
+BEGIN
+END_FUNCTION_BLOCK
+

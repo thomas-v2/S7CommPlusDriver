@@ -1,0 +1,13 @@
+﻿FUNCTION "FC_TestCallParameterTypes" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+
+BEGIN
+	// Call FB for test parameter datatypes
+	// Unfortunately you can't write the parameters in SCL, only in FUP/KOP.
+	// We keep the default values defined in the FB interface.
+	
+	"FB_ParameterTypes_DB"();
+	
+END_FUNCTION
+

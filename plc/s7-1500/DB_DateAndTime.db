@@ -1,0 +1,64 @@
+﻿DATA_BLOCK "DB_DateAndTime"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Date_Min_1990_01_01 : Date;   // Date: Min
+      Date_Max_2169_06_06 : Date;   // Date: Max
+      Date_2023_10_28 : Date;   // Date: Testvalue 1
+      Date_1991_02_03 : Date;   // Date: Testvalue 2
+      Time_Of_Day_Min_00_00_00d000 : Time_Of_Day;   // Time_Of_Day: Min
+      Time_Of_Day_Max_23_59_59d999 : Time_Of_Day;   // Time_Of_Day: Min
+      Time_Of_Day_01_02_03 : Time_Of_Day;   // Time_Of_Day: Testvalue 1
+      Time_Of_Day_23_58_59 : Time_Of_Day;   // Time_Of_Day: Testvalue 2
+      Time_Of_Day_12_13_14d123 : Time_Of_Day;   // Time_Of_Day: Testvalue 3
+      Date_And_Time_Min_1990_01_01_00_00_00 : Date_And_Time;   // Date_And_Time: Min
+      Date_And_Time_Max_2089_12_31_23_59_59d999 : Date_And_Time;   // Date_And_Time: Max
+      Date_And_Time_2023_10_28_23_58_59d123 : Date_And_Time;   // Date_And_Time: Testvalue 1
+      LTOD_Min_00_00_00d000000000 : LTime_Of_Day;   // LTOD: Min
+      LTOD_Max_23_59_59d999999999 : LTime_Of_Day;   // LTOD: Max
+      LTOD_10_20_30d400365215 : LTime_Of_Day;   // LTOD: Testvalue 1
+      LDT_Min_1970_01_01_00_00_00d000000000 : LDT;   // LDT: Min
+      LDT_Max_2262_04_11_23_47_16d854775807 : LDT;   // LDT: Max
+      LDT_2008_10_25_08_12_34d567 : LDT;   // LDT: Testvalue 1
+      DTL_Min_1970_01_01_00_00_00d000000000 {InstructionName := 'DTL'; LibVersion := '1.0'} : DTL;   // DTL: Min
+      DTL_Max_2262_04_11_23_47_16d854775807 {InstructionName := 'DTL'; LibVersion := '1.0'} : DTL;   // DTL: Max
+      DTL_2008_10_25_08_12_34d567 {InstructionName := 'DTL'; LibVersion := '1.0'} : DTL;   // DTL: Testvalue 1
+   END_VAR
+
+
+BEGIN
+   Date_Max_2169_06_06 := D#2169-06-06;
+   Date_2023_10_28 := D#2023-10-28;
+   Date_1991_02_03 := D#1990-02-03;
+   Time_Of_Day_Max_23_59_59d999 := TOD#23:59:59.999;
+   Time_Of_Day_01_02_03 := TOD#01:02:03;
+   Time_Of_Day_23_58_59 := TOD#23:58:59;
+   Time_Of_Day_12_13_14d123 := TOD#12:13:14.123;
+   Date_And_Time_Max_2089_12_31_23_59_59d999 := DT#2089-12-31-23:59:59.999;
+   Date_And_Time_2023_10_28_23_58_59d123 := DT#2023-10-28-23:58:59.123;
+   LTOD_Max_23_59_59d999999999 := LTOD#23:59:59.999999999;
+   LTOD_10_20_30d400365215 := LTOD#10:20:30.400365215;
+   LDT_Max_2262_04_11_23_47_16d854775807 := LDT#2262-04-11-23:47:16.854775807;
+   LDT_2008_10_25_08_12_34d567 := LDT#2008-10-25-08:12:34.567;
+   DTL_Max_2262_04_11_23_47_16d854775807.YEAR := 2262;
+   DTL_Max_2262_04_11_23_47_16d854775807.MONTH := 4;
+   DTL_Max_2262_04_11_23_47_16d854775807.DAY := 11;
+   DTL_Max_2262_04_11_23_47_16d854775807.WEEKDAY := 6;
+   DTL_Max_2262_04_11_23_47_16d854775807.HOUR := 23;
+   DTL_Max_2262_04_11_23_47_16d854775807.MINUTE := 47;
+   DTL_Max_2262_04_11_23_47_16d854775807.SECOND := 16;
+   DTL_Max_2262_04_11_23_47_16d854775807.NANOSECOND := 854775807;
+   DTL_Max_2262_04_11_23_47_16d854775807 := DTL#2262-04-11-23:47:16.854775807;
+   DTL_2008_10_25_08_12_34d567.YEAR := 2008;
+   DTL_2008_10_25_08_12_34d567.MONTH := 10;
+   DTL_2008_10_25_08_12_34d567.DAY := 25;
+   DTL_2008_10_25_08_12_34d567.WEEKDAY := 7;
+   DTL_2008_10_25_08_12_34d567.HOUR := 8;
+   DTL_2008_10_25_08_12_34d567.MINUTE := 12;
+   DTL_2008_10_25_08_12_34d567.SECOND := 34;
+   DTL_2008_10_25_08_12_34d567.NANOSECOND := 567000000;
+   DTL_2008_10_25_08_12_34d567 := DTL#2008-10-25-08:12:34.567;
+
+END_DATA_BLOCK
+

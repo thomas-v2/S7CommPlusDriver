@@ -1,0 +1,14 @@
+﻿FUNCTION_BLOCK "FB_Pointers"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Any_1 : Any;   // Any
+      Pointer_1 : Pointer;   // Pointer
+      Remote_1 : Remote;   // Remote
+      Variant_1 : Variant;   // Variant
+   END_VAR
+
+
+BEGIN
+END_FUNCTION_BLOCK
+
