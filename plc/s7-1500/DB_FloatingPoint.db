@@ -11,7 +11,7 @@ NON_RETAIN
       Real_987d125 : Real;   // Real: Testvalue 1
       Real_n123d5 : Real;   // Real: Testvalue 2
       LReal_MinNeg_n1d7976931348623157e308 : LReal;   // LReal: Min negative value
-      LReal_MaxNeg_2d2250738585072014en308 : LReal;   // LReal: Max negative value
+      LReal_MaxNeg_n2d2250738585072014en308 : LReal;   // LReal: Max negative value
       LReal_MinPos_2d2250738585072014en308 : LReal;   // LReal: Min positive value
       LReal_MaxPos_1d7976931348623157e308 : LReal;   // LReal: Max positive value
       LReal_0d0 : LReal;   // LReal: Zero
@@ -29,7 +29,7 @@ BEGIN
    Real_987d125 := 987.125;
    Real_n123d5 := -123.5;
    LReal_MinNeg_n1d7976931348623157e308 := -1.7976931348623157E+308;
-   LReal_MaxNeg_2d2250738585072014en308 := 2.2250738585072014E-308;
+   LReal_MaxNeg_n2d2250738585072014en308 := -2.2250738585072014E-308;
    LReal_MinPos_2d2250738585072014en308 := 2.2250738585072014E-308;
    LReal_MaxPos_1d7976931348623157e308 := 1.7976931348623157E+308;
    LReal_987d125 := 987.125;
