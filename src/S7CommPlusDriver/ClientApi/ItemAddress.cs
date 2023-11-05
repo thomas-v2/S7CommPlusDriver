@@ -70,6 +70,18 @@ namespace S7CommPlusDriver
             }
         }
 
+        public string GetAccessString()
+        {
+            // Aus der angegebenen Adresse, einen Zugriffsstring zurückgenerieren.
+            // Falls der Benutzer ist Teile nicht über den String, sondern manuell über Einzelelemente gesetzt hat.
+            string s = String.Format("{0:X}", AccessArea);
+            foreach(var i in LID)
+            {
+                s += String.Format(".{0:X}", i);
+            }
+            return s;
+        }
+
         public UInt32 GetNumberOfFields()
         {
             return (UInt32)(4 + LID.Count);

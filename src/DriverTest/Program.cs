@@ -1,6 +1,11 @@
-﻿using System;
+﻿//#define _TEST_BASIC_VAR
+#define _TEST_PLCTAG
+
+using System;
 using System.Collections.Generic;
 using S7CommPlusDriver;
+using S7CommPlusDriver.ClientApi;
+
 
 namespace DriverTest
 {
@@ -35,10 +40,45 @@ namespace DriverTest
                 List<VarInfo> vars = new List<VarInfo>();
                 res = conn.Browse(out vars);
                 Console.WriteLine("Main - Browse res=" + res);
-
                 #endregion
+
+#if _TEST_PLCTAG
                 #region Werte aller Variablen einlesen
                 Console.WriteLine("Main - Lese Werte aller Variablen aus");
+
+                List<PlcTag> taglist = new List<PlcTag>();
+                PlcTags tags = new PlcTags();
+
+                foreach (var v in vars)
+                {
+                    taglist.Add(tags.TagFactory(v.Name, new ItemAddress(v.AccessSequence), v.Softdatatype));
+                }
+                foreach (var t in taglist)
+                {
+                    tags.AddTag(t);
+                }
+                res = tags.ReadTags(conn);
+                if (res == 0)
+                {
+                    Console.WriteLine("====================== VARIABLENHAUSHALT ======================");
+
+                    string formatstring = "{0,-80}{1,-30}{2,-20}{3,-20}";
+                    Console.WriteLine(String.Format(formatstring, "SYMBOLIC-NAME", "ACCESS-SEQUENCE", "TYP", "QC: VALUE"));
+                    for (int i = 0; i < vars.Count; i++)
+                    {
+                        string s;
+      
+                        s = String.Format(formatstring, taglist[i].Name, taglist[i].Address.GetAccessString(), Softdatatype.Types[taglist[i].Datatype], taglist[i].ToString());
+                        Console.WriteLine(s);
+                    }
+                }
+                #endregion
+#endif
+
+#if _TEST_BASIC_VAR
+                #region Werte aller Variablen einlesen
+                Console.WriteLine("Main - Lese Werte aller Variablen aus");
+
                 foreach (var v in vars)
                 {
                     readlist.Add(new ItemAddress(v.AccessSequence));
@@ -46,6 +86,7 @@ namespace DriverTest
                 List<object> values = new List<object>();
                 List<UInt64> errors = new List<UInt64>();
 
+                
                 // Fehlerhafte Variable setzen
                 //readlist[2].LID[0] = 123;
                 res = conn.ReadValues(readlist, out values, out errors);
@@ -69,25 +110,10 @@ namespace DriverTest
                     Console.WriteLine("===============================================================");
                 }
                 #endregion
+#endif
+
                 /*
-                #region Test: Dauerlauf
-                for (int i = 1; i <= 10000; i++)
-                {
-                    res = conn.ReadValues(readlist, out values, out errors);
-                    if (res != 0)
-                    {
-                        Console.WriteLine("Fehler bei Durchlauf " + i);
-                        break;
-                    }
-                    if (i % 10 == 0)
-                    {
-                        Console.WriteLine("Durchlauf: " + i);
-                    }
-                }
-                #endregion
-
                 #region Test: Wert schreiben
-
                 List<PValue> writevalues = new List<PValue>();
                 PValue writeValue = new ValueInt(8888);
                 writevalues.Add(writeValue);
@@ -96,11 +122,10 @@ namespace DriverTest
                 errors.Clear();
                 res = conn.WriteValues(writelist, writevalues, out errors);
                 Console.WriteLine("res=" + res);
-
                 #endregion
                 */
 
-
+                /*
                 #region Test: Absolutadressen lesen
                 // Daten aus nicht "optimierten" Datenbausteinen lesen
                 readlist.Clear();
@@ -120,10 +145,10 @@ namespace DriverTest
 
                 res = conn.ReadValues(readlist, out values, out errors);
                 Console.WriteLine(values.ToString());
-
                 #endregion
+                */
 
-
+                /*
                 #region Test: SPS in Stopp setzen
                 Console.WriteLine("Setze SPS in STOP...");
                 conn.SetPlcOperatingState(1);
@@ -131,9 +156,8 @@ namespace DriverTest
                 Console.ReadKey();
                 Console.WriteLine("Setze SPS in RUN...");
                 conn.SetPlcOperatingState(3);
-
                 #endregion
-
+                */
                 conn.Disconnect();
             }
             else

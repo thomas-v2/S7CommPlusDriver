@@ -83,7 +83,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientApi\Browser.cs" />
+    <Compile Include="ClientApi\PlcTagQC.cs" />
+    <Compile Include="ClientApi\PlcTags.cs" />
     <Compile Include="Core\IS7pSerialize.cs" />
+    <Compile Include="ClientApi\PlcTag.cs" />
     <Compile Include="Core\ProtocolVersion.cs" />
     <Compile Include="Core\SetVariableResponse.cs" />
     <Compile Include="Core\SetVariableRequest.cs" />
