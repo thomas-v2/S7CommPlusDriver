@@ -1,0 +1,43 @@
+﻿DATA_BLOCK "DB_Integers"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Int_Min_n32768 : Int;   // Int: Min
+      Int_Max_32767 : Int;   // Int: Max
+      Int_12345 : Int;   // Int: Testvalue 1
+      Int_n9876 : Int;   // Int: Testvalue 2
+      USint_Min_0 : USInt;   // USInt: Min
+      USInt_Max_255 : USInt;   // USInt: Max
+      USInt_123 : USInt;   // USInt: Testvalue 1
+      UInt_Min_0 : UInt;   // UInt: Min
+      UInt_Max_65535 : UInt;   // UInt: Max
+      UInt_12345 : UInt;   // UInt: Testvalue 1
+      UDInt_Min_0 : UDInt;   // UDInt: Min
+      UDInt_Max_4294967295 : UDInt;   // UDInt: Max
+      UDint_1234567890 : UDInt;   // UDInt: Testvalue 1
+      SInt_Min_n128 : SInt;   // SInt: Min
+      SInt_Max_127 : SInt;   // SInt: Max
+      SInt_123 : SInt;   // SInt: Testvalue 1
+      SInt_n123 : SInt;   // SInt: Testvalue 2
+   END_VAR
+
+
+BEGIN
+   Int_Min_n32768 := -32768;
+   Int_Max_32767 := 32767;
+   Int_12345 := 12345;
+   Int_n9876 := -9876;
+   USInt_Max_255 := 255;
+   USInt_123 := 123;
+   UInt_Max_65535 := 65535;
+   UInt_12345 := 12345;
+   UDInt_Max_4294967295 := 4_294_967_295;
+   UDint_1234567890 := 1_234_567_890;
+   SInt_Min_n128 := -128;
+   SInt_Max_127 := 127;
+   SInt_123 := 123;
+   SInt_n123 := -123;
+
+END_DATA_BLOCK
+

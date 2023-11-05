@@ -1,0 +1,15 @@
+﻿DATA_BLOCK "DB_Binary"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Bool_False : Bool;   // Bool: False
+      Bool_True : Bool;   // Bool: True
+   END_VAR
+
+
+BEGIN
+   Bool_True := TRUE;
+
+END_DATA_BLOCK
+
