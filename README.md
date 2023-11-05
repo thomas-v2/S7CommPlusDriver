@@ -82,6 +82,11 @@ In der Tabelle sind alle in der SPS zur Zeit (TIA V18) möglichen Datentypen auf
 auf dem Netzwerk im S7comm-Plus-Protokoll übertragen werden, sowie welcher .Net Datentyp in den PlcTag Klassen daraus
 resultiert.
 
+<style scoped>
+table {
+  font-size: 11px;
+}
+</style>
 
 | Supported | PLC Datentyp              | PLC Kategorie     | PLC Info          | Netzwerk Datentyp             | .Net Datentyp PlcTag          | Sonstiges                                         |
 | :-------: | --------------------------| ----------------- | ----------------- | ----------------------------- | ----------------------------- | ------------------------------------------------- |
