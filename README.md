@@ -24,14 +24,15 @@ mit der ensprechenden Version projektiert wurde. Das ist nur mit einer TIA-Porta
 
 ### OpenSSL
 Für die TLS-Kommunikation wird OpenSSL verwendet. Ist OpenSSL in der entsprechenden Version installiert, dann sollte ein entsprechender
-Systempfad zum Installationsverzeichnis eingetragen sein. Alternativ können die notwendigen Dateien (dlls) auch in das Verzeichnis mit
-der ausführbaren Datei abgelegt werden. Das wären je nach verwendetem Betriebssystem:
+Systempfad zum Installationsverzeichnis eingetragen sein. Die notwendigen dlls sind aber auch im Projekt abgelegt, und werden im Buildprozess
+in der notwendigen Version (x86 oder x64) in das Ausgabeverzeichnis kopiert.
+Die notwendigen dlls mit Dateinamen je nach verwendetem Betriebssystem:
 
-Für 32 Bit:
+Für 32 Bit (x86):
 - libcrypto-3.dll
 - libssl-3.dll
 
-Für 64 Bit:
+Für 64 Bit (x64):
 - libcrypto-3-x64.dll
 - libssl-3-x64.dll
 
