@@ -101,12 +101,25 @@ namespace S7CommPlusDriver
         const int S7COMMP_TAGDESCR_OFFSETINFOTYPE2_PROGRAMALARM = 15;
 
         const int S7COMMP_TAGDESCR_BITOFFSETINFO_RETAIN = 0x80;
+        const int S7COMMP_TAGDESCR_BITOFFSETINFO_NONOPTBITOFFSET = 0x70;
         const int S7COMMP_TAGDESCR_BITOFFSETINFO_CLASSIC = 0x08;
+        const int S7COMMP_TAGDESCR_BITOFFSETINFO_OPTBITOFFSET = 0x07;
 
         public UInt32 LID;
         public UInt32 SymbolCrc;
         public UInt32 Softdatatype;
         public UInt16 AttributeFlags;
+
+        public int GetAttributeSection()
+        {
+            return ((AttributeFlags & S7COMMP_TAGDESCR_ATTRIBUTE2_SECTION) >> 4);
+        }
+
+        public int GetAttributeBitoffset()
+        {
+            return (AttributeFlags & S7COMMP_TAGDESCR_ATTRIBUTE2_BITOFFSET);
+        }
+
         public bool GetAttributeFlagHmiVisible()
         {
             return ((AttributeFlags & S7COMMP_TAGDESCR_ATTRIBUTE2_HMIVISIBLE) != 0);
@@ -137,6 +150,16 @@ namespace S7CommPlusDriver
         public bool GetBitoffsetinfoFlagClassic()
         {
             return ((BitoffsetinfoFlags & S7COMMP_TAGDESCR_BITOFFSETINFO_CLASSIC) != 0);
+        }
+
+        public int GetBitoffsetinfoNonoptimizedBitoffset()
+        {
+            return ((BitoffsetinfoFlags & S7COMMP_TAGDESCR_BITOFFSETINFO_NONOPTBITOFFSET) >> 4);
+        }
+
+        public int GetBitoffsetinfoOptimizedBitoffset()
+        {
+            return (BitoffsetinfoFlags & S7COMMP_TAGDESCR_BITOFFSETINFO_OPTBITOFFSET);
         }
 
         public POffsetInfoType OffsetInfoType;
