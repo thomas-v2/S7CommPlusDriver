@@ -146,12 +146,6 @@ namespace S7CommPlusDriver
             ret += S7p.DecodeUInt32LE(buffer, out oi.Info5);
             ret += S7p.DecodeUInt32LE(buffer, out oi.Info6);
             ret += S7p.DecodeUInt32LE(buffer, out oi.Info7);
-
-            ret += S7p.DecodeUInt32LE(buffer, out oi.RelationId);
-            ret += S7p.DecodeUInt32LE(buffer, out oi.Info4);
-            ret += S7p.DecodeUInt32LE(buffer, out oi.Info5);
-            ret += S7p.DecodeUInt32LE(buffer, out oi.Info6);
-            ret += S7p.DecodeUInt32LE(buffer, out oi.Info7);
             ret += S7p.DecodeUInt32LE(buffer, out oi.RetainSectionOffset);
             ret += S7p.DecodeUInt32LE(buffer, out oi.VolatileSectionOffset);
 
