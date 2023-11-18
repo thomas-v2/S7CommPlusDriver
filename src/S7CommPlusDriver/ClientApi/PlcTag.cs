@@ -486,7 +486,7 @@ namespace S7CommPlusDriver.ClientApi
             {
                 var v = ((ValueWord)valueObj).GetValue();
                 TimeValue = BCD_ushort_to_ushort((ushort)(v & (ushort)0x0FFF));
-                TimeBase = (ushort)((v & (ushort)0x0300) >> 12);
+                TimeBase = (ushort)((v & (ushort)0x3000) >> 12);
                 Quality = PlcTagQC.TAG_QUALITY_GOOD;
             }
             else
