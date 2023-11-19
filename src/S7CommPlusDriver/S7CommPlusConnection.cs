@@ -29,7 +29,7 @@ namespace S7CommPlusDriver
         private MemoryStream m_ReceivedStream;
         private bool m_ReceivedNeedMorePdus;
         private bool m_NewS7CommPlusReceived;
-        
+
         private UInt32 m_SessionId;
         private int m_ReadTimeout = 5000;
 
@@ -47,7 +47,7 @@ namespace S7CommPlusDriver
 
         #region Public Members
         public int m_LastError = 0;
-        
+
         #endregion
 
         #region Private Methods
@@ -90,12 +90,13 @@ namespace S7CommPlusDriver
                 Thread.Sleep(2);
                 Expired = Environment.TickCount - Elapsed > Timeout;
             }
-            
+
             if (Expired)
             {
                 Console.WriteLine("S7CommPlusConnection - WaitForNewS7plusReceived: FEHLER: Timeout!");
                 m_LastError = S7Consts.errTCPDataReceive;
-            } else
+            }
+            else
             {
                 // Console.WriteLine("S7CommPlusConnection - WaitForNewS7plusReceived: ...neue S7CommPlusPDU vollständig empfangen. Zeit: " + (Environment.TickCount - Elapsed) + " ms.");
             }
@@ -339,7 +340,7 @@ namespace S7CommPlusDriver
             // Hier kann ein Overflow vorkommen, ist aber erlaubt und Ergebnis wird akzeptiert.
             UInt32 reqIntegCheck = (UInt32)requestSequenceNumber + requestIntegrity;
             if (responseIntegrity != reqIntegCheck)
-            {  
+            {
                 Console.WriteLine(String.Format("checkResponseWithIntegrity: FEHLER! Integrity der Response ({0}) passt nicht zum Request ({1})", responseIntegrity, reqIntegCheck));
                 // Vorerst nicht als Fehler zurückgeben
             }
@@ -377,7 +378,7 @@ namespace S7CommPlusDriver
                 return res;
 
             #region Schritt 1: Unverschlüsselt InitSSL Request / Response
-            
+
             // Ab jetzt den Thread starten
             InitSslRequest sslrequest = new InitSslRequest(ProtocolVersion.V1, GetNextSequenceNumber(), 0);
             res = SendS7plusFunctionObject(sslrequest);
@@ -454,7 +455,7 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Schritt 4: SetMultiVariablesRequest / Response
-            
+
             SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
             setMultiVariablesRequest.SetSessionSetupData(m_SessionId, serverSession);
             setMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber();
@@ -539,7 +540,7 @@ namespace S7CommPlusDriver
                 getMultiVariablesRequest.AddressList.Clear();
                 count_perChunk = 0;
                 while (count_perChunk < m_MaxTagsPerReadRequestLimit && (chunk_startIndex + count_perChunk) < addresslist.Count)
-                { 
+                {
                     getMultiVariablesRequest.AddressList.Add(addresslist[chunk_startIndex + count_perChunk]);
                     count_perChunk++;
                 }
@@ -580,7 +581,7 @@ namespace S7CommPlusDriver
 
                 foreach (var ev in getMultiVariablesResponse.ErrorValues)
                 {
-                    errors[chunk_startIndex+ (int)ev.Key - 1] = ev.Value;
+                    errors[chunk_startIndex + (int)ev.Key - 1] = ev.Value;
                 }
 
                 chunk_startIndex += count_perChunk;
@@ -733,7 +734,7 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Alle Datenbausteine auswerten die anschließend gebrowst werden müssen
-            
+
             List<PObject> objList = exploreRes.ResponseObject.GetObjects();
 
             foreach (var ob in objList)
@@ -869,7 +870,7 @@ namespace S7CommPlusDriver
                 else
                 {
                     List<PObject> objs = exploreResponse.ResponseObject.GetObjectsByClassId(Ids.ClassTypeInfo);
-                    
+
                     vars.SetTypeInfoContainerObjects(objs);
                     vars.BuildTree();
                     vars.BuildFlatList();
@@ -897,6 +898,189 @@ namespace S7CommPlusDriver
             public UInt32 db_block_ti_relid;                                // Type-Info RID des Datenbausteins
             public List<BrowseEntry> variables = new List<BrowseEntry>(); // Variablen des Datenbausteins
         };
-        #endregion
+
+
+        public class DatablockInfo
+        {
+            public string db_name;                                          // Name of the datablock
+            public UInt32 db_number;                                        // Number of the datablock
+            public UInt32 db_block_relid;                                   // RID of the datablock
+            public UInt32 db_block_ti_relid;                                // Type-Info RID of the datablock
+        };
+
+        public int GetListOfDatablocks(out List<DatablockInfo> dbInfoList)
+        {
+            int res;
+
+            dbInfoList = new List<DatablockInfo>();
+
+            var exploreReq = new ExploreRequest(ProtocolVersion.V2);
+            exploreReq.SessionId = m_SessionId;
+            exploreReq.SequenceNumber = GetNextSequenceNumber();
+            exploreReq.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
+            exploreReq.ExploreRequestId = Ids.None;
+            exploreReq.ExploreChildsRecursive = 1;
+            exploreReq.ExploreParents = 0;
+            exploreReq.IntegrityId = GetNextIntegrityId();
+
+            // Add the attributes we need in the response
+            exploreReq.AddressList.Add(Ids.ObjectVariableTypeName);
+
+            // Set filter on Id for Datablock Class RID. With this filter, we only
+            // get informations from datablocks, and not other blocks we don't need here.
+            var filter = new ValueStruct(Ids.Filter);
+            filter.AddStructElement(Ids.FilterOperation, new ValueDInt(8)); // 8 = InstanceIOf
+            filter.AddStructElement(Ids.AddressCount, new ValueUDInt(0));
+            uint[] faddress = new uint[32]; // Unknown, possible dependant on FilterOperation
+            filter.AddStructElement(Ids.Address, new ValueUDIntArray(faddress));
+            filter.AddStructElement(Ids.FilterValue, new ValueRID(Ids.DB_Class_Rid));
+
+            exploreReq.FilterData = filter;
+
+            res = SendS7plusFunctionObject(exploreReq);
+            if (res != 0)
+            {
+                return res;
+            }
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                return m_LastError;
+            }
+
+            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            res = checkResponseWithIntegrity(exploreRes,
+                    exploreReq.SequenceNumber,
+                    exploreRes.SequenceNumber,
+                    exploreReq.IntegrityId,
+                    exploreRes.IntegrityId);
+            if (res != 0)
+            {
+                return res;
+            }
+
+            // Get the datablock information we want further informations from.
+            var objList = exploreRes.ResponseObject.GetObjects();
+
+            foreach (var ob in objList)
+            {
+                // May be this check can be removed, if setting the filter to the DB_Class_Rid is working 100%.
+                switch (ob.ClassId)
+                {
+                    case Ids.DB_Class_Rid:
+                        UInt32 relid = ob.RelationId;
+                        UInt32 area = (relid >> 16);
+                        UInt32 num = relid & 0xffff;
+                        if (area == 0x8a0e)
+                        {
+                            var name = (ValueWString)(ob.GetAttribute(Ids.ObjectVariableTypeName));
+                            DatablockInfo data = new DatablockInfo();
+                            data.db_block_relid = relid;
+                            data.db_name = name.GetValue();
+                            data.db_number = num;
+                            dbInfoList.Add(data);
+                        }
+                        break;
+                }
+            }
+
+            // Get the TypeInfo RID to RelId from the first response
+
+            // With LID=1 we get the RID back. With this number we can explore further 
+            // informations of this datablock.
+            // This is neccessary, because informations about instance DBs (e.g. TON) you
+            // don't get by the RID of the DB, instead of exploring the TON Type RID.
+            var readlist = new List<ItemAddress>();
+            var values = new List<object>();
+            var errors = new List<UInt64>();
+
+            foreach (var data in dbInfoList)
+            {
+                if (data.db_number > 0)
+                {
+                    // Insert the address
+                    var adr1 = new ItemAddress();
+                    adr1.AccessArea = data.db_block_relid;
+                    adr1.AccessSubArea = Ids.DB_ValueActual;
+                    adr1.LID.Add(1);
+                    readlist.Add(adr1);
+                }
+            }
+            res = ReadValues(readlist, out values, out errors);
+            if (res != 0)
+            {
+                return res;
+            }
+
+            // Insert response data into the list
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (errors[i] == 0)
+                {
+                    var rid = (ValueRID)values[i];
+                    var data = dbInfoList[i];
+                    data.db_block_ti_relid = rid.GetValue();
+                    dbInfoList[i] = data;
+                }
+                else
+                {
+                    // On error, set relid=0, which is then removed in the next step
+                    // Should we report this for the user?
+                    var data = dbInfoList[i];
+                    data.db_block_ti_relid = 0;
+                    dbInfoList[i] = data;
+                }
+            }
+
+            // Remove elements with db_block_ti_relid == 0.
+            // This can occur on datablocks which are only in load memory, and can't be explored.
+            dbInfoList.RemoveAll(item => item.db_block_ti_relid == 0);
+
+            return 0;
+        }
+
+
+        public int GetTypeInformation(uint exploreId, out List<PObject> objList)
+        {
+            int res;
+            objList = new List<PObject>();
+
+            var exploreReq = new ExploreRequest(ProtocolVersion.V2);
+            exploreReq.SessionId = m_SessionId;
+            exploreReq.SequenceNumber = GetNextSequenceNumber();
+            exploreReq.IntegrityId = GetNextIntegrityId();
+            exploreReq.ExploreId = exploreId;
+            exploreReq.ExploreRequestId = Ids.None;
+            exploreReq.ExploreChildsRecursive = 1;
+            exploreReq.ExploreParents = 0;
+
+            res = SendS7plusFunctionObject(exploreReq);
+            if (res != 0)
+            {
+                return res;
+            }
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                return m_LastError;
+            }
+
+            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            res = checkResponseWithIntegrity(exploreRes,
+                    exploreReq.SequenceNumber,
+                    exploreRes.SequenceNumber,
+                    exploreReq.IntegrityId,
+                    exploreRes.IntegrityId);
+            if (res != 0)
+            {
+                return res;
+            }
+            objList.Add(exploreRes.ResponseObject);
+
+            return 0;
+        }
     }
+    #endregion
 }
