@@ -305,7 +305,7 @@ namespace S7CommPlusDriver
                         } while (n <= ArrayElementCount);
                         #endregion
                     }
-                    if (vte.OffsetInfoType.HasRelation())
+                    else if (vte.OffsetInfoType.HasRelation())
                     {
                         #region Struct / UDT / System-Biliotheks-Strukturen (DTL, IEC_TIMER, ...) aber keine Art von Array
                         var ioit = (IOffsetInfoType_Relation)vte.OffsetInfoType;
