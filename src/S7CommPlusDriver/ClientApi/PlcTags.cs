@@ -136,6 +136,11 @@ namespace S7CommPlusDriver.ClientApi
                 case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTATT:
                     return new PlcTagDWord(name, address, softdatatype);
 
+                case Softdatatype.S7COMMP_SOFTDATATYPE_FOLDER:
+                    // Softdatatype 132: This type is only used as parameter for internal SFBs (e.g. AID input parameter)
+                    // Length of value (4 byte) calculated from the offsetinfo byte addresses.
+                    return new PlcTagDWord(name, address, softdatatype);
+
                 case Softdatatype.S7COMMP_SOFTDATATYPE_AOMLINK:
                     return new PlcTagDWord(name, address, softdatatype);
 

@@ -102,13 +102,16 @@ namespace S7CommPlusDriver
             if (node.Childs.Count == 0)
             {
                 // Am Blatt des Baums angekommen
-                var info = new VarInfo
+                if (IsSoftdatatypeSupported(node.Softdatatype))
                 {
-                    Name = names,
-                    AccessSequence = accessIds,
-                    Softdatatype = node.Softdatatype
-                };
-                m_varInfoList.Add(info);
+                    var info = new VarInfo
+                    {
+                        Name = names,
+                        AccessSequence = accessIds,
+                        Softdatatype = node.Softdatatype
+                    };
+                    m_varInfoList.Add(info);
+                }
             }
             else
             {
@@ -324,6 +327,90 @@ namespace S7CommPlusDriver
                     }
                     element_index++;
                 }
+            }
+        }
+
+        private bool IsSoftdatatypeSupported(uint softdatatype)
+        {
+            switch (softdatatype)
+            {
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BOOL:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BYTE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CHAR:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_WORD:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_INT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DWORD:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_REAL:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DATE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_TIMEOFDAY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_TIME:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_S5TIME:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DATEANDTIME:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_STRING:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_POINTER:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_ANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BLOCKFB:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BLOCKFC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_COUNTER:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_TIMER:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LREAL:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_ULINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LWORD:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_USINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_UINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_UDINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_SINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_WCHAR:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_WSTRING:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LTIME:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LTOD:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LDT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DTL:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_REMOTE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMIDENT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTATT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_FOLDER: // Should we support this internal datatype? Only used internally in SFBs
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMLINK:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWIOSYSTEM:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWDPMASTER:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWDEVICE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWDPSLAVE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWIO:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWMODULE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWSUBMODULE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWHSC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWPWM:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWPTO:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWINTERFACE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWIEPORT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBDELAY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBTOD:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBCYCLIC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBATT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNPRG:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNOUC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNRID:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_PORT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_RTM:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_PIP:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBPCYCLE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBHWINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBDIAG:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBTIMEERROR:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBSTARTUP:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DBANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DBWWW:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DBDYN:
+                    return true;
+                default:
+                    return false;
             }
         }
 
