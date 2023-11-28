@@ -172,10 +172,9 @@ namespace S7CommPlusDriver
                         // Die Zugriffs-ID beginnt hier immer bei 0, unabhängig von Lowerbounds
                         for (uint i = 0; i < ArrayElementCount; i++)
                         {
-                            // Struct Array gesondert behandeln/kennzeichnen. Hier ist noch eine zusätzliche ID hinter Array Index
+                            // Struct/FB Array gesondert behandeln/kennzeichnen. Hier ist noch eine zusätzliche ID hinter Array Index
                             // und Zugriffs-LID vorhanden.
-
-                            if (vte.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_STRUCT)
+                            if (vte.OffsetInfoType.HasRelation())
                             {
                                 var arraynode = new Node
                                 {
@@ -252,7 +251,7 @@ namespace S7CommPlusDriver
                                 }
                             }
 
-                            if (vte.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_STRUCT)
+                            if (vte.OffsetInfoType.HasRelation())
                             {
                                 var arraynode = new Node
                                 {
