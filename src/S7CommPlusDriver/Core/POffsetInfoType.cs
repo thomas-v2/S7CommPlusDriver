@@ -59,7 +59,7 @@ namespace S7CommPlusDriver
             Struct = 12,
             Struct1Dim = 13,
             StructMDim = 14,
-            ProgramAlarm = 15
+            FbSfb = 15
         }
 
         public abstract bool HasRelation();
@@ -93,15 +93,15 @@ namespace S7CommPlusDriver
                 case OffsetInfoType.StructElemStructMDim:
                 case OffsetInfoType.StructMDim:
                     return POffsetInfoType_StructMDim.Deserialize(buffer, out length);
-                case OffsetInfoType.ProgramAlarm:
-                    return POffsetInfoType_ProgramAlarm.Deserialize(buffer, out length);
+                case OffsetInfoType.FbSfb:
+                    return POffsetInfoType_FbSfb.Deserialize(buffer, out length);
             }
             length = 0;
             return null;
         }
     }
 
-    public class POffsetInfoType_ProgramAlarm : POffsetInfoType, IOffsetInfoType_Relation
+    public class POffsetInfoType_FbSfb : POffsetInfoType, IOffsetInfoType_Relation
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
@@ -121,10 +121,10 @@ namespace S7CommPlusDriver
         public override bool Is1Dim() { return false; }
         public override bool IsMDim() { return false; }
 
-        public static POffsetInfoType_ProgramAlarm Deserialize(Stream buffer, out int length)
+        public static POffsetInfoType_FbSfb Deserialize(Stream buffer, out int length)
         {
             int ret = 0;
-            POffsetInfoType_ProgramAlarm oi = new POffsetInfoType_ProgramAlarm();
+            POffsetInfoType_FbSfb oi = new POffsetInfoType_FbSfb();
 
             ret += S7p.DecodeUInt16LE(buffer, out oi.UnspecifiedOffsetinfo1);
             ret += S7p.DecodeUInt16LE(buffer, out oi.UnspecifiedOffsetinfo2);
@@ -147,7 +147,7 @@ namespace S7CommPlusDriver
         public override string ToString()
         {
             string s = "";
-            s += "<POffsetInfoType_ProgramAlarm>" + Environment.NewLine;
+            s += "<POffsetInfoType_FbSfb>" + Environment.NewLine;
             s += "<UnspecifiedOffsetinfo1>" + UnspecifiedOffsetinfo1.ToString() + "</UnspecifiedOffsetinfo1>" + Environment.NewLine;
             s += "<UnspecifiedOffsetinfo2>" + UnspecifiedOffsetinfo2.ToString() + "</UnspecifiedOffsetinfo2>" + Environment.NewLine;
 
@@ -163,7 +163,7 @@ namespace S7CommPlusDriver
             s += "<RetainSectionOffset>" + RetainSectionOffset.ToString() + "</RetainSectionOffset>" + Environment.NewLine;
             s += "<VolatileSectionOffset>" + VolatileSectionOffset.ToString() + "</VolatileSectionOffset>" + Environment.NewLine;
 
-            s += "</POffsetInfoType_ProgramAlarm>" + Environment.NewLine;
+            s += "</POffsetInfoType_FbSfb>" + Environment.NewLine;
 
             return s;
         }
