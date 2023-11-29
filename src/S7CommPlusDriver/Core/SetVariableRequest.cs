@@ -45,7 +45,6 @@ namespace S7CommPlusDriver
 
         public int Serialize(Stream buffer)
         {
-            UInt32 i;
             int ret = 0;
             ret += S7p.EncodeByte(buffer, Opcode.Request);
             ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved

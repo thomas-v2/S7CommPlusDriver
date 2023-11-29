@@ -30,6 +30,8 @@ namespace S7CommPlusDriver
         public byte ExploreChildsRecursive;
         public byte ExploreParents;
 
+        public ValueStruct FilterData;
+
         public bool WithIntegrityId = true; // Bei neueren FW (ab 3 oder 4?) immer vorhanden
         public UInt32 IntegrityId;
 
@@ -62,6 +64,21 @@ namespace S7CommPlusDriver
             ret += S7p.EncodeByte(buffer, ExploreChildsRecursive);
             ret += S7p.EncodeByte(buffer, 1);                                   // Unbekannt 0 oder 1?
             ret += S7p.EncodeByte(buffer, ExploreParents);
+
+            if (FilterData != null)
+            {
+                ret += S7p.EncodeByte(buffer, 1); // 1 object / value
+                
+                // TODO / Experimentell:
+                // Besonderheit hier, oder noch nicht ganz verstanden wie es funktioniert:
+                // Hier werden bei einer Struct die DatatypeFlags nicht mit in den Stream geschrieben.
+                // Oder das Byte davor gibt die Flags an? (so wird es aktuell in Wireshark angezeigt)
+                // Provisorisch wird das eine Byte was (vermutet) die Anzahl der Adressen angab, nicht
+                // in den Stream geschrieben.
+                // ret += S7p.EncodeByte(buffer, 0); // 0 address
+                ret += FilterData.Serialize(buffer);
+            }
+
             ret += S7p.EncodeByte(buffer, 0);                                   // Number of following Objects / unbekannt
 
             ret += S7p.EncodeUInt32Vlq(buffer, (UInt32)AddressList.Count);      // im Wireshark Dissector nur 1 Byte, vermutl. aber ein VLQ

@@ -1,0 +1,20 @@
+﻿DATA_BLOCK "DB_Timers"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Time_Min_n24D_20H_31M_23S_648MS : Time;   // Time: Min
+      Time_Max_24D_20H_31M_23S_647MS : Time;   // Time: Max
+      Time_12S_345MS : Time;   // Time: Testvalue 1
+      Time_n20M_34S : Time;   // Time: Testvalue 2
+   END_VAR
+
+
+BEGIN
+   Time_Min_n24D_20H_31M_23S_648MS := T#-24D_20H_31M_23S_648MS;
+   Time_Max_24D_20H_31M_23S_647MS := T#24D_20H_31M_23S_647MS;
+   Time_12S_345MS := T#12S_345MS;
+   Time_n20M_34S := T#-20M_34S;
+
+END_DATA_BLOCK
+

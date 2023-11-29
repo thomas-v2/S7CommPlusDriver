@@ -1,0 +1,11 @@
+﻿FUNCTION "FC_TestCallPointers" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+
+BEGIN
+	// Call FB for test Pointer datatypes
+	"FB_Pointers_DB"( Remote_1:=P#DB987.DBX6.5 BYTE 4321,
+	                  Variant_1:="DB_Integers".Int_12345);
+	
+END_FUNCTION
+

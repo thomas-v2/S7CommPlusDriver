@@ -1,0 +1,22 @@
+﻿DATA_BLOCK "DB_SystemDataTypes"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      CREF_1 {InstructionName := 'CREF'; LibVersion := '1.0'} : CREF;   // CREF: All values default
+      ErrorStruct_1 {InstructionName := 'ErrorStruct'; LibVersion := '1.0'} : ErrorStruct;   // ErrorStruct: All values default
+      IEC_COUNTER_1 {InstructionName := 'IEC_COUNTER'; LibVersion := '1.0'} : IEC_COUNTER;   // IEC_COUNTER: All values default
+      IEC_DCOUNTER_1 {InstructionName := 'IEC_DCOUNTER'; LibVersion := '1.0'} : IEC_DCOUNTER;   // IEC_DCOUNTER: All values default
+      IEC_SCOUNTER_1 {InstructionName := 'IEC_SCOUNTER'; LibVersion := '1.0'} : IEC_SCOUNTER;   // IEC_SCOUNTER: All values default
+      IEC_TIMER_1 {InstructionName := 'IEC_TIMER'; LibVersion := '1.0'} : IEC_TIMER;   // IEC_TIMER: All values default
+      IEC_UCOUNTER_1 {InstructionName := 'IEC_UCOUNTER'; LibVersion := '1.0'} : IEC_UCOUNTER;   // IEC_UCOUNTER: All values default
+      IEC_UDCOUNTER_1 {InstructionName := 'IEC_UDCOUNTER'; LibVersion := '1.0'} : IEC_UDCOUNTER;   // IEC_UDCOUNTER: All values default
+      IEC_USCOUNTER_1 {InstructionName := 'IEC_USCOUNTER'; LibVersion := '1.0'} : IEC_USCOUNTER;   // IEC_USCOUNTER: All values default
+      NREF {InstructionName := 'NREF'; LibVersion := '1.0'} : NREF;   // NREF: All values default
+   END_VAR
+
+
+BEGIN
+
+END_DATA_BLOCK
+

@@ -37,6 +37,11 @@ namespace S7CommPlusDriver
         public const int ClassTypeInfo = 511;
         public const int ObjectOMSTypeInfoContainer = 537;
         public const int SystemLimits = 1037;
+        public const int Filter = 1246;
+        public const int FilterOperation = 1247;
+        public const int AddressCount = 1249;
+        public const int Address = 1250;
+        public const int FilterValue = 1251;
         public const int ObjectQualifier = 1256;
         public const int ParentRID = 1257;
         public const int CompositionAID = 1258;

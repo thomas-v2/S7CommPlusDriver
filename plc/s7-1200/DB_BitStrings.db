@@ -1,0 +1,27 @@
+﻿DATA_BLOCK "DB_BitStrings"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Byte_Min_0x00 : Byte;   // Byte: Min
+      Byte_Max_0xFF : Byte;   // Byte: Max
+      Byte_0xAB : Byte;   // Byte: Testvalue 1
+      Word_Min_0x0000 : Word;   // Word: Min
+      Word_Max_0xFFFF : Word;   // Word: Max
+      Word_0xCAFE : Word;   // Word: Testvalue 1
+      DWord_Min_0x00000000 : DWord;   // DWord: Min
+      DWord_Max_0xFFFFFFFF : DWord;   // DWord: Max
+      DWord_0xCAFEBABE : DWord;   // DWord: Testvalue 1
+   END_VAR
+
+
+BEGIN
+   Byte_Max_0xFF := 16#00FF;
+   Byte_0xAB := 16#00AB;
+   Word_Max_0xFFFF := 16#FFFF;
+   Word_0xCAFE := 16#CAFE;
+   DWord_Max_0xFFFFFFFF := 16#FFFF_FFFF;
+   DWord_0xCAFEBABE := 16#CAFE_BABE;
+
+END_DATA_BLOCK
+

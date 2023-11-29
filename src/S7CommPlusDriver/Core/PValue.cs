@@ -1821,7 +1821,6 @@ namespace S7CommPlusDriver
     public class ValueTimestamp : PValue
     {
         UInt64 Value;
-        static UInt64 bias = 621355968000000000;
 
         public ValueTimestamp(UInt64 value) : this(value, 0)
         {
@@ -1849,8 +1848,34 @@ namespace S7CommPlusDriver
 
         public override string ToString()
         {
-            DateTime dt = new DateTime((long)(bias + (Value / 100)));
-            return "<Value type=\"Timestamp\">" + dt.ToString() + "." + dt.Millisecond + "</Value>";
+            DateTime dt = new DateTime(1970, 1, 1);
+            ulong v, ns;
+            string fmt;
+            v = Value;
+            ns = v % 1000000000;
+            v /= 1000000000;
+
+            dt = dt.AddSeconds(v);
+
+            if ((ns % 1000) > 0)
+            {
+                fmt = "{0}.{1:D09}";
+            }
+            else if ((ns % 1000000) > 0)
+            {
+                fmt = "{0}.{1:D06}";
+                ns /= 1000;
+            }
+            else if ((ns % 1000000000) > 0)
+            {
+                fmt = "{0}.{1:D03}";
+                ns /= 1000000;
+            }
+            else
+            {
+                return "<Value type=\"Timestamp\">" + dt.ToString() + "</Value>";
+            }
+            return "<Value type=\"Timestamp\">" + String.Format(fmt, dt.ToString(), ns) + "</Value>";
         }
 
         public static ValueTimestamp Deserialize(Stream buffer, byte flags)
@@ -1896,7 +1921,7 @@ namespace S7CommPlusDriver
             string[] vfmt = { "{0}d", "{0:00}h", "{0:00}m", "{0:00}s", "{0:000}ms", "{0:000}us", "{0:000}ns" };
             long val;
             long timespan = Value;
-
+            bool time_negative = false;
             if (timespan == 0)
             {
                 str = "LT#000ns";
@@ -1906,7 +1931,11 @@ namespace S7CommPlusDriver
                 if (timespan < 0)
                 {
                     str = "LT#-";
-                    timespan *= -1;
+                    time_negative = true;
+                    for (int i = 0; i < 7; i++)
+                    {
+                        divs[i] = -divs[i];
+                    }
                 }
                 else
                 {
@@ -1920,7 +1949,7 @@ namespace S7CommPlusDriver
                     if (val > 0)
                     {
                         str += String.Format(vfmt[i], (Int32)val);
-                        if (timespan > 0)
+                        if ((!time_negative && timespan > 0) || (time_negative && timespan < 0))
                         {
                             str += "_";
                         }

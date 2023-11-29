@@ -1,0 +1,40 @@
+﻿DATA_BLOCK "DB_FloatingPoint"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Real_MinNeg_n3d402823e38 : Real;   // Real: Min negative value
+      Real_MaxNeg_n1d175495en38 : Real;   // Real: Max negative value
+      Real_MinPos_1d175495en38 : Real;   // Real: Min positive value
+      Real_MaxPos_3d402823e38 : Real;   // Real: Max positive value
+      Real_0d0 : Real;   // Real: Zero
+      Real_987d125 : Real;   // Real: Testvalue 1
+      Real_n123d5 : Real;   // Real: Testvalue 2
+      LReal_MinNeg_n1d7976931348623157e308 : LReal;   // LReal: Min negative value
+      LReal_MaxNeg_n2d2250738585072014en308 : LReal;   // LReal: Max negative value
+      LReal_MinPos_2d2250738585072014en308 : LReal;   // LReal: Min positive value
+      LReal_MaxPos_1d7976931348623157e308 : LReal;   // LReal: Max positive value
+      LReal_0d0 : LReal;   // LReal: Zero
+      LReal_987d125 : LReal;   // LReal: Testvalue 1
+      LReal_n123d5 : LReal;   // LReal: Testvalue 2
+      LReal_1d23456789012346e18 : LReal;   // LReal: Testvalue 3
+   END_VAR
+
+
+BEGIN
+   Real_MinNeg_n3d402823e38 := -3.402823E+38;
+   Real_MaxNeg_n1d175495en38 := -1.175495E-38;
+   Real_MinPos_1d175495en38 := 1.175495E-38;
+   Real_MaxPos_3d402823e38 := 3.402823E+38;
+   Real_987d125 := 987.125;
+   Real_n123d5 := -123.5;
+   LReal_MinNeg_n1d7976931348623157e308 := -1.7976931348623157E+308;
+   LReal_MaxNeg_n2d2250738585072014en308 := -2.2250738585072014E-308;
+   LReal_MinPos_2d2250738585072014en308 := 2.2250738585072014E-308;
+   LReal_MaxPos_1d7976931348623157e308 := 1.7976931348623157E+308;
+   LReal_987d125 := 987.125;
+   LReal_n123d5 := -123.5;
+   LReal_1d23456789012346e18 := 1.23456789012346E+18;
+
+END_DATA_BLOCK
+

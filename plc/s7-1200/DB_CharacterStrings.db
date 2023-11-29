@@ -1,0 +1,38 @@
+﻿DATA_BLOCK "DB_CharacterStrings"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Char_Space : Char;   // Char: Space
+      Char_A : Char;   // Char: Capital A
+      Char_auml : Char;   // Char: Lowecase german a Umlaut
+      String_Empty : String;   // String: Empty
+      String_Hello_World : String;   // String: "Hello World"
+      String_Moumltoumlrhead : String;   // String: "Mötörhead"
+      String_Len4_Test : String[4];   // String: Fix len[4] "Test"
+      WChar_Space : WChar;   // WChar: Space
+      WChar_auml : WChar;   // WChar: Lowecase german a Umlaut
+      WChar_X : WChar;   // WChar: Capital X
+      WChar_GreekSigmaBig : WChar;   // WChar: Greek capital Sigma
+      WString_Empty : WString;   // WString: Empty
+      WString_Moumltoumlrhead : WString;   // WString: "Mötörhead"
+      WString_Greek1 : WString;   // WString: String with greek chars
+      WString_Len4_Test : WString[4];   // WString: Fix len[4] "Test"
+   END_VAR
+
+
+BEGIN
+   Char_A := 'A';
+   Char_auml := 'ä';
+   String_Hello_World := 'Hello World';
+   String_Moumltoumlrhead := 'Mötörhead';
+   String_Len4_Test := 'Test';
+   WChar_auml := WCHAR#'ä';
+   WChar_X := WCHAR#'X';
+   WChar_GreekSigmaBig := WCHAR#'Ʃ';
+   WString_Moumltoumlrhead := WSTRING#'Mötörhead';
+   WString_Greek1 := WSTRING#'Test Greek ΣΛΔ end.';
+   WString_Len4_Test := WSTRING#'Test';
+
+END_DATA_BLOCK
+
