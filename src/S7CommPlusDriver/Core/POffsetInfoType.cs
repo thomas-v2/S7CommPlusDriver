@@ -245,18 +245,18 @@ namespace S7CommPlusDriver
             s += "<UnspecifiedOffsetinfo2>" + UnspecifiedOffsetinfo2.ToString() + "</UnspecifiedOffsetinfo2>" + Environment.NewLine;
 
             s += "<OptimizedAddress>" + OptimizedAddress.ToString() + "</OptimizedAddress>" + Environment.NewLine;
-            s += "<NonoptimizedAddress>" + OptimizedAddress.ToString() + "</NonoptimizedAddress>" + Environment.NewLine;
+            s += "<NonoptimizedAddress>" + NonoptimizedAddress.ToString() + "</NonoptimizedAddress>" + Environment.NewLine;
 
             s += "<ArrayLowerBounds>" + ArrayLowerBounds.ToString() + "</ArrayLowerBounds>" + Environment.NewLine;
             s += "<ArrayElementCount>" + ArrayElementCount.ToString() + "</ArrayElementCount>" + Environment.NewLine;
 
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "<MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "</MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
             }
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "<MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "</MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
             }
 
             s += "<OptimizedStructSize>" + OptimizedStructSize.ToString() + "</OptimizedStructSize>" + Environment.NewLine;
@@ -359,7 +359,7 @@ namespace S7CommPlusDriver
             s += "<UnspecifiedOffsetinfo2>" + UnspecifiedOffsetinfo2.ToString() + "</UnspecifiedOffsetinfo2>" + Environment.NewLine;
 
             s += "<OptimizedAddress>" + OptimizedAddress.ToString() + "</OptimizedAddress>" + Environment.NewLine;
-            s += "<NonoptimizedAddress>" + OptimizedAddress.ToString() + "</NonoptimizedAddress>" + Environment.NewLine;
+            s += "<NonoptimizedAddress>" + NonoptimizedAddress.ToString() + "</NonoptimizedAddress>" + Environment.NewLine;
 
             s += "<ArrayLowerBounds>" + ArrayLowerBounds.ToString() + "</ArrayLowerBounds>" + Environment.NewLine;
             s += "<ArrayElementCount>" + ArrayElementCount.ToString() + "</ArrayElementCount>" + Environment.NewLine;
@@ -522,11 +522,11 @@ namespace S7CommPlusDriver
 
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "<MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "</MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
             }
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "<MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "</MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
             }
 
             s += "</POffsetInfoType_ArrayMDim>" + Environment.NewLine;
@@ -787,11 +787,11 @@ namespace S7CommPlusDriver
 
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "<MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "</MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
             }
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "<MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "</MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
             }
 
             s += "</POffsetInfoType_FbArray>" + Environment.NewLine;
