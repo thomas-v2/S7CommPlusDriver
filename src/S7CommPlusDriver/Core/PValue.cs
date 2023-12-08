@@ -94,8 +94,8 @@ namespace S7CommPlusDriver
                         return ValueRIDArray.Deserialize(buffer, flags);
                     case Datatype.AID:
                         return ValueAIDArray.Deserialize(buffer, flags);
-
-
+                    case Datatype.Blob:
+                        return ValueBlobArray.Deserialize(buffer, flags);
                     case Datatype.Timestamp:
                         throw new NotImplementedException();
                     case Datatype.Timespan:
@@ -2229,6 +2229,66 @@ namespace S7CommPlusDriver
             value = new byte[blobSize];
             S7p.DecodeOctets(buffer, (int)blobSize, out value);
             return new ValueBlob(blobRootId, value, flags);
+        }
+    }
+
+    public class ValueBlobArray : PValue
+    {
+        ValueBlob[] Value;
+
+        public ValueBlobArray(ValueBlob[] value) : this(value, FLAGS_ADDRESSARRAY)
+        {
+        }
+
+        public ValueBlobArray(ValueBlob[] value, byte flags)
+        {
+            DatatypeFlags = flags;
+            if (value != null)
+            {
+                Value = new ValueBlob[value.Length];
+                Array.Copy(value, Value, value.Length);
+            }
+        }
+
+        public ValueBlob[] GetValue()
+        {
+            return Value;
+        }
+
+        public override int Serialize(Stream buffer)
+        {
+            int ret = 0;
+            ret += S7p.EncodeByte(buffer, DatatypeFlags);
+            ret += S7p.EncodeByte(buffer, Datatype.Blob);
+            ret += S7p.EncodeUInt32Vlq(buffer, (uint)Value.Length);
+            for (int i = 0; i < Value.Length; i++)
+            {
+                ret += Value[i].Serialize(buffer);
+            }
+            return ret;
+        }
+
+        public override string ToString()
+        {
+            string s = "<Value type =\"ValueBlobArray\" size=\"" + Value.Length.ToString() + "\">";
+            for (int i = 0; i < Value.Length; i++)
+            {
+                s += String.Format("<Value>{0}</Value>", Value[i]);
+            }
+            s += "</Value>";
+            return s;
+        }
+
+        public static ValueBlobArray Deserialize(Stream buffer, byte flags)
+        {
+            UInt32 size = 0;
+            S7p.DecodeUInt32Vlq(buffer, out size);
+            ValueBlob[] value = new ValueBlob[size];
+            for (int i = 0; i < size; i++)
+            {
+                value[i] = ValueBlob.Deserialize(buffer, flags);
+            }
+            return new ValueBlobArray(value, flags);
         }
     }
 
