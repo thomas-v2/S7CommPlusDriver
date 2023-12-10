@@ -22,7 +22,7 @@ using System.IO;
 namespace S7CommPlusDriver
 {
     // Diese Klasse handelt das aufteilen der S7commPlus Pakete auf ein oder mehrere Iso PDUs
-    public class S7CommPlusConnection
+    public partial class S7CommPlusConnection
     {
         #region Private Members
         private S7Client m_client;
