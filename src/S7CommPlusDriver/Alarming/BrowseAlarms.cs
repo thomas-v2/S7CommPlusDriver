@@ -399,16 +399,15 @@ namespace S7CommPlusDriver
         public byte AlarmEnabled; //0=No, 1=Yes
         
         public ushort HmiInfoLength;
-        // for HmiInfoLength = 9 and 17
         public ushort HmiInfo_SyntaxId;
         public ushort HmiInfo_Version;
         public uint HmiInfo_ClientAlarmId;
         public byte HmiInfo_Priority;
-        // for HmiInfoLength = 17
-        public byte HmiInfo_UnknownByte1;
-        public ushort HmiInfo_UnknownUShort1;
-        public uint HmiInfo_UnknownLid;
-        public byte HmiInfo_UnknownByte2;
+        // HmiInfo_SyntaxId >= 258 with HmiInfoLength >= 17
+        public ushort HmiInfo_AlarmClass;
+        public byte HmiInfo_Producer;
+        public byte HmiInfo_GroupId;
+        public byte HmiInfo_Flags;
 
         public ushort LidCount;
         public uint[] Lids;
@@ -423,45 +422,31 @@ namespace S7CommPlusDriver
             ret += S7p.DecodeUInt16(buffer, out AlarmDomain);
             ret += S7p.DecodeUInt16(buffer, out MessageType);
             ret += S7p.DecodeByte(buffer, out AlarmEnabled);
+
             ret += S7p.DecodeUInt16(buffer, out HmiInfoLength);
 
-            // TODO: Generate other MessageTypes, determine other fields if possible (or if at least there are other)
-            if (MessageType == 1 || MessageType == 2)
-            {
-                if (HmiInfoLength == 9)
+            ret += S7p.DecodeUInt16(buffer, out HmiInfo_SyntaxId);
+            ret += S7p.DecodeUInt16(buffer, out HmiInfo_Version);
+            ret += S7p.DecodeUInt32(buffer, out HmiInfo_ClientAlarmId);
+            ret += S7p.DecodeByte(buffer, out HmiInfo_Priority);
+            if (HmiInfo_SyntaxId >= 257) {
+                // Skip 3 bytes with no useful data
+                ret += S7p.DecodeByte(buffer, out _);
+                ret += S7p.DecodeByte(buffer, out _);
+                ret += S7p.DecodeByte(buffer, out _);
+                if (HmiInfo_SyntaxId >= 258)
                 {
-                    ret += S7p.DecodeUInt16(buffer, out HmiInfo_SyntaxId);
-                    ret += S7p.DecodeUInt16(buffer, out HmiInfo_Version);
-                    ret += S7p.DecodeUInt32(buffer, out HmiInfo_ClientAlarmId);
-                    ret += S7p.DecodeByte(buffer, out HmiInfo_Priority);
-                }
-                else if (HmiInfoLength == 17)
-                {
-                    ret += S7p.DecodeUInt16(buffer, out HmiInfo_SyntaxId);
-                    ret += S7p.DecodeUInt16(buffer, out HmiInfo_Version);
-                    ret += S7p.DecodeUInt32(buffer, out HmiInfo_ClientAlarmId);
-                    ret += S7p.DecodeByte(buffer, out HmiInfo_Priority);
-
-                    ret += S7p.DecodeByte(buffer, out HmiInfo_UnknownByte1);
-                    ret += S7p.DecodeUInt32(buffer, out HmiInfo_UnknownLid);
-                    ret += S7p.DecodeUInt16(buffer, out HmiInfo_UnknownUShort1);
-                    ret += S7p.DecodeByte(buffer, out HmiInfo_UnknownByte2);
-                }
-                else
-                {
-                    ret += HmiInfoLength;
-                    return ret;
-                }
-                ret += S7p.DecodeUInt16(buffer, out LidCount);
-                Lids = new uint[LidCount];
-                for (int i = 0; i < LidCount; i++)
-                {
-                    ret += S7p.DecodeUInt32(buffer, out Lids[i]);
+                    ret += S7p.DecodeUInt16(buffer, out HmiInfo_AlarmClass);
+                    ret += S7p.DecodeByte(buffer, out HmiInfo_Producer);
+                    ret += S7p.DecodeByte(buffer, out HmiInfo_GroupId);
+                    ret += S7p.DecodeByte(buffer, out HmiInfo_Flags);
                 }
             }
-            else
+            ret += S7p.DecodeUInt16(buffer, out LidCount);
+            Lids = new uint[LidCount];
+            for (int i = 0; i < LidCount; i++)
             {
-                ret += HmiInfoLength;
+                ret += S7p.DecodeUInt32(buffer, out Lids[i]);
             }
             return ret;
         }
@@ -476,41 +461,22 @@ namespace S7CommPlusDriver
             s += "<AlarmDomain>" + AlarmDomain.ToString() + "</AlarmDomain>" + Environment.NewLine;
             s += "<MessageType>" + MessageType.ToString() + "</MessageType>" + Environment.NewLine;
             s += "<AlarmEnabled>" + AlarmEnabled.ToString() + "</AlarmEnabled>" + Environment.NewLine;
-
             s += "<HmiInfoLength>" + HmiInfoLength.ToString() + "</HmiInfoLength>" + Environment.NewLine;
-            if (MessageType == 1 || MessageType == 2)
+            s += "<HmiInfo_SyntaxId>" + HmiInfo_SyntaxId.ToString() + "</HmiInfo_SyntaxId>" + Environment.NewLine;
+            s += "<HmiInfo_Version>" + HmiInfo_Version.ToString() + "</HmiInfo_Version>" + Environment.NewLine;
+            s += "<HmiInfo_ClientAlarmId>" + HmiInfo_ClientAlarmId.ToString() + "</HmiInfo_ClientAlarmId>" + Environment.NewLine;
+            s += "<HmiInfo_Priority>" + HmiInfo_Priority.ToString() + "</HmiInfo_Priority>" + Environment.NewLine;
+            if (HmiInfo_SyntaxId >= 258)
             {
-                bool has_lids = false;
-                if (HmiInfoLength == 9)
-                {
-                    s += "<HmiInfo_SyntaxId>" + HmiInfo_SyntaxId.ToString() + "</HmiInfo_SyntaxId>" + Environment.NewLine;
-                    s += "<HmiInfo_Version>" + HmiInfo_Version.ToString() + "</HmiInfo_Version>" + Environment.NewLine;
-                    s += "<HmiInfo_ClientAlarmId>" + HmiInfo_ClientAlarmId.ToString() + "</HmiInfo_ClientAlarmId>" + Environment.NewLine;
-                    s += "<HmiInfo_Priority>" + HmiInfo_Priority.ToString() + "</HmiInfo_Priority>" + Environment.NewLine;
-                    has_lids = true;
-                }
-                else if (HmiInfoLength == 17)
-                {
-                    s += "<HmiInfo_SyntaxId>" + HmiInfo_SyntaxId.ToString() + "</HmiInfo_SyntaxId>" + Environment.NewLine;
-                    s += "<HmiInfo_Version>" + HmiInfo_Version.ToString() + "</HmiInfo_Version>" + Environment.NewLine;
-                    s += "<HmiInfo_ClientAlarmId>" + HmiInfo_ClientAlarmId.ToString() + "</HmiInfo_ClientAlarmId>" + Environment.NewLine;
-                    s += "<HmiInfo_Priority>" + HmiInfo_Priority.ToString() + "</HmiInfo_Priority>" + Environment.NewLine;
-
-                    s += "<HmiInfo_UnknownByte1>" + HmiInfo_UnknownByte1.ToString() + "</HmiInfo_UnknownByte1>" + Environment.NewLine;
-                    s += "<HmiInfo_UnknownLid>" + HmiInfo_UnknownLid.ToString() + "</HmiInfo_UnknownLid>" + Environment.NewLine;
-                    s += "<HmiInfo_UnknownUShort1>" + HmiInfo_UnknownUShort1.ToString() + "</HmiInfo_UnknownUShort1>" + Environment.NewLine;
-                    s += "<HmiInfo_UnknownByte2>" + HmiInfo_UnknownByte2.ToString() + "</HmiInfo_UnknownByte2>" + Environment.NewLine;
-                    has_lids = true;
-                }
-
-                if (has_lids)
-                {
-                    s += "<LidCount>" + LidCount.ToString() + "</LidCount>" + Environment.NewLine;
-                    foreach (var li in Lids)
-                    {
-                        s += "<Lid>" + li.ToString() + "</Lid>" + Environment.NewLine;
-                    }
-                }
+                s += "<HmiInfo_AlarmClass>" + HmiInfo_AlarmClass.ToString() + "</HmiInfo_AlarmClass>" + Environment.NewLine;
+                s += "<HmiInfo_Producer>" + HmiInfo_Producer.ToString() + "</HmiInfo_Producer>" + Environment.NewLine;
+                s += "<HmiInfo_GroupId>" + HmiInfo_GroupId.ToString() + "</HmiInfo_GroupId>" + Environment.NewLine;
+                s += "<HmiInfo_Flags>" + HmiInfo_Flags.ToString() + "</HmiInfo_Flags>" + Environment.NewLine;
+            }
+            s += "<LidCount>" + LidCount.ToString() + "</LidCount>" + Environment.NewLine;
+            foreach (var li in Lids)
+            {
+                s += "<Lid>" + li.ToString() + "</Lid>" + Environment.NewLine;
             }
             s += "<AlText>" + Environment.NewLine;
             s += "<Infotext>" + AlText.Infotext + "</Infotext>" + Environment.NewLine;
