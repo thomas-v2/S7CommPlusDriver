@@ -518,14 +518,14 @@ namespace S7CommPlusDriver
             // Beispielsweise werden Strings als UInt-Array zurückgegeben.
             values = new List<object>();
             errors = new List<UInt64>();
-            // values und errors initialisieren
+            // Initialize error fields to error value
             for (int i = 0; i < addresslist.Count; i++)
             {
                 values.Add(null);
-                errors.Add(0xffffffffffffffff); // Auf Fehler initialisieren
+                errors.Add(0xffffffffffffffff);
             }
 
-            // Request in Teile aufsplitten
+            // Split request into chunks, taking the MaxTags per request into account
             int chunk_startIndex = 0;
             int count_perChunk = 0;
             do
@@ -536,7 +536,6 @@ namespace S7CommPlusDriver
                 getMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber();
                 getMultiVariablesRequest.IntegrityId = GetNextIntegrityId();
 
-                //getMultiVariablesRequest.AddressList = addresslist;
                 getMultiVariablesRequest.AddressList.Clear();
                 count_perChunk = 0;
                 while (count_perChunk < m_MaxTagsPerReadRequestLimit && (chunk_startIndex + count_perChunk) < addresslist.Count)
@@ -552,7 +551,7 @@ namespace S7CommPlusDriver
                 {
                     return m_LastError;
                 }
-                // Antwort auswerten
+
                 GetMultiVariablesResponse getMultiVariablesResponse = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
                 res = checkResponseWithIntegrity(getMultiVariablesResponse,
                     getMultiVariablesRequest.SequenceNumber,
@@ -563,7 +562,7 @@ namespace S7CommPlusDriver
                 {
                     return res;
                 }
-                // ReturnValue zeigt auch an wenn nur eine Variable von mehreren nicht gelesen werden konnte.
+                // ReturnValue shows also an error, if only one single variable could not be read
                 if (getMultiVariablesResponse.ReturnValue != 0)
                 {
                     Console.WriteLine("S7CommPlusConnection - ReadValues: Mit Fehler ausgeführt. ReturnValue=" + getMultiVariablesResponse.ReturnValue);
@@ -596,49 +595,69 @@ namespace S7CommPlusDriver
             int res;
 
             errors = new List<UInt64>();
-            // errors initialisieren
+            // Initialize error fields to error value
             for (int i = 0; i < addresslist.Count; i++)
             {
-                errors.Add(0xffffffffffffffff); // Auf Fehler initialisieren
+                errors.Add(0xffffffffffffffff);
             }
 
-            SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
-            setMultiVariablesRequest.SessionId = m_SessionId;
-            setMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber();
-            setMultiVariablesRequest.IntegrityId = GetNextIntegrityId();
+            // Split request into chunks, taking the MaxTags per request into account
+            int chunk_startIndex = 0;
+            int count_perChunk = 0;
+            do
+            {
+                SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
+                setMultiVariablesRequest.SessionId = m_SessionId;
+                setMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber();
+                setMultiVariablesRequest.IntegrityId = GetNextIntegrityId();
 
-            setMultiVariablesRequest.AddressListVar = addresslist;
-            setMultiVariablesRequest.ValueList = values;
+                setMultiVariablesRequest.AddressListVar.Clear();
+                setMultiVariablesRequest.ValueList.Clear();
+                count_perChunk = 0;
+                while (count_perChunk < m_MaxTagsPerWriteRequestLimit && (chunk_startIndex + count_perChunk) < addresslist.Count)
+                {
+                    setMultiVariablesRequest.AddressListVar.Add(addresslist[chunk_startIndex + count_perChunk]);
+                    setMultiVariablesRequest.ValueList.Add(values[chunk_startIndex + count_perChunk]);
+                    count_perChunk++;
+                }
 
-            res = SendS7plusFunctionObject(setMultiVariablesRequest);
-            if (res != 0)
-            {
-                return res;
-            }
-            m_LastError = 0;
-            WaitForNewS7plusReceived(m_ReadTimeout);
-            if (m_LastError != 0)
-            {
-                return m_LastError;
-            }
+                res = SendS7plusFunctionObject(setMultiVariablesRequest);
+                if (res != 0)
+                {
+                    return res;
+                }
+                m_LastError = 0;
+                WaitForNewS7plusReceived(m_ReadTimeout);
+                if (m_LastError != 0)
+                {
+                    return m_LastError;
+                }
 
-            SetMultiVariablesResponse setMultiVariablesResponse;
-            setMultiVariablesResponse = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
-            res = checkResponseWithIntegrity(setMultiVariablesResponse,
-                    setMultiVariablesRequest.SequenceNumber,
-                    setMultiVariablesResponse.SequenceNumber,
-                    setMultiVariablesRequest.IntegrityId,
-                    setMultiVariablesResponse.IntegrityId);
-            if (res != 0)
-            {
-                return res;
-            }
-            // ReturnValue zeigt auch an wenn nur eine Variable von mehreren nicht geschrieben werden konnte.
-            if (setMultiVariablesResponse.ReturnValue != 0)
-            {
-                Console.WriteLine("S7CommPlusConnection - WriteValues: Mit Fehler ausgeführt. ReturnValue=" + setMultiVariablesResponse.ReturnValue);
-            }
-            m_LastIntegrityId = setMultiVariablesResponse.IntegrityId;
+                SetMultiVariablesResponse setMultiVariablesResponse;
+                setMultiVariablesResponse = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+                res = checkResponseWithIntegrity(setMultiVariablesResponse,
+                        setMultiVariablesRequest.SequenceNumber,
+                        setMultiVariablesResponse.SequenceNumber,
+                        setMultiVariablesRequest.IntegrityId,
+                        setMultiVariablesResponse.IntegrityId);
+                if (res != 0)
+                {
+                    return res;
+                }
+                // ReturnValue shows also an error, if only one single variable could not be written
+                if (setMultiVariablesResponse.ReturnValue != 0)
+                {
+                    Console.WriteLine("S7CommPlusConnection - WriteValues: Write with errors. ReturnValue=" + setMultiVariablesResponse.ReturnValue);
+                }
+                m_LastIntegrityId = setMultiVariablesResponse.IntegrityId;
+
+                foreach (var ev in setMultiVariablesResponse.ErrorValues)
+                {
+                    errors[chunk_startIndex + (int)ev.Key - 1] = ev.Value;
+                }
+                chunk_startIndex += count_perChunk;
+
+            } while (chunk_startIndex < addresslist.Count);
 
             return m_LastError;
         }
