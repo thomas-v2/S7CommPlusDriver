@@ -33,13 +33,14 @@ namespace S7CommPlusDriver
         private UInt32 m_SessionId;
         private int m_ReadTimeout = 5000;
 
+        
         private UInt16 m_SequenceNumber = 0;
         private UInt32 m_IntegrityId = 0;
-        private UInt32 m_LastIntegrityId;
-
-        // Maximale Anzahl mit 20 initialisieren, da 50 vermutlich der Mindestwert ist. 
-        // Denn die konkrete Anzahl wird über einen ReadRequest ausgelesen.
-        // Rückgabetyp ist DInt.
+        private UInt16 m_SequenceNumber_Set = 0;
+        private UInt32 m_IntegrityId_Set = 0;
+        
+        // Initialize the max values to 20, 50 is possibly the lowest value.
+        // The actual supported value is read after connection setup via a ReadRequest, which returns a DInt.
         private Int32 m_MaxTagsPerReadRequestLimit = 20;
         private Int32 m_MaxTagsPerWriteRequestLimit = 20;
 
@@ -51,33 +52,78 @@ namespace S7CommPlusDriver
         #endregion
 
         #region Private Methods
-        private UInt16 GetNextSequenceNumber()
-        {
-            if (m_SequenceNumber == UInt16.MaxValue)
-            {
-                m_SequenceNumber = 1;
-            }
-            else
-            {
-                m_SequenceNumber++;
-            }
 
-            return m_SequenceNumber;
+        // We must count SequenceNumber and IntegrityId for different functions of the protocol.
+        // As a first guess functions for setting variables need separate counters.
+        // Use the functioncode to differ between the which sequence/integrity counter values.
+        private UInt16 GetNextSequenceNumber(ushort functioncode)
+        {
+            UInt16 ret;
+            switch (functioncode)
+            {
+                case Functioncode.SetMultiVariables:
+                case Functioncode.SetVariable:
+                case Functioncode.SetVarSubStreamed:
+                    if (m_SequenceNumber_Set == UInt16.MaxValue)
+                    {
+                        m_SequenceNumber_Set = 1;
+                    }
+                    else
+                    {
+                        m_SequenceNumber_Set++;
+                    }
+
+                    ret = m_SequenceNumber_Set;
+                    break;
+                default:
+                    if (m_SequenceNumber == UInt16.MaxValue)
+                    {
+                        m_SequenceNumber = 1;
+                    }
+                    else
+                    {
+                        m_SequenceNumber++;
+                    }
+                    ret = m_SequenceNumber;
+                    break;
+            }
+            return ret;
         }
 
-        private UInt32 GetNextIntegrityId()
+        private UInt32 GetNextIntegrityId(ushort functioncode)
         {
-            // Wenn Überlauf nicht bei 0, dann Fehler von SPS
-            if (m_IntegrityId == UInt32.MaxValue)
+            UInt32 ret;
+            switch (functioncode)
             {
-                m_IntegrityId = 0;
-            }
-            else
-            {
-                m_IntegrityId++;
-            }
+                case Functioncode.SetMultiVariables:
+                case Functioncode.SetVariable:
+                case Functioncode.SetVarSubStreamed:
+                    if (m_IntegrityId_Set == UInt32.MaxValue)
+                    {
+                        m_IntegrityId_Set = 0;
+                    }
+                    else
+                    {
+                        m_IntegrityId_Set++;
+                    }
 
-            return m_IntegrityId;
+                    ret = m_IntegrityId_Set;
+                    break;
+                default:
+
+                    if (m_IntegrityId == UInt32.MaxValue)
+                    {
+                        m_IntegrityId = 0;
+                    }
+                    else
+                    {
+                        m_IntegrityId++;
+                    }
+
+                    ret = m_IntegrityId;
+                    break;
+            }
+            return ret;
         }
 
         private void WaitForNewS7plusReceived(int Timeout)
@@ -380,7 +426,8 @@ namespace S7CommPlusDriver
             #region Schritt 1: Unverschlüsselt InitSSL Request / Response
 
             // Ab jetzt den Thread starten
-            InitSslRequest sslrequest = new InitSslRequest(ProtocolVersion.V1, GetNextSequenceNumber(), 0);
+            InitSslRequest sslrequest = new InitSslRequest(ProtocolVersion.V1, 0 , 0);
+            sslrequest.SequenceNumber = GetNextSequenceNumber(sslrequest.FunctionCode);
             res = SendS7plusFunctionObject(sslrequest);
             if (res != 0)
             {
@@ -419,7 +466,8 @@ namespace S7CommPlusDriver
 
             #region Schritt 3: CreateObjectRequest / Response (mit TLS)
 
-            CreateObjectRequest createObjectRequest = new CreateObjectRequest(ProtocolVersion.V1, GetNextSequenceNumber(), Ids.ObjectNullServerSession);
+            CreateObjectRequest createObjectRequest = new CreateObjectRequest(ProtocolVersion.V1, 0, Ids.ObjectNullServerSession);
+            createObjectRequest.SequenceNumber = GetNextSequenceNumber(createObjectRequest.FunctionCode);
             createObjectRequest.SetNullServerSessionData();
             res = SendS7plusFunctionObject(createObjectRequest);
             if (res != 0)
@@ -458,7 +506,7 @@ namespace S7CommPlusDriver
 
             SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
             setMultiVariablesRequest.SetSessionSetupData(m_SessionId, serverSession);
-            setMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber();
+            setMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber(setMultiVariablesRequest.FunctionCode);
             res = SendS7plusFunctionObject(setMultiVariablesRequest);
             if (res != 0)
             {
@@ -481,7 +529,6 @@ namespace S7CommPlusDriver
                 m_client.Disconnect();
                 return S7Consts.errIsoInvalidPDU;
             }
-            m_LastIntegrityId = setMultiVariablesResponse.IntegrityId;
 
             #endregion
 
@@ -533,8 +580,8 @@ namespace S7CommPlusDriver
                 int res;
                 GetMultiVariablesRequest getMultiVariablesRequest = new GetMultiVariablesRequest(ProtocolVersion.V2);
                 getMultiVariablesRequest.SessionId = m_SessionId;
-                getMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber();
-                getMultiVariablesRequest.IntegrityId = GetNextIntegrityId();
+                getMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber(getMultiVariablesRequest.FunctionCode);
+                getMultiVariablesRequest.IntegrityId = GetNextIntegrityId(getMultiVariablesRequest.FunctionCode);
 
                 getMultiVariablesRequest.AddressList.Clear();
                 count_perChunk = 0;
@@ -567,7 +614,6 @@ namespace S7CommPlusDriver
                 {
                     Console.WriteLine("S7CommPlusConnection - ReadValues: Mit Fehler ausgeführt. ReturnValue=" + getMultiVariablesResponse.ReturnValue);
                 }
-                m_LastIntegrityId = getMultiVariablesResponse.IntegrityId;
 
                 // TODO: Falls eine Variable nicht gelesen werden konnte, ist kein Value vorhanden, dafür dann aber ein ErrorValue.
                 // Der Anwender muss darum prüfen, ob Value != null ist. Eventuell eleganter zu lösen.
@@ -608,8 +654,8 @@ namespace S7CommPlusDriver
             {
                 SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
                 setMultiVariablesRequest.SessionId = m_SessionId;
-                setMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber();
-                setMultiVariablesRequest.IntegrityId = GetNextIntegrityId();
+                setMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber(setMultiVariablesRequest.FunctionCode);
+                setMultiVariablesRequest.IntegrityId = GetNextIntegrityId(setMultiVariablesRequest.FunctionCode);
 
                 setMultiVariablesRequest.AddressListVar.Clear();
                 setMultiVariablesRequest.ValueList.Clear();
@@ -649,7 +695,6 @@ namespace S7CommPlusDriver
                 {
                     Console.WriteLine("S7CommPlusConnection - WriteValues: Write with errors. ReturnValue=" + setMultiVariablesResponse.ReturnValue);
                 }
-                m_LastIntegrityId = setMultiVariablesResponse.IntegrityId;
 
                 foreach (var ev in setMultiVariablesResponse.ErrorValues)
                 {
@@ -668,8 +713,8 @@ namespace S7CommPlusDriver
 
             SetVariableRequest setVariableRequest = new SetVariableRequest(ProtocolVersion.V2);
             setVariableRequest.SessionId = m_SessionId;
-            setVariableRequest.SequenceNumber = GetNextSequenceNumber();
-            setVariableRequest.IntegrityId = GetNextIntegrityId();
+            setVariableRequest.SequenceNumber = GetNextSequenceNumber(setVariableRequest.FunctionCode);
+            setVariableRequest.IntegrityId = GetNextIntegrityId(setVariableRequest.FunctionCode);
 
             setVariableRequest.InObjectId = 52; // NativeObjects.theCPUexecUnit_Rid
             setVariableRequest.Address = 2167; // CPUexecUnit.operatingStateREQ
@@ -697,7 +742,7 @@ namespace S7CommPlusDriver
                 m_client.Disconnect();
                 return S7Consts.errIsoInvalidPDU;
             }
-            m_LastIntegrityId = setVariableResponse.IntegrityId;
+
             return 0;
         }
 
@@ -718,12 +763,12 @@ namespace S7CommPlusDriver
 
             exploreReq = new ExploreRequest(ProtocolVersion.V2);
             exploreReq.SessionId = m_SessionId;
-            exploreReq.SequenceNumber = GetNextSequenceNumber();
+            exploreReq.SequenceNumber = GetNextSequenceNumber(exploreReq.FunctionCode);
+            exploreReq.IntegrityId = GetNextIntegrityId(exploreReq.FunctionCode);
             exploreReq.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 1;
             exploreReq.ExploreParents = 0;
-            exploreReq.IntegrityId = GetNextIntegrityId();
 
             // Diese Objektattribute werden mit abgefragt
             exploreReq.AddressList.Add(Ids.ObjectVariableTypeName);
@@ -852,8 +897,8 @@ namespace S7CommPlusDriver
             #region Type Info Container auslesen (große PDU, muss geprüft werden, ob das bei sehr großen Programmen praktikabel ist)
             ExploreRequest exploreRequest = new ExploreRequest(ProtocolVersion.V2);
             exploreRequest.SessionId = m_SessionId;
-            exploreRequest.SequenceNumber = GetNextSequenceNumber();
-            exploreRequest.IntegrityId = GetNextIntegrityId();
+            exploreRequest.SequenceNumber = GetNextSequenceNumber(exploreRequest.FunctionCode);
+            exploreRequest.IntegrityId = GetNextIntegrityId(exploreRequest.FunctionCode);
 
             exploreRequest.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
 
@@ -935,12 +980,12 @@ namespace S7CommPlusDriver
 
             var exploreReq = new ExploreRequest(ProtocolVersion.V2);
             exploreReq.SessionId = m_SessionId;
-            exploreReq.SequenceNumber = GetNextSequenceNumber();
+            exploreReq.SequenceNumber = GetNextSequenceNumber(exploreReq.FunctionCode);
+            exploreReq.IntegrityId = GetNextIntegrityId(exploreReq.FunctionCode);
             exploreReq.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 1;
             exploreReq.ExploreParents = 0;
-            exploreReq.IntegrityId = GetNextIntegrityId();
 
             // Add the attributes we need in the response
             exploreReq.AddressList.Add(Ids.ObjectVariableTypeName);
@@ -1067,8 +1112,8 @@ namespace S7CommPlusDriver
 
             var exploreReq = new ExploreRequest(ProtocolVersion.V2);
             exploreReq.SessionId = m_SessionId;
-            exploreReq.SequenceNumber = GetNextSequenceNumber();
-            exploreReq.IntegrityId = GetNextIntegrityId();
+            exploreReq.SequenceNumber = GetNextSequenceNumber(exploreReq.FunctionCode);
+            exploreReq.IntegrityId = GetNextIntegrityId(exploreReq.FunctionCode);
             exploreReq.ExploreId = exploreId;
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 1;

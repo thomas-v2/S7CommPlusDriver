@@ -20,6 +20,7 @@ namespace S7CommPlusDriver
 {
     public class DeleteObjectRequest : IS7pSendableObject
     {
+        public readonly ushort FunctionCode = Functioncode.DeleteObject;
         public byte ProtocolVersion;
         public UInt16 SequenceNumber;
         public UInt32 SessionId;
@@ -44,7 +45,7 @@ namespace S7CommPlusDriver
             int ret = 0;
             ret += S7p.EncodeByte(buffer, Opcode.Request);
             ret += S7p.EncodeUInt16(buffer, 0);
-            ret += S7p.EncodeUInt16(buffer, Functioncode.DeleteObject);
+            ret += S7p.EncodeUInt16(buffer, FunctionCode);
             ret += S7p.EncodeUInt16(buffer, 0);
             ret += S7p.EncodeUInt16(buffer, SequenceNumber);
             ret += S7p.EncodeUInt32(buffer, SessionId);
