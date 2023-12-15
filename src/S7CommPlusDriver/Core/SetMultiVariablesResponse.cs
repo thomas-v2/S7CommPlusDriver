@@ -19,19 +19,23 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class SetMultiVariablesResponse
+    public class SetMultiVariablesResponse : IS7pResponse
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
         public byte TransportFlags;
         public UInt64 ReturnValue;
         public Dictionary<UInt32, UInt64> ErrorValues;      // ItemNumber, ReturnValue
-        public UInt32 IntegrityId;
+
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.SetMultiVariables; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public SetMultiVariablesResponse(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
             ErrorValues = new Dictionary<UInt32, UInt64>();
+            WithIntegrityId = true;
         }
 
         public int Deserialize(Stream buffer)
@@ -40,7 +44,8 @@ namespace S7CommPlusDriver
             UInt32 itemnr = 0;
             UInt64 retval = 0;
 
-            ret += S7p.DecodeUInt16(buffer, out SequenceNumber);
+            ret += S7p.DecodeUInt16(buffer, out ushort seqnr);
+            SequenceNumber = seqnr;
             ret += S7p.DecodeByte(buffer, out TransportFlags);
 
             // Response Set
@@ -53,7 +58,8 @@ namespace S7CommPlusDriver
                 ErrorValues.Add(itemnr, retval);
                 ret += S7p.DecodeUInt32Vlq(buffer, out itemnr); /// ????? Ist das richtig?
             }
-            ret += S7p.DecodeUInt32Vlq(buffer, out IntegrityId);
+            ret += S7p.DecodeUInt32Vlq(buffer, out uint iid);
+            IntegrityId = iid;
             return ret;
         }
 

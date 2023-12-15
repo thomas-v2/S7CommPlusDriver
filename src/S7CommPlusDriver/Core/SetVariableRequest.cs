@@ -18,7 +18,7 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class SetVariableRequest : IS7pSendableObject
+    public class SetVariableRequest : IS7pRequest
     {
         byte TransportFlags = 0x34;
 

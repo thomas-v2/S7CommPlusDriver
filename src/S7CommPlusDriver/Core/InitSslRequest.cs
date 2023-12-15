@@ -18,7 +18,7 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    class InitSslRequest : IS7pSendableObject
+    class InitSslRequest : IS7pRequest
     {
         byte TransportFlags = 0x30;
 

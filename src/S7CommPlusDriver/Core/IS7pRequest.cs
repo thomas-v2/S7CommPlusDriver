@@ -15,7 +15,7 @@
 
 namespace S7CommPlusDriver
 {
-    public interface IS7pSendableObject
+    public interface IS7pRequest
     {
         int Serialize(System.IO.Stream buffer);
 

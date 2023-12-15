@@ -47,7 +47,6 @@ namespace S7CommPlusDriver
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 1;
             exploreReq.ExploreParents = 0;
-            
 
             res = SendS7plusFunctionObject(exploreReq);
             if (res != 0)
@@ -62,10 +61,7 @@ namespace S7CommPlusDriver
             }
 
             var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
-            res = checkResponseWithIntegrity(exploreReq,
-                    exploreRes,
-                    exploreRes.SequenceNumber,
-                    exploreRes.IntegrityId);
+            res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
                 return res;

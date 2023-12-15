@@ -19,7 +19,7 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class ExploreRequest : IS7pSendableObject
+    public class ExploreRequest : IS7pRequest
     {
         byte TransportFlags = 0x34; // oder 0x36???
         public UInt32 ExploreId;

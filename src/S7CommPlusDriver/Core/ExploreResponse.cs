@@ -18,17 +18,18 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class ExploreResponse
+    public class ExploreResponse : IS7pResponse
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
         public byte TransportFlags;
         public UInt64 ReturnValue;
         public UInt32 ExploreId;
         public PObject ResponseObject;
 
-        public bool WithIntegrityId;
-        public UInt32 IntegrityId;
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.Explore; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public ExploreResponse(byte protocolVersion)
         {
@@ -39,7 +40,8 @@ namespace S7CommPlusDriver
         {
             int ret = 0;
 
-            ret += S7p.DecodeUInt16(buffer, out SequenceNumber);
+            ret += S7p.DecodeUInt16(buffer, out ushort seqnr);
+            SequenceNumber = seqnr;
             ret += S7p.DecodeByte(buffer, out TransportFlags);
 
             // Response Set
@@ -48,7 +50,8 @@ namespace S7CommPlusDriver
             // TODO: Hier ist noch eine Sonderfunktion bei allen anderen CPUs (1500 oder Protoversion 3) notwendig!
             if (WithIntegrityId)
             {
-                ret += S7p.DecodeUInt32Vlq(buffer, out IntegrityId);
+                ret += S7p.DecodeUInt32Vlq(buffer, out uint iid);
+                IntegrityId = iid;
             }
             // Siehe Kommentar im Wireshark Code
             ret += S7p.DecodeObject(buffer, ref ResponseObject);

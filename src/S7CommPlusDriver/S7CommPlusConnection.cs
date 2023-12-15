@@ -128,7 +128,7 @@ namespace S7CommPlusDriver
         }
 
 
-        private int SendS7plusFunctionObject(IS7pSendableObject funcObj)
+        private int SendS7plusFunctionObject(IS7pRequest funcObj)
         {
             // If we don't have a SessionId, this must be the first CreateObjectRequest, where we use the Id for NullServerSession
             if (m_SessionId == 0)
@@ -366,24 +366,24 @@ namespace S7CommPlusDriver
             return res;
         }
 
-        private int checkResponseWithIntegrity(IS7pSendableObject request, object responseObject, UInt16 responseSequenceNumber, UInt32 responseIntegrity)
+        private int checkResponseWithIntegrity(IS7pRequest request, IS7pResponse response)
         {
-            if (responseObject == null)
+            if (response == null)
             {
-                Console.WriteLine("checkResponseWithIntegrity: FEHLER! responseObject == null");
+                Console.WriteLine("checkResponseWithIntegrity: ERROR! response == null");
                 return S7Consts.errIsoInvalidPDU;
             }
-            if (request.SequenceNumber != responseSequenceNumber)
+            if (request.SequenceNumber != response.SequenceNumber)
             {
-                Console.WriteLine(String.Format("checkResponseWithIntegrity: FEHLER! SeqenceNumber von Response ({0}) passt nicht zum Request ({1})", responseSequenceNumber, request.SequenceNumber));
+                Console.WriteLine(String.Format("checkResponseWithIntegrity: ERROR! SeqenceNumber of Response ({0}) doesn't match Request ({1})", response.SequenceNumber, request.SequenceNumber));
                 return S7Consts.errIsoInvalidPDU;
             }
-            // Hier kann ein Overflow vorkommen, ist aber erlaubt und Ergebnis wird akzeptiert.
+            // Overflow is possible and allowed
             UInt32 reqIntegCheck = (UInt32)request.SequenceNumber + request.IntegrityId;
-            if (responseIntegrity != reqIntegCheck)
+            if (response.IntegrityId != reqIntegCheck)
             {
-                Console.WriteLine(String.Format("checkResponseWithIntegrity: FEHLER! Integrity der Response ({0}) passt nicht zum Request ({1})", responseIntegrity, reqIntegCheck));
-                // Vorerst nicht als Fehler zurückgeben
+                Console.WriteLine(String.Format("checkResponseWithIntegrity: ERROR! IntegrityId of the Response ({0}) doesn't match Request ({1})", response.IntegrityId, reqIntegCheck));
+                // Don't return this as error so far
             }
             return 0;
         }
@@ -588,10 +588,7 @@ namespace S7CommPlusDriver
                 }
 
                 GetMultiVariablesResponse getMultiVariablesResponse = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
-                res = checkResponseWithIntegrity(getMultiVariablesRequest, 
-                    getMultiVariablesResponse,
-                    getMultiVariablesResponse.SequenceNumber,
-                    getMultiVariablesResponse.IntegrityId);
+                res = checkResponseWithIntegrity(getMultiVariablesRequest, getMultiVariablesResponse);
                 if (res != 0)
                 {
                     return res;
@@ -664,10 +661,7 @@ namespace S7CommPlusDriver
 
                 SetMultiVariablesResponse setMultiVariablesResponse;
                 setMultiVariablesResponse = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
-                res = checkResponseWithIntegrity(setMultiVariablesRequest,
-                    setMultiVariablesResponse,
-                    setMultiVariablesResponse.SequenceNumber,
-                    setMultiVariablesResponse.IntegrityId);
+                res = checkResponseWithIntegrity(setMultiVariablesRequest, setMultiVariablesResponse);
                 if (res != 0)
                 {
                     return res;
@@ -982,10 +976,7 @@ namespace S7CommPlusDriver
             }
 
             var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
-            res = checkResponseWithIntegrity(exploreReq,
-                exploreRes,
-                exploreRes.SequenceNumber,
-                exploreRes.IntegrityId);
+            res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
                 return res;
@@ -1096,9 +1087,7 @@ namespace S7CommPlusDriver
             }
 
             var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
-            res = checkResponseWithIntegrity(exploreReq, exploreRes,
-                    exploreRes.SequenceNumber,
-                    exploreRes.IntegrityId);
+            res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
                 return res;

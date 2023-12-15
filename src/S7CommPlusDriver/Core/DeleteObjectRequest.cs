@@ -18,7 +18,7 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class DeleteObjectRequest : IS7pSendableObject
+    public class DeleteObjectRequest : IS7pRequest
     {
         byte TransportFlags = 0x34;
         public UInt32 DeleteObjectId;

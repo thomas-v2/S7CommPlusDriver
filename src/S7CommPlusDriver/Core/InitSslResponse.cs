@@ -18,22 +18,29 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    class InitSslResponse
+    class InitSslResponse : IS7pResponse
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
         public byte TransportFlags;
         public UInt64 ReturnValue;
+
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.InitSsl; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
+
         public InitSslResponse(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = false;
         }
 
         public int Deserialize(Stream buffer)
         {
             int ret = 0;
 
-            ret += S7p.DecodeUInt16(buffer, out SequenceNumber);
+            ret += S7p.DecodeUInt16(buffer, out ushort seqnr);
+            SequenceNumber = seqnr;
             ret += S7p.DecodeByte(buffer, out TransportFlags);
 
             // Response Set

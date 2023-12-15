@@ -19,7 +19,7 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    class GetMultiVariablesRequest : IS7pSendableObject
+    class GetMultiVariablesRequest : IS7pRequest
     {
         byte TransportFlags = 0x34;
         public UInt32 LinkId = 0;       // für Variablen lesen = 0
