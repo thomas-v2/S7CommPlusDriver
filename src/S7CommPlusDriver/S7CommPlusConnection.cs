@@ -21,7 +21,6 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    // Diese Klasse handelt das aufteilen der S7commPlus Pakete auf ein oder mehrere Iso PDUs
     public partial class S7CommPlusConnection
     {
         #region Private Members
@@ -108,7 +107,7 @@ namespace S7CommPlusDriver
         {
             bool Expired = false;
             int Elapsed = Environment.TickCount;
-            //Console.WriteLine("S7CommPlusConnection - WaitForNewS7plusReceived: Warte max " + Timeout + " ms auf neue PDU..");
+
             while (!m_NewS7CommPlusReceived && !Expired)
             {
                 Thread.Sleep(2);
@@ -117,12 +116,8 @@ namespace S7CommPlusDriver
 
             if (Expired)
             {
-                Console.WriteLine("S7CommPlusConnection - WaitForNewS7plusReceived: FEHLER: Timeout!");
+                Console.WriteLine("S7CommPlusConnection - WaitForNewS7plusReceived: ERROR: Timeout!");
                 m_LastError = S7Consts.errTCPDataReceive;
-            }
-            else
-            {
-                // Console.WriteLine("S7CommPlusConnection - WaitForNewS7plusReceived: ...neue S7CommPlusPDU vollständig empfangen. Zeit: " + (Environment.TickCount - Elapsed) + " ms.");
             }
             m_NewS7CommPlusReceived = false;
         }
@@ -159,14 +154,14 @@ namespace S7CommPlusDriver
             int curSize;
             int sourcePos = 0;
             int sendLen;
-            int NegotiatedIsoPduSize = 1024;// TODO: Ausgehandelte TPDU auswerten
+            int NegotiatedIsoPduSize = 1024;// TODO: Respect the negotiated TPDU size
             byte[] packet = new byte[NegotiatedIsoPduSize];
 
             // 4 Byte TPKT Header
             // 3 Byte ISO-Header
-            // 5 Byte TLS Header + 17 Bytes Zusatz durch TLS
+            // 5 Byte TLS Header + 17 Bytes addition from TLS
             // 4 Byte S7CommPlus Header
-            // 4 Byte S7CommPlus Trailer (muss bei letzter mit hineinpassen)
+            // 4 Byte S7CommPlus Trailer (must fit into last PDU)
             int MaxSize = NegotiatedIsoPduSize - 4 - 3 - 5 - 17 - 4 - 4;
 
             while (bytesToSend > 0)
@@ -186,12 +181,12 @@ namespace S7CommPlusDriver
                 packet[1] = protoVersion;
                 packet[2] = (byte)(curSize >> 8);
                 packet[3] = (byte)(curSize & 0x00FF);
-                // Datenteil
+                // Data part
                 Array.Copy(sendPduData, sourcePos, packet, 4, curSize);
                 sourcePos += curSize;
                 sendLen = 4 + curSize;
 
-                // Trailer nur beim letzten Paket
+                // Trailer only in last packet
                 if (bytesToSend == 0)
                 {
                     packet[sendLen] = 0x72;
@@ -211,30 +206,27 @@ namespace S7CommPlusDriver
 
         private void OnDataReceived(byte[] PDU, int len)
         {
-            // Console.WriteLine("S7CommPlusConnection - OnDataReceived: len=" + len);
-
-            // Hier kommt immer eine komplette TPDU herein.
-            // An dieser Stelle können schon fragmentierte S7CommPlus PDU festgestellt werden.
-            // Wenn unfragmentiert, dann ist die TPKT.Length minus 15 gleich der Länge im S7CommPlus.Header.
-            // 15 Bytes wegen: 4 Bytes TPKT.Header.len + 3 Bytes ISO.Header.Len + 4 Bytes S7CommPlus.Header.len + 4 Bytes S7CommPlus.trailer.Len.
-            // Da hier schon die reinen Nutzdaten der TPDU hereinkommen, sind das nur minus 4 Bytes Header + 4 Bytes Trailer.
+            // In this method, we've got always a complete TPDU (from protocol layer above) without fragmentation
+            // At this point, we can detect if we receive a fragmented S7CommPlus PDU.
+            // If not fragmented, then TPKT.Length - 15 is equal of the length in S7CommPlus.Header.
+            // 15 bytes because: 4 Bytes TPKT.Header.len + 3 Bytes ISO.Header.Len + 4 Bytes S7CommPlus.Header.len + 4 Bytes S7CommPlus.trailer.Len.
+            // Since the pure userdata of the TPDU comes in here, that is only minus 4 bytes header + 4 bytes trailer.
             // 
-            // Besonderheit bei SystemEvents mit ProtocolVersion = 0xfe: Hier gibt es nur den Header
-            // Es müsste als erstes Byte auf jeden Fall immer das eine Byte für die Protocol-Version in den Stream geschrieben werden.
-            //
-            // Die Datenlänge darf nicht, weil die bei fragmentierten PDUs nicht gültig ist
-            //
+            // Special handling for SystemEvents with ProtocolVersion = 0xfe:
+            // Here's only a header.
+            // Because of this, the first byte for the ProtocolVersion must be written in then stream at first.
+            // The datalength must not be written into the stream, because it's not valid on fragmented PDUs
+            // for the complete length, only for the single fragment.
+
             if (!m_ReceivedNeedMorePdus)
             {
                 m_ReceivedStream = new MemoryStream();
             }
-
             // S7comm-plus
             byte protoVersion;
             int pos = 0;
             int s7HeaderDataLen = 0;
-            // Header prüfen
-            // Console.WriteLine("S7CommPlusConnection - OnDataReceived: Prüfe auf S7 Protokoll-ID PDU[0]=0x" + String.Format("{0:X}", PDU[pos]));
+            // Check header
             if (PDU[pos] != 0x72)
             {
                 m_LastError = S7Consts.errIsoInvalidPDU;
@@ -243,27 +235,26 @@ namespace S7CommPlusDriver
             protoVersion = PDU[pos];
             if (protoVersion != ProtocolVersion.V1 && protoVersion != ProtocolVersion.V2 && protoVersion != ProtocolVersion.V3 && protoVersion != ProtocolVersion.SystemEvent)
             {
-                // Abbau der Verbindung notwendig
+                // Need to disconnect
                 m_LastError = S7Consts.errIsoInvalidPDU;
             }
-            // Beim ersten Fragment die ProtocolVersion vorab in den Stream schreiben
+            // For the first fragment, write the ProtocolVersion into the stream in advance
             if (!m_ReceivedNeedMorePdus)
             {
                 m_ReceivedStream.Write(PDU, pos, 1);
             }
             pos++;
 
-            // Länge des Datenteils aus dem Header auslesen
+            // Read the length of the data-part from header
             s7HeaderDataLen = GetWordAt(PDU, pos);
             pos += 2;
-            // Console.WriteLine("S7CommPlusConnection - OnDataReceived: Längenangabe aus S7 Header, len=" + s7HeaderDataLen.ToString());
             if (s7HeaderDataLen > 0)
             {
-                // SystemEvent 0xfe PDUs gesondert behandeln.
-                // Es werden dadurch nur ein paar Daten bestätigt, aber auch grobe Protokollfehler gemeldet (z.B. falsche Sequenznummern)
-                // Bei ersterem können die Daten vorerst verworfen werden, bei letzterem ist eigentlich ein Verbindungsabbruch notwendig.
-                // Bei ersterem ist Datalength immer 16 Bytes, wenn mehr, dann Fehler
-                // Da hier kein Trailer vorhanden ist, können die PDUs eigentlich nicht fragmentiert übertragen werden
+                // Special handling for SystemEvent 0xfe PDUs:
+                // This only confirms a few data, but also reports major protocol errors (e.g.incorrect sequence numbers).
+                // The confirms can be discarded (for now), but the errors are relevant, because a connection termination is neccessary.
+                // On the confirms, the datalength is always 16 bytes. If it's more, then it's an error.
+                // As we don't have a trailer on this types, it's not possible that they are transmitted as fragments.
                 if (protoVersion == ProtocolVersion.SystemEvent)
                 {
                     Console.WriteLine("S7CommPlusConnection - OnDataReceived: ProtocolVersion 0xfe SystemEvent received");
@@ -271,33 +262,29 @@ namespace S7CommPlusDriver
                     pos += s7HeaderDataLen;
                     if (s7HeaderDataLen > 16)
                     {
-                        Console.WriteLine("S7CommPlusConnection - OnDataReceived: SystemEvent mit s7HeaderDataLen > 16, vermutlich Fehler.");
-                        // Abbau der Verbindung notwendig
+                        Console.WriteLine("S7CommPlusConnection - OnDataReceived: SystemEvent with s7HeaderDataLen > 16, possibly ERROR.");
+                        // Termination neccessary
                         m_LastError = S7Consts.errIsoInvalidPDU;
                     }
-                    // Alles verwerden
+                    // Discard all data
                     m_ReceivedNeedMorePdus = false;
-                    m_ReceivedStream.Position = 0;    // Position wieder auf Null setzen, damit später ausgelesen werden kann
+                    m_ReceivedStream.Position = 0;    // Set position back to zero, ready for readout
                     m_NewS7CommPlusReceived = false;
                 }
                 else
                 {
-                    // Datenteil in Ziel kopieren
-                    // Console.WriteLine("S7CommPlusConnection - OnDataReceived: Schreibe " + s7HeaderDataLen.ToString() + " Bytes in den Stream, PDU pos=" + pos.ToString());
+                    // Copy data part to destination stream
                     m_ReceivedStream.Write(PDU, pos, s7HeaderDataLen);
                     pos += s7HeaderDataLen;
-
-                    // Wenn dieses eine fragmentierte PDU ist, dann folgt jetzt kein Trailer mehr.
+                    // If this is a fragmented PDU, then at this point no trailer
                     if ((len - 4 - 4) == s7HeaderDataLen)
                     {
-                        // Console.WriteLine("S7CommPlusConnection - OnDataReceived: Fertig eingelesen.");
                         m_ReceivedNeedMorePdus = false;
-                        m_ReceivedStream.Position = 0;    // Position wieder auf Null setzen, damit später ausgelesen werden kann
+                        m_ReceivedStream.Position = 0;    // Set position back to zero, ready for readout
                         m_NewS7CommPlusReceived = true;
                     }
                     else
                     {
-                        //Console.WriteLine("S7CommPlusConnection - OnDataReceived: Fragmentiert, brauche noch mehr PDUs.");
                         m_ReceivedNeedMorePdus = true;
                     }
                 }
@@ -326,10 +313,10 @@ namespace S7CommPlusDriver
 
         private int ReadSystemLimits()
         {
-            // SystemLimits auslesen
-            // Der eine Wertist max. tags to read, das andere tags to write.
-            // Welche von beiden was ist, ist noch nicht klar. Bisher waren immer beide Werte identisch
-            // Annahme bis zur Klärung: 1000 = Read, 1001 = Write
+            // Read SystemLimits
+            // Assumption (so far, because for all CPUs which have be seen both values wer the same):
+            // 1000 = Number for Reading
+            // 1001 = Number for Writing
             int res;
             List<ItemAddress> readlist = new List<ItemAddress>();
             List<object> values = new List<object>();
@@ -361,8 +348,6 @@ namespace S7CommPlusDriver
                 var v = (ValueDInt)values[1];
                 m_MaxTagsPerWriteRequestLimit = v.GetValue();
             }
-            Console.WriteLine("S7CommPlusConnection - ReadSystemLimits: m_MaxTagsPerReadRequestLimit=" + m_MaxTagsPerReadRequestLimit);
-            Console.WriteLine("S7CommPlusConnection - ReadSystemLimits: m_MaxTagsPerWriteRequestLimit=" + m_MaxTagsPerWriteRequestLimit);
             return res;
         }
 
@@ -387,21 +372,6 @@ namespace S7CommPlusDriver
             }
             return 0;
         }
-
-        private int checkResponse(object responseObject, ushort requestSequenceNumber, ushort responseSequenceNumber)
-        {
-            if (responseObject == null)
-            {
-                Console.WriteLine("checkResponse: FEHLER! responseObject == null");
-                return S7Consts.errIsoInvalidPDU;
-            }
-            if (requestSequenceNumber != responseSequenceNumber)
-            {
-                Console.WriteLine(String.Format("checkResponse: FEHLER! SeqenceNumber von Response ({0}) passt nicht zum Request ({1})", responseSequenceNumber, requestSequenceNumber));
-                return S7Consts.errIsoInvalidPDU;
-            }
-            return 0;
-        }
         #endregion
 
         #region Public Methods
@@ -418,9 +388,8 @@ namespace S7CommPlusDriver
             if (res != 0)
                 return res;
 
-            #region Schritt 1: Unverschlüsselt InitSSL Request / Response
+            #region Step 1: Unencrypted InitSSL Request / Response
 
-            // Ab jetzt den Thread starten
             InitSslRequest sslrequest = new InitSslRequest(ProtocolVersion.V1, 0 , 0);
             res = SendS7plusFunctionObject(sslrequest);
             if (res != 0)
@@ -439,14 +408,14 @@ namespace S7CommPlusDriver
             sslresponse = InitSslResponse.DeserializeFromPdu(m_ReceivedStream);
             if (sslresponse == null)
             {
-                Console.WriteLine("S7CommPlusConnection - Connect: InitSslResponse fehlerhaft");
+                Console.WriteLine("S7CommPlusConnection - Connect: InitSslResponse with Error!");
                 m_client.Disconnect();
                 return m_LastError;
             }
 
             #endregion
 
-            #region Schritt 2: SSL aktivieren, alles ab hier erfolgt die Übertragung TLS verschlüsselt
+            #region Step 2: Activate TLS. Everything from here onwards is TLS encrypted.
 
             res = m_client.SslActivate();
             if (res != 0)
@@ -457,7 +426,7 @@ namespace S7CommPlusDriver
 
             #endregion
 
-            #region Schritt 3: CreateObjectRequest / Response (mit TLS)
+            #region Step 3: CreateObjectRequest / Response (with TLS)
 
             CreateObjectRequest createObjectRequest = new CreateObjectRequest(ProtocolVersion.V1, 0);
             createObjectRequest.SetNullServerSessionData();
@@ -479,22 +448,21 @@ namespace S7CommPlusDriver
             createObjectResponse = CreateObjectResponse.DeserializeFromPdu(m_ReceivedStream);
             if (createObjectResponse == null)
             {
-                Console.WriteLine("S7CommPlusConnection - Connect: CreateObjectResponse fehlerhaft");
+                Console.WriteLine("S7CommPlusConnection - Connect: CreateObjectResponse with Error!");
                 m_client.Disconnect();
                 return S7Consts.errIsoInvalidPDU;
             }
             m_SessionId = createObjectResponse.ObjectIds[0];
-            Console.WriteLine("S7CommPlusConnection - Connect: Verwende SessionId=0x" + String.Format("{0:X04}", m_SessionId));
-
+            Console.WriteLine("S7CommPlusConnection - Connect: Using SessionId=0x" + String.Format("{0:X04}", m_SessionId));
 
             ////////////////////////////////////////////////
-            // Struct 314 auswerten
+            // Evaluate Struct 314
             PValue sval = createObjectResponse.ResponseObject.GetAttribute(Ids.ServerSessionVersion);
             ValueStruct serverSession = (ValueStruct)sval;
 
             #endregion
 
-            #region Schritt 4: SetMultiVariablesRequest / Response
+            #region Step 4: SetMultiVariablesRequest / Response
 
             SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
             setMultiVariablesRequest.SetSessionSetupData(m_SessionId, serverSession);
@@ -516,14 +484,14 @@ namespace S7CommPlusDriver
             setMultiVariablesResponse = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
             if (setMultiVariablesResponse == null)
             {
-                Console.WriteLine("S7CommPlusConnection - Connect: SetMultiVariablesResponse fehlerhaft");
+                Console.WriteLine("S7CommPlusConnection - Connect: SetMultiVariablesResponse with Error!");
                 m_client.Disconnect();
                 return S7Consts.errIsoInvalidPDU;
             }
 
             #endregion
 
-            #region Schritt 5: SystemLimits auslesen
+            #region Step 5: Read SystemLimits
             res = ReadSystemLimits();
             if (res != 0)
             {
@@ -532,8 +500,8 @@ namespace S7CommPlusDriver
             }
             #endregion
 
-            // Wenn bis hier her alles ohne Fehler, dann ist Verbindung erfolgreich aufgebaut
-            Console.WriteLine("S7CommPlusConnection - Connect: Benötige Zeit für gesamten Verbindungsaufbau: " + (Environment.TickCount - Elapsed) + " ms.");
+            // If everything has been error-free up to this point, then the connection has been established successfully.
+            Console.WriteLine("S7CommPlusConnection - Connect: Time for connection establishment: " + (Environment.TickCount - Elapsed) + " ms.");
             return 0;
         }
 
@@ -542,18 +510,10 @@ namespace S7CommPlusDriver
             m_client.Disconnect();
         }
 
-        /*
-         * public void ReadValues(
-            IList<NodeId>           variableIds,
-            IList<Type>             expectedTypes,
-            out List<object>        values, 
-            out List<ServiceResult> errors)
-        */
         public int ReadValues(List<ItemAddress> addresslist, out List<object> values, out List<UInt64> errors)
         {
-            // Der Anfragesteller muss den internen Typ schon mit der Anfrage übergeben,
-            // sonst können nicht alle Rückgabewerte automatisch konvertiert werden.
-            // Beispielsweise werden Strings als UInt-Array zurückgegeben.
+            // The requester must pass the internal type with the request, otherwise not all return values can be converted automatically.
+            // For example, strings are transmitted as UInt-Array.
             values = new List<object>();
             errors = new List<UInt64>();
             // Initialize error fields to error value
@@ -596,15 +556,15 @@ namespace S7CommPlusDriver
                 // ReturnValue shows also an error, if only one single variable could not be read
                 if (getMultiVariablesResponse.ReturnValue != 0)
                 {
-                    Console.WriteLine("S7CommPlusConnection - ReadValues: Mit Fehler ausgeführt. ReturnValue=" + getMultiVariablesResponse.ReturnValue);
+                    Console.WriteLine("S7CommPlusConnection - ReadValues: Executed with Error! ReturnValue=" + getMultiVariablesResponse.ReturnValue);
                 }
 
-                // TODO: Falls eine Variable nicht gelesen werden konnte, ist kein Value vorhanden, dafür dann aber ein ErrorValue.
-                // Der Anwender muss darum prüfen, ob Value != null ist. Eventuell eleganter zu lösen.
+                // TODO: If a variable could not be read, there is no value, but there is an ErrorValue.
+                // The user must therefore check whether Value != null. Maybe there's a more elegant solution.
                 foreach (var v in getMultiVariablesResponse.Values)
                 {
                     values[chunk_startIndex + (int)v.Key - 1] = v.Value;
-                    // Error hier schon mal auf 0 zurücksetzen, wird ggf. unten überschrieben falls doch ein Fehler vorhanden war.
+                    // Initialize error to 0, will be overwritten below if there was an error on an item.
                     errors[chunk_startIndex + (int)v.Key - 1] = 0;
                 }
 
@@ -688,8 +648,8 @@ namespace S7CommPlusDriver
             int res;
 
             SetVariableRequest setVariableRequest = new SetVariableRequest(ProtocolVersion.V2);
-            setVariableRequest.InObjectId = 52; // NativeObjects.theCPUexecUnit_Rid
-            setVariableRequest.Address = 2167; // CPUexecUnit.operatingStateREQ
+            setVariableRequest.InObjectId = Ids.NativeObjects_theCPUexecUnit_Rid;
+            setVariableRequest.Address = Ids.CPUexecUnit_operatingStateReq;
             setVariableRequest.Value = new ValueDInt(state);
 
             res = SendS7plusFunctionObject(setVariableRequest);
@@ -710,7 +670,7 @@ namespace S7CommPlusDriver
             setVariableResponse = SetVariableResponse.DeserializeFromPdu(m_ReceivedStream);
             if (setVariableResponse == null)
             {
-                Console.WriteLine("S7CommPlusConnection - Connect: SetVariableResponse fehlerhaft");
+                Console.WriteLine("S7CommPlusConnection - Connect: SetVariableResponse with Error!");
                 m_client.Disconnect();
                 return S7Consts.errIsoInvalidPDU;
             }
@@ -720,17 +680,14 @@ namespace S7CommPlusDriver
 
         public int Browse(out List<VarInfo> varInfoList)
         {
-            //Console.WriteLine("S7CommPlusConnection - Browse: Start");
-            varInfoList = new List<VarInfo>();
             int res;
-
+            varInfoList = new List<VarInfo>();
             Browser vars = new Browser();
-
             ExploreRequest exploreReq;
             ExploreResponse exploreRes;
 
-            #region Alle Objekte auslesen
-            //Console.WriteLine("S7CommPlusConnection - Browse: Alle Objekte auslesen");
+            #region Read all objects
+
             List<BrowseData> exploreData = new List<BrowseData>();
 
             exploreReq = new ExploreRequest(ProtocolVersion.V2);
@@ -739,7 +696,7 @@ namespace S7CommPlusDriver
             exploreReq.ExploreChildsRecursive = 1;
             exploreReq.ExploreParents = 0;
 
-            // Diese Objektattribute werden mit abgefragt
+            // We want to know the following attributes
             exploreReq.AddressList.Add(Ids.ObjectVariableTypeName);
             exploreReq.AddressList.Add(Ids.Block_BlockNumber);
             exploreReq.AddressList.Add(Ids.ASObjectES_Comment);
@@ -755,18 +712,17 @@ namespace S7CommPlusDriver
             {
                 return m_LastError;
             }
-            // Antwort auswerten
+
             exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
-            if ((exploreRes == null) ||
-                (exploreRes.SequenceNumber != exploreReq.SequenceNumber) ||
-                (exploreRes.ReturnValue != 0))
+            res = checkResponseWithIntegrity(exploreReq, exploreRes);
+            if (res != 0)
             {
-                return S7Consts.errIsoInvalidPDU;
+                return res;
             }
 
             #endregion
 
-            #region Alle Datenbausteine auswerten die anschließend gebrowst werden müssen
+            #region Evaluate all data blocks that then need to be browsed
 
             List<PObject> objList = exploreRes.ResponseObject.GetObjects();
 
@@ -793,21 +749,19 @@ namespace S7CommPlusDriver
 
             #endregion
 
-            #region TypeInfo RID zur RelId aus erster Anfrage bestimmen
-
-            // Mit Abfrage von LID=1 aus allen DBs bekommt man die RID zurück mit dem
-            // die Typinformationen abgefragt werden können.
-            // Das ist notwendig, weil z.B. bei Instanz-DBs (z.B. TON) an die Typinformationen
-            // nicht über die RID des DBs sondern des TONs gelangt werden muss
+            #region Determine the TypeInfo RID to the RelId from the first response
+            // By querying LID = 1 from all DBs you get the RID back with which the type information can be queried.
+            // This is necessary because, for example, with instance DBs (e.g. TON), the type information must
+            // not be accessed via the RID of the DB but of the TON.
             List<ItemAddress> readlist = new List<ItemAddress>();
             List<object> values = new List<object>();
             List<UInt64> errors = new List<UInt64>();
 
             foreach (var data in exploreData)
             {
-                if (data.db_number > 0)        // Merker usw. nicht abfragen
+                if (data.db_number > 0) // only process datablocks here, no marker, timer etc.
                 {
-                    // Variablenadresse einfügen
+                    // Insert the variable address
                     ItemAddress adr1 = new ItemAddress();
                     adr1.AccessArea = data.db_block_relid;
                     adr1.AccessSubArea = Ids.DB_ValueActual;
@@ -822,9 +776,9 @@ namespace S7CommPlusDriver
             }
             #endregion
 
-            #region Vorabinformationen zur Kombination an ExploreSymbols übergeben
+            #region Pass the preliminary information for recombination to ExploreSymbols
 
-            // Antworten in Liste eintragen
+            // Add the response information to the list
             for (int i = 0; i < values.Count; i++)
             {
                 if (errors[i] == 0)
@@ -836,17 +790,15 @@ namespace S7CommPlusDriver
                 }
                 else
                 {
-                    // Bei Fehler relid=0 einfügen, wird unten aus der Liste komplett entfernt
-                    // TODO: Fehler melden
+                    // On error, set the relid to zero, will be removed from the list in the next step.
+                    // TODO: Report this as an error?
                     var data = exploreData[i];
                     data.db_block_ti_relid = 0;
                     exploreData[i] = data;
                 }
             }
-
-            // Elemente mit db_block_ti_relid == 0 aus Liste löschen
-            // Wenn die RID == 0 ist, dann kann diese nicht weiter verwendet werden!
-            // Das kommt vor bei Datenbausteinen die nur im Ladespeicher abgelegt sind.
+            // Remove elements with db_block_ti_relid == 0. This occurs e.g. on datablocks only present in load memors.
+            // The informations can't be used any further (at least not for variable access).
             exploreData.RemoveAll(item => item.db_block_ti_relid == 0);
 
             foreach (var ed in exploreData)
@@ -854,7 +806,7 @@ namespace S7CommPlusDriver
                 vars.AddBlockNode(eNodeType.Root, ed.db_name, ed.db_block_relid, ed.db_block_ti_relid);
             }
 
-            // Merker usw. manuell hinzufügen.
+            // Add IQMCT areas manually
             vars.AddBlockNode(eNodeType.Root, "IArea", Ids.NativeObjects_theIArea_Rid, 0x90010000);
             vars.AddBlockNode(eNodeType.Root, "QArea", Ids.NativeObjects_theQArea_Rid, 0x90020000);
             vars.AddBlockNode(eNodeType.Root, "MArea", Ids.NativeObjects_theMArea_Rid, 0x90030000);
@@ -863,13 +815,10 @@ namespace S7CommPlusDriver
 
             #endregion
 
-            #region Type Info Container auslesen (große PDU, muss geprüft werden, ob das bei sehr großen Programmen praktikabel ist)
+            #region Read the Type Info Container (as a single big PDU, must be proven to be the way to go in big programs)
             ExploreRequest exploreRequest = new ExploreRequest(ProtocolVersion.V2);
-            exploreRequest.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
-
-            // Mit AID.ObjectOMSTypeInfoContainer erhält man den kompletten Variablenhaushalt in einer großen PDU!
+            // With ObjectOMSTypeInfoContainer we get all in a big PDU (with maybe hundreds of fragments)
             exploreRequest.ExploreId = Ids.ObjectOMSTypeInfoContainer;
-
             exploreRequest.ExploreRequestId = Ids.None;
             exploreRequest.ExploreChildsRecursive = 1;
             exploreRequest.ExploreParents = 0;
@@ -885,28 +834,23 @@ namespace S7CommPlusDriver
             {
                 return m_LastError;
             }
-
             #endregion
 
-            #region Antwort auswerten
+            #region Process the response, and build the complete variables list
             ExploreResponse exploreResponse = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
-            if (exploreResponse != null)
+            res = checkResponseWithIntegrity(exploreRequest, exploreResponse);
+            if (res != 0)
             {
-                if (exploreResponse.SequenceNumber != exploreRequest.SequenceNumber)
-                {
-                    Console.WriteLine("S7CommPlusConnection - Browse: ExploreResponse SequenceNumber stimmt nicht mit Request überein.");
-                }
-                else
-                {
-                    List<PObject> objs = exploreResponse.ResponseObject.GetObjectsByClassId(Ids.ClassTypeInfo);
-
-                    vars.SetTypeInfoContainerObjects(objs);
-                    vars.BuildTree();
-                    vars.BuildFlatList();
-                    varInfoList = vars.GetVarInfoList();
-                }
+                return res;
             }
+            List<PObject> objs = exploreResponse.ResponseObject.GetObjectsByClassId(Ids.ClassTypeInfo);
+
+            vars.SetTypeInfoContainerObjects(objs);
+            vars.BuildTree();
+            vars.BuildFlatList();
+            varInfoList = vars.GetVarInfoList();
             #endregion
+
             return 0;
         }
 
@@ -916,18 +860,17 @@ namespace S7CommPlusDriver
             public uint Softdatatype;
             public UInt32 LID;
             public UInt32 SymbolCrc;
-            public string AccessSequence;                                   // Zugriffsname wie er in WinCC angezeigt wird z.B. (8A0E0003.11)
+            public string AccessSequence;
         };
 
         public class BrowseData
         {
-            public string db_name;                                          // Name des Datenbausteins
-            public UInt32 db_number;                                        // Nummer des Datenbausteins
-            public UInt32 db_block_relid;                                   // RID des Datenbausteins
-            public UInt32 db_block_ti_relid;                                // Type-Info RID des Datenbausteins
-            public List<BrowseEntry> variables = new List<BrowseEntry>(); // Variablen des Datenbausteins
+            public string db_name;                                          // Name of the datablock
+            public UInt32 db_number;                                        // Number of the datablock
+            public UInt32 db_block_relid;                                   // RID of the datablock
+            public UInt32 db_block_ti_relid;                                // Type-Info RID of the datablock
+            public List<BrowseEntry> variables = new List<BrowseEntry>();   // Variables inside the datablock
         };
-
 
         public class DatablockInfo
         {
@@ -1061,7 +1004,6 @@ namespace S7CommPlusDriver
 
             return 0;
         }
-
 
         public int GetTypeInformation(uint exploreId, out List<PObject> objList)
         {

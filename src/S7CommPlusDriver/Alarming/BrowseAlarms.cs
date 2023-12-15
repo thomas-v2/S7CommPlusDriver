@@ -66,10 +66,10 @@ namespace S7CommPlusDriver
             {
                 return res;
             }
-            List<PObject> staiclass = exploreRes.ResponseObject.GetObjectsByClassId(7854); // 7854 = MultipleSTAI.Class_Rid
+            List<PObject> staiclass = exploreRes.ResponseObject.GetObjectsByClassId(Ids.MultipleSTAI_Class_Rid);
             if (staiclass != null && staiclass.Count > 0)
             {
-                PValue stais = staiclass[0].GetAttribute(7859); // 7859 = MultipleSTAI.STAIs
+                PValue stais = staiclass[0].GetAttribute(Ids.MultipleSTAI_STAIs);
                 if (stais != null)
                 {
                     if (stais.GetType() == typeof(ValueBlobSparseArray))
@@ -109,8 +109,8 @@ namespace S7CommPlusDriver
             exploreReq.ExploreParents = 0;
 
             // Add the requestes attributes
-            exploreReq.AddressList.Add(229); // 229 = ObjectVariableTypeParentObject
-            exploreReq.AddressList.Add(7859); // 7859 = MultipleSTAI.STAIs
+            exploreReq.AddressList.Add(Ids.ObjectVariableTypeParentObject);
+            exploreReq.AddressList.Add(Ids.MultipleSTAI_STAIs);
 
             res = SendS7plusFunctionObject(exploreReq);
             if (res != 0)
@@ -137,10 +137,10 @@ namespace S7CommPlusDriver
 
             foreach (var ob in objList)
             {
-                staiclass = ob.GetObjectsByClassId(7854); // 7854 = MultipleSTAI.Class_Rid
+                staiclass = ob.GetObjectsByClassId(Ids.MultipleSTAI_Class_Rid);
                 if (staiclass != null && staiclass.Count > 0)
                 {
-                    PValue stais = staiclass[0].GetAttribute(7859); // 7859 = MultipleSTAI.STAIs
+                    PValue stais = staiclass[0].GetAttribute(Ids.MultipleSTAI_STAIs);
                     if (stais != null)
                     {
                         if (stais.GetType() == typeof(ValueBlobSparseArray))
@@ -175,7 +175,6 @@ namespace S7CommPlusDriver
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 0;
             exploreReq.ExploreParents = 0;
-            
 
             res = SendS7plusFunctionObject(exploreReq);
             if (res != 0)
@@ -202,8 +201,8 @@ namespace S7CommPlusDriver
             // [2] contains the resulting offsets for the strings in TextLibraryStringArea.
             // TODO: Check if all fields are present, or use try/catch?
 
-            var tloa = ((ValueBlobArray)exploreRes.ResponseObject.GetAttribute(608)).GetValue(); // 608 = TextLibraryOffsetArea
-            var tlsa = ((ValueBlob)exploreRes.ResponseObject.GetAttribute(609)).GetValue(); // 609 = TextLibraryStringArea
+            var tloa = ((ValueBlobArray)exploreRes.ResponseObject.GetAttribute(Ids.TextLibraryOffsetArea)).GetValue();
+            var tlsa = ((ValueBlob)exploreRes.ResponseObject.GetAttribute(Ids.TextLibraryStringArea)).GetValue();
 
             var tloa_1 = tloa[0].GetValue();
             var tloa_2 = tloa[1].GetValue();

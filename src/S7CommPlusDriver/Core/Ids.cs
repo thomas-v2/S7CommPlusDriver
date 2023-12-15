@@ -19,6 +19,7 @@ namespace S7CommPlusDriver
     {
         public const int None = 0;
         public const int NativeObjects_thePLCProgram_Rid = 3;
+        public const int NativeObjects_theCPUexecUnit_Rid = 52;
         public const int NativeObjects_theIArea_Rid = 80;
         public const int NativeObjects_theQArea_Rid = 81;
         public const int NativeObjects_theMArea_Rid = 82;
@@ -26,6 +27,7 @@ namespace S7CommPlusDriver
         public const int NativeObjects_theS7Timers_Rid = 84;
         public const int ObjectRoot = 201;
         public const int GetNewRIDOnServer = 211;
+        public const int ObjectVariableTypeParentObject = 229;
         public const int ObjectVariableTypeName = 233;
         public const int ClassSubscriptions = 255;
         public const int ClassServerSessionContainer = 284;
@@ -36,6 +38,8 @@ namespace S7CommPlusDriver
         public const int ServerSessionVersion = 306;
         public const int ClassTypeInfo = 511;
         public const int ObjectOMSTypeInfoContainer = 537;
+        public const int TextLibraryOffsetArea = 608;
+        public const int TextLibraryStringArea = 609;
         public const int SystemLimits = 1037;
         public const int Filter = 1246;
         public const int FilterOperation = 1247;
@@ -46,6 +50,7 @@ namespace S7CommPlusDriver
         public const int ParentRID = 1257;
         public const int CompositionAID = 1258;
         public const int KeyQualifier = 1259;
+        public const int CPUexecUnit_operatingStateReq = 2167;
         public const int Block_BlockNumber = 2521;
         public const int DB_ValueInitial = 2548;
         public const int DB_ValueActual = 2550;
@@ -55,5 +60,7 @@ namespace S7CommPlusDriver
         public const int ControllerArea_ValueActual = 3736;
         public const int ControllerArea_RuntimeModified = 3737;
         public const int ASObjectES_Comment = 4288;
+        public const int MultipleSTAI_Class_Rid = 7854;
+        public const int MultipleSTAI_STAIs = 7859;
     }
 }
