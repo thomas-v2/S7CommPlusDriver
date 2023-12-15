@@ -21,10 +21,6 @@ namespace S7CommPlusDriver
 {
     public class ExploreRequest : IS7pSendableObject
     {
-        public readonly ushort FunctionCode = Functioncode.Explore;
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         byte TransportFlags = 0x34; // oder 0x36???
         public UInt32 ExploreId;
         public UInt32 ExploreRequestId;
@@ -33,14 +29,19 @@ namespace S7CommPlusDriver
 
         public ValueStruct FilterData;
 
-        public bool WithIntegrityId = true; // Bei neueren FW (ab 3 oder 4?) immer vorhanden
-        public UInt32 IntegrityId;
-
         public List<UInt32> AddressList = new List<UInt32>();
+
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.Explore; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public ExploreRequest(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = true;
         }
 
         public byte GetProtocolVersion()

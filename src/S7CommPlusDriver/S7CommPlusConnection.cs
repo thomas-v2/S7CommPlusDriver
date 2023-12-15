@@ -36,7 +36,6 @@ namespace S7CommPlusDriver
         
         private UInt16 m_SequenceNumber = 0;
         private UInt32 m_IntegrityId = 0;
-        private UInt16 m_SequenceNumber_Set = 0;
         private UInt32 m_IntegrityId_Set = 0;
         
         // Initialize the max values to 20, 50 is possibly the lowest value.
@@ -53,43 +52,22 @@ namespace S7CommPlusDriver
 
         #region Private Methods
 
-        // We must count SequenceNumber and IntegrityId for different functions of the protocol.
-        // As a first guess functions for setting variables need separate counters.
-        // Use the functioncode to differ between the which sequence/integrity counter values.
-        private UInt16 GetNextSequenceNumber(ushort functioncode)
+        private UInt16 GetNextSequenceNumber()
         {
-            UInt16 ret;
-            switch (functioncode)
+            if (m_SequenceNumber == UInt16.MaxValue)
             {
-                case Functioncode.SetMultiVariables:
-                case Functioncode.SetVariable:
-                case Functioncode.SetVarSubStreamed:
-                    if (m_SequenceNumber_Set == UInt16.MaxValue)
-                    {
-                        m_SequenceNumber_Set = 1;
-                    }
-                    else
-                    {
-                        m_SequenceNumber_Set++;
-                    }
-
-                    ret = m_SequenceNumber_Set;
-                    break;
-                default:
-                    if (m_SequenceNumber == UInt16.MaxValue)
-                    {
-                        m_SequenceNumber = 1;
-                    }
-                    else
-                    {
-                        m_SequenceNumber++;
-                    }
-                    ret = m_SequenceNumber;
-                    break;
+                m_SequenceNumber = 1;
             }
-            return ret;
+            else
+            {
+                m_SequenceNumber++;
+            }
+            return m_SequenceNumber;
         }
 
+        // We must count the IntegrityId for different functions of the protocol.
+        // As a first guess functions for setting variables need separate counters.
+        // Use the functioncode to differ between the which sequence/integrity counter values.
         private UInt32 GetNextIntegrityId(ushort functioncode)
         {
             UInt32 ret;
@@ -152,9 +130,26 @@ namespace S7CommPlusDriver
 
         private int SendS7plusFunctionObject(IS7pSendableObject funcObj)
         {
+            // If we don't have a SessionId, this must be the first CreateObjectRequest, where we use the Id for NullServerSession
+            if (m_SessionId == 0)
+            {
+                funcObj.SessionId = Ids.ObjectNullServerSession;
+            }
+            else
+            {
+                funcObj.SessionId = m_SessionId;
+            }
+
+            // Insert SequenceNumber and IntegrityId, if neccessary for object type and state of communication
+            funcObj.SequenceNumber = GetNextSequenceNumber();
+            if (funcObj.WithIntegrityId)
+            {
+                funcObj.IntegrityId = GetNextIntegrityId(funcObj.FunctionCode);
+            }
+
             MemoryStream stream = new MemoryStream();
             funcObj.Serialize(stream);
-            return SendS7plusPDUdata(stream.ToArray(), (int)stream.Length, funcObj.GetProtocolVersion());
+            return SendS7plusPDUdata(stream.ToArray(), (int)stream.Length, funcObj.ProtocolVersion);
         }
 
         private int SendS7plusPDUdata(byte[] sendPduData, int bytesToSend, byte protoVersion)
@@ -371,20 +366,20 @@ namespace S7CommPlusDriver
             return res;
         }
 
-        private int checkResponseWithIntegrity(object responseObject, UInt16 requestSequenceNumber, UInt16 responseSequenceNumber, UInt32 requestIntegrity, UInt32 responseIntegrity)
+        private int checkResponseWithIntegrity(IS7pSendableObject request, object responseObject, UInt16 responseSequenceNumber, UInt32 responseIntegrity)
         {
             if (responseObject == null)
             {
                 Console.WriteLine("checkResponseWithIntegrity: FEHLER! responseObject == null");
                 return S7Consts.errIsoInvalidPDU;
             }
-            if (requestSequenceNumber != responseSequenceNumber)
+            if (request.SequenceNumber != responseSequenceNumber)
             {
-                Console.WriteLine(String.Format("checkResponseWithIntegrity: FEHLER! SeqenceNumber von Response ({0}) passt nicht zum Request ({1})", responseSequenceNumber, requestSequenceNumber));
+                Console.WriteLine(String.Format("checkResponseWithIntegrity: FEHLER! SeqenceNumber von Response ({0}) passt nicht zum Request ({1})", responseSequenceNumber, request.SequenceNumber));
                 return S7Consts.errIsoInvalidPDU;
             }
             // Hier kann ein Overflow vorkommen, ist aber erlaubt und Ergebnis wird akzeptiert.
-            UInt32 reqIntegCheck = (UInt32)requestSequenceNumber + requestIntegrity;
+            UInt32 reqIntegCheck = (UInt32)request.SequenceNumber + request.IntegrityId;
             if (responseIntegrity != reqIntegCheck)
             {
                 Console.WriteLine(String.Format("checkResponseWithIntegrity: FEHLER! Integrity der Response ({0}) passt nicht zum Request ({1})", responseIntegrity, reqIntegCheck));
@@ -427,7 +422,6 @@ namespace S7CommPlusDriver
 
             // Ab jetzt den Thread starten
             InitSslRequest sslrequest = new InitSslRequest(ProtocolVersion.V1, 0 , 0);
-            sslrequest.SequenceNumber = GetNextSequenceNumber(sslrequest.FunctionCode);
             res = SendS7plusFunctionObject(sslrequest);
             if (res != 0)
             {
@@ -449,7 +443,6 @@ namespace S7CommPlusDriver
                 m_client.Disconnect();
                 return m_LastError;
             }
-            // Console.WriteLine(sslresponse.ToString());
 
             #endregion
 
@@ -466,8 +459,7 @@ namespace S7CommPlusDriver
 
             #region Schritt 3: CreateObjectRequest / Response (mit TLS)
 
-            CreateObjectRequest createObjectRequest = new CreateObjectRequest(ProtocolVersion.V1, 0, Ids.ObjectNullServerSession);
-            createObjectRequest.SequenceNumber = GetNextSequenceNumber(createObjectRequest.FunctionCode);
+            CreateObjectRequest createObjectRequest = new CreateObjectRequest(ProtocolVersion.V1, 0);
             createObjectRequest.SetNullServerSessionData();
             res = SendS7plusFunctionObject(createObjectRequest);
             if (res != 0)
@@ -506,7 +498,6 @@ namespace S7CommPlusDriver
 
             SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
             setMultiVariablesRequest.SetSessionSetupData(m_SessionId, serverSession);
-            setMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber(setMultiVariablesRequest.FunctionCode);
             res = SendS7plusFunctionObject(setMultiVariablesRequest);
             if (res != 0)
             {
@@ -579,9 +570,6 @@ namespace S7CommPlusDriver
             {
                 int res;
                 GetMultiVariablesRequest getMultiVariablesRequest = new GetMultiVariablesRequest(ProtocolVersion.V2);
-                getMultiVariablesRequest.SessionId = m_SessionId;
-                getMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber(getMultiVariablesRequest.FunctionCode);
-                getMultiVariablesRequest.IntegrityId = GetNextIntegrityId(getMultiVariablesRequest.FunctionCode);
 
                 getMultiVariablesRequest.AddressList.Clear();
                 count_perChunk = 0;
@@ -600,10 +588,9 @@ namespace S7CommPlusDriver
                 }
 
                 GetMultiVariablesResponse getMultiVariablesResponse = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
-                res = checkResponseWithIntegrity(getMultiVariablesResponse,
-                    getMultiVariablesRequest.SequenceNumber,
+                res = checkResponseWithIntegrity(getMultiVariablesRequest, 
+                    getMultiVariablesResponse,
                     getMultiVariablesResponse.SequenceNumber,
-                    getMultiVariablesRequest.IntegrityId,
                     getMultiVariablesResponse.IntegrityId);
                 if (res != 0)
                 {
@@ -653,10 +640,6 @@ namespace S7CommPlusDriver
             do
             {
                 SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
-                setMultiVariablesRequest.SessionId = m_SessionId;
-                setMultiVariablesRequest.SequenceNumber = GetNextSequenceNumber(setMultiVariablesRequest.FunctionCode);
-                setMultiVariablesRequest.IntegrityId = GetNextIntegrityId(setMultiVariablesRequest.FunctionCode);
-
                 setMultiVariablesRequest.AddressListVar.Clear();
                 setMultiVariablesRequest.ValueList.Clear();
                 count_perChunk = 0;
@@ -681,11 +664,10 @@ namespace S7CommPlusDriver
 
                 SetMultiVariablesResponse setMultiVariablesResponse;
                 setMultiVariablesResponse = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
-                res = checkResponseWithIntegrity(setMultiVariablesResponse,
-                        setMultiVariablesRequest.SequenceNumber,
-                        setMultiVariablesResponse.SequenceNumber,
-                        setMultiVariablesRequest.IntegrityId,
-                        setMultiVariablesResponse.IntegrityId);
+                res = checkResponseWithIntegrity(setMultiVariablesRequest,
+                    setMultiVariablesResponse,
+                    setMultiVariablesResponse.SequenceNumber,
+                    setMultiVariablesResponse.IntegrityId);
                 if (res != 0)
                 {
                     return res;
@@ -712,10 +694,6 @@ namespace S7CommPlusDriver
             int res;
 
             SetVariableRequest setVariableRequest = new SetVariableRequest(ProtocolVersion.V2);
-            setVariableRequest.SessionId = m_SessionId;
-            setVariableRequest.SequenceNumber = GetNextSequenceNumber(setVariableRequest.FunctionCode);
-            setVariableRequest.IntegrityId = GetNextIntegrityId(setVariableRequest.FunctionCode);
-
             setVariableRequest.InObjectId = 52; // NativeObjects.theCPUexecUnit_Rid
             setVariableRequest.Address = 2167; // CPUexecUnit.operatingStateREQ
             setVariableRequest.Value = new ValueDInt(state);
@@ -762,9 +740,6 @@ namespace S7CommPlusDriver
             List<BrowseData> exploreData = new List<BrowseData>();
 
             exploreReq = new ExploreRequest(ProtocolVersion.V2);
-            exploreReq.SessionId = m_SessionId;
-            exploreReq.SequenceNumber = GetNextSequenceNumber(exploreReq.FunctionCode);
-            exploreReq.IntegrityId = GetNextIntegrityId(exploreReq.FunctionCode);
             exploreReq.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 1;
@@ -896,10 +871,6 @@ namespace S7CommPlusDriver
 
             #region Type Info Container auslesen (große PDU, muss geprüft werden, ob das bei sehr großen Programmen praktikabel ist)
             ExploreRequest exploreRequest = new ExploreRequest(ProtocolVersion.V2);
-            exploreRequest.SessionId = m_SessionId;
-            exploreRequest.SequenceNumber = GetNextSequenceNumber(exploreRequest.FunctionCode);
-            exploreRequest.IntegrityId = GetNextIntegrityId(exploreRequest.FunctionCode);
-
             exploreRequest.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
 
             // Mit AID.ObjectOMSTypeInfoContainer erhält man den kompletten Variablenhaushalt in einer großen PDU!
@@ -979,9 +950,6 @@ namespace S7CommPlusDriver
             dbInfoList = new List<DatablockInfo>();
 
             var exploreReq = new ExploreRequest(ProtocolVersion.V2);
-            exploreReq.SessionId = m_SessionId;
-            exploreReq.SequenceNumber = GetNextSequenceNumber(exploreReq.FunctionCode);
-            exploreReq.IntegrityId = GetNextIntegrityId(exploreReq.FunctionCode);
             exploreReq.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 1;
@@ -1014,11 +982,10 @@ namespace S7CommPlusDriver
             }
 
             var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
-            res = checkResponseWithIntegrity(exploreRes,
-                    exploreReq.SequenceNumber,
-                    exploreRes.SequenceNumber,
-                    exploreReq.IntegrityId,
-                    exploreRes.IntegrityId);
+            res = checkResponseWithIntegrity(exploreReq,
+                exploreRes,
+                exploreRes.SequenceNumber,
+                exploreRes.IntegrityId);
             if (res != 0)
             {
                 return res;
@@ -1111,9 +1078,6 @@ namespace S7CommPlusDriver
             objList = new List<PObject>();
 
             var exploreReq = new ExploreRequest(ProtocolVersion.V2);
-            exploreReq.SessionId = m_SessionId;
-            exploreReq.SequenceNumber = GetNextSequenceNumber(exploreReq.FunctionCode);
-            exploreReq.IntegrityId = GetNextIntegrityId(exploreReq.FunctionCode);
             exploreReq.ExploreId = exploreId;
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 1;
@@ -1132,10 +1096,8 @@ namespace S7CommPlusDriver
             }
 
             var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
-            res = checkResponseWithIntegrity(exploreRes,
-                    exploreReq.SequenceNumber,
+            res = checkResponseWithIntegrity(exploreReq, exploreRes,
                     exploreRes.SequenceNumber,
-                    exploreReq.IntegrityId,
                     exploreRes.IntegrityId);
             if (res != 0)
             {

@@ -20,16 +20,21 @@ namespace S7CommPlusDriver
 {
     class InitSslRequest : IS7pSendableObject
     {
-        public readonly ushort FunctionCode = Functioncode.InitSsl;
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         byte TransportFlags = 0x30;
+
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.InitSsl; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
+
         public InitSslRequest(byte protocolVersion, UInt16 seqNum, UInt32 sessionId)
         {
             ProtocolVersion = protocolVersion;
             SequenceNumber = seqNum;
             SessionId = sessionId;
+            WithIntegrityId = false;
         }
 
         public byte GetProtocolVersion()

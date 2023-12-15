@@ -20,20 +20,23 @@ namespace S7CommPlusDriver
 {
     public class CreateObjectRequest : IS7pSendableObject
     {
-        public readonly ushort FunctionCode = Functioncode.CreateObject;
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         public byte TransportFlags = 0x36;
         public UInt32 RequestId;
         public PValue RequestValue;
         public PObject RequestObject;
 
-        public CreateObjectRequest(byte protocolVersion, UInt16 seqNum, UInt32 sessionId)
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.CreateObject; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
+
+        public CreateObjectRequest(byte protocolVersion, UInt16 seqNum)
         {
             ProtocolVersion = protocolVersion;
             SequenceNumber = seqNum;
-            SessionId = sessionId;
+            WithIntegrityId = false;
         }
 
         public void SetRequestIdValue(UInt32 requestId, PValue requestValue)
@@ -49,8 +52,8 @@ namespace S7CommPlusDriver
 
         public void SetNullServerSessionData()
         {
-            // Initialisiert die Daten für eine Nullserver Session zum Verbindungsaufbau
-            SessionId = Ids.ObjectNullServerSession;
+            // Initializes the data for a Nullserver Session on connection setup.
+            // SessionId is set automatically to Ids.ObjectNullServerSession when this this object is sent, if there's no session Id.
             TransportFlags = 0x36;
             RequestId = Ids.ObjectServerSessionContainer;
             RequestValue = new ValueUDInt(0);

@@ -21,20 +21,21 @@ namespace S7CommPlusDriver
 {
     class GetMultiVariablesRequest : IS7pSendableObject
     {
-        public readonly ushort FunctionCode = Functioncode.GetMultiVariables;
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         byte TransportFlags = 0x34;
         public UInt32 LinkId = 0;       // für Variablen lesen = 0
         public List<ItemAddress> AddressList = new List<ItemAddress>();
 
-        public bool WithIntegrityId = true;
-        public UInt32 IntegrityId;
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.GetMultiVariables; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public GetMultiVariablesRequest(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = true;
         }
 
         public byte GetProtocolVersion()

@@ -43,9 +43,6 @@ namespace S7CommPlusDriver
 
             #region Explore all other than Alarm AP (AnwenderProgramAlarme)
             var exploreReq = new ExploreRequest(ProtocolVersion.V2);
-            exploreReq.SessionId = m_SessionId;
-            exploreReq.SequenceNumber = GetNextSequenceNumber(exploreReq.FunctionCode);
-            exploreReq.IntegrityId = GetNextIntegrityId(exploreReq.FunctionCode);
             exploreReq.ExploreId = 0x8a7e0000; // ASAlarms.0
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 1;
@@ -65,10 +62,9 @@ namespace S7CommPlusDriver
             }
 
             var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
-            res = checkResponseWithIntegrity(exploreRes,
-                    exploreReq.SequenceNumber,
+            res = checkResponseWithIntegrity(exploreReq,
+                    exploreRes,
                     exploreRes.SequenceNumber,
-                    exploreReq.IntegrityId,
                     exploreRes.IntegrityId);
             if (res != 0)
             {
@@ -111,9 +107,6 @@ namespace S7CommPlusDriver
 
             #region Explore Alarm AP
             exploreReq = new ExploreRequest(ProtocolVersion.V2);
-            exploreReq.SessionId = m_SessionId;
-            exploreReq.SequenceNumber = GetNextSequenceNumber(exploreReq.FunctionCode);
-            exploreReq.IntegrityId = GetNextIntegrityId(exploreReq.FunctionCode);
             exploreReq.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 1;
@@ -182,9 +175,6 @@ namespace S7CommPlusDriver
             #region Explore AlarmTextLists
 
             exploreReq = new ExploreRequest(ProtocolVersion.V2);
-            exploreReq.SessionId = m_SessionId;
-            exploreReq.SequenceNumber = GetNextSequenceNumber(exploreReq.FunctionCode);
-            exploreReq.IntegrityId = GetNextIntegrityId(exploreReq.FunctionCode);
             exploreReq.ExploreId = 0x8a360000 + (ushort)languageId; // There may be several languages, add language ID (e.g. 1031 = german / de-DE)
             exploreReq.ExploreRequestId = Ids.None;
             exploreReq.ExploreChildsRecursive = 0;

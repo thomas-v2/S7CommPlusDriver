@@ -21,10 +21,6 @@ namespace S7CommPlusDriver
 {
     public class SetMultiVariablesRequest : IS7pSendableObject
     {
-        public readonly ushort FunctionCode = Functioncode.SetMultiVariables;
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         byte TransportFlags = 0x34;
 
         public UInt32 InObjectId;
@@ -48,12 +44,17 @@ namespace S7CommPlusDriver
         public List<ItemAddress> AddressListVar = new List<ItemAddress>();
         public List<PValue> ValueList = new List<PValue>();
 
-        public bool WithIntegrityId = true;
-        public UInt32 IntegrityId;
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.SetMultiVariables; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public SetMultiVariablesRequest(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = true;
         }
 
         public byte GetProtocolVersion()
