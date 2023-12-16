@@ -21,14 +21,12 @@ namespace S7CommPlusDriver
 {
     public class ExploreRequest : IS7pRequest
     {
-        byte TransportFlags = 0x34; // oder 0x36???
+        byte TransportFlags = 0x34; // or 0x36???
         public UInt32 ExploreId;
         public UInt32 ExploreRequestId;
         public byte ExploreChildsRecursive;
         public byte ExploreParents;
-
         public ValueStruct FilterData;
-
         public List<UInt32> AddressList = new List<UInt32>();
 
         public uint SessionId { get; set; }
@@ -64,26 +62,25 @@ namespace S7CommPlusDriver
             ret += S7p.EncodeUInt32(buffer, ExploreId);
             ret += S7p.EncodeUInt32Vlq(buffer, ExploreRequestId);
             ret += S7p.EncodeByte(buffer, ExploreChildsRecursive);
-            ret += S7p.EncodeByte(buffer, 1);                                   // Unbekannt 0 oder 1?
+            ret += S7p.EncodeByte(buffer, 1);                                   // unknown 0 or 1?
             ret += S7p.EncodeByte(buffer, ExploreParents);
 
             if (FilterData != null)
             {
                 ret += S7p.EncodeByte(buffer, 1); // 1 object / value
                 
-                // TODO / Experimentell:
-                // Besonderheit hier, oder noch nicht ganz verstanden wie es funktioniert:
-                // Hier werden bei einer Struct die DatatypeFlags nicht mit in den Stream geschrieben.
-                // Oder das Byte davor gibt die Flags an? (so wird es aktuell in Wireshark angezeigt)
-                // Provisorisch wird das eine Byte was (vermutet) die Anzahl der Adressen angab, nicht
-                // in den Stream geschrieben.
+                // TODO / Experimental:
+                // Not 100% sure about how this has to be used:
+                // On a Struct, we don't write the datatypeflags into the stream.
+                // Maybe the byte before are the flags (which is the way I have it in the Wireshark dissector so far, which may be wrong).
+                // To get this working, the byte which gas given the number of addresses isn't written to the stream anymore.
                 // ret += S7p.EncodeByte(buffer, 0); // 0 address
                 ret += FilterData.Serialize(buffer);
             }
 
-            ret += S7p.EncodeByte(buffer, 0);                                   // Number of following Objects / unbekannt
+            ret += S7p.EncodeByte(buffer, 0);                                   // Number of following Objects / unknown
 
-            ret += S7p.EncodeUInt32Vlq(buffer, (UInt32)AddressList.Count);      // im Wireshark Dissector nur 1 Byte, vermutl. aber ein VLQ
+            ret += S7p.EncodeUInt32Vlq(buffer, (UInt32)AddressList.Count);      // in Wireshark Dissector only 1 Byte, but maybe a VLQ
             foreach (UInt32 id in AddressList)
             {
                 ret += S7p.EncodeUInt32Vlq(buffer, id);
@@ -92,10 +89,10 @@ namespace S7CommPlusDriver
             {
                 ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
             }
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
-            // Plcsim V13 mit Integrity Id benötigt hier 5 Bytes, mit nur 4 funktioniert es hier nicht (keine Antwort).
-            // Mit meiner 1200er FW2.2 funktioniert es hingegen auch mit 4.
+            // Plcsim V13 with Integrity Id needs here 5 Bytes, with 4 doesn't work (not responding).
+            // But with my old 1200er FW2.2 it's still working with 4.
             ret += S7p.EncodeByte(buffer, 0);
 
             return ret;

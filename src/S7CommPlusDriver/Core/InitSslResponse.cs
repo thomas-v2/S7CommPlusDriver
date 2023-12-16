@@ -47,8 +47,7 @@ namespace S7CommPlusDriver
             ret += S7p.DecodeUInt64Vlq(buffer, out ReturnValue);
             if ((ReturnValue & 0x4000000000000000) > 0) // Error Extension
             {
-                // Objekt nur dekodieren, aber z.Zt. nicht weiter nutzen weil Funktion unbekannt
-                // evtl. gehört das Objekt zur Fehlermeldung an sich um mehr Details zum Fehler zu übermitteln.
+                // Decode the error object, but don't use any informations from it. Must be processed on a higher level.
                 PObject errorObject = new PObject();
                 ret += S7p.DecodeObject(buffer, ref errorObject);
             }
@@ -76,7 +75,7 @@ namespace S7CommPlusDriver
             byte opcode;
             UInt16 function;
             UInt16 reserved;
-            // ProtocolVersion wird vorab als ein Byte in den Stream geschrieben, Sonderbehandlung
+            // Special handling of ProtocolVersion, which is written to the stream before
             S7p.DecodeByte(pdu, out protocolVersion);
             S7p.DecodeByte(pdu, out opcode);
             if (opcode != Opcode.Response)

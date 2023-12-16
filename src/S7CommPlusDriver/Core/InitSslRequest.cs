@@ -53,7 +53,7 @@ namespace S7CommPlusDriver
             ret += S7p.EncodeUInt32(buffer, SessionId);
             ret += S7p.EncodeByte(buffer, TransportFlags);
 
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
 
             return ret;

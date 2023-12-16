@@ -22,7 +22,7 @@ namespace S7CommPlusDriver
     class GetMultiVariablesRequest : IS7pRequest
     {
         byte TransportFlags = 0x34;
-        public UInt32 LinkId = 0;       // für Variablen lesen = 0
+        public UInt32 LinkId = 0;       // for reading variables, this should be 0
         public List<ItemAddress> AddressList = new List<ItemAddress>();
 
         public uint SessionId { get; set; }
@@ -74,7 +74,7 @@ namespace S7CommPlusDriver
             {
                 ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
             }
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
 
             return ret;

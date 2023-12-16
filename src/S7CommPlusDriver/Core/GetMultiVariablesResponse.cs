@@ -117,7 +117,7 @@ namespace S7CommPlusDriver
             byte opcode;
             UInt16 function;
             UInt16 reserved;
-            // ProtocolVersion wird vorab als ein Byte in den Stream geschrieben, Sonderbehandlung
+            // Special handling of ProtocolVersion, which is written to the stream before
             S7p.DecodeByte(pdu, out protocolVersion);
             S7p.DecodeByte(pdu, out opcode);
             if (opcode != Opcode.Response)

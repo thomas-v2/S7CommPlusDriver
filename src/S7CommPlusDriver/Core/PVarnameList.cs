@@ -41,11 +41,11 @@ namespace S7CommPlusDriver
                 do
                 {
                     name = String.Empty;
-                    // Laenge eines Namens max. 128 Zeichen
+                    // Length of a name is max. 128 chars
                     ret += S7p.DecodeByte(buffer, out namelen);
                     ret += S7p.DecodeWString(buffer, namelen, out name);
                     Names.Add(name);
-                    // Noch 1 Byte mit 0 am Ende. Zusätzliche Null-Terminierung des Strings, oder für weitere Funktion?
+                    // Additional 1 Byte with 0 at the end. Why Null termination when the length is given? I don't know...
                     ret += S7p.DecodeByte(buffer, out unknown2);
                 } while (ret < maxret);
                 ret += S7p.DecodeUInt16(buffer, out blocklen);

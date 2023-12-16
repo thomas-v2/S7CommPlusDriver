@@ -3,15 +3,12 @@ using System.Text;
 
 namespace S7CommPlusDriver.ClientApi
 {
-    /* Ideen:
-     * - Initialwert im Konstruktor (Optional)
-     * - Die verschiedenen SPS-Variablentypen auf den jeweils größten
-     *   .Net Typen vereinheitlichen und somit die Anzahl verringern.
-     *   Beispielsweise bei den Ganzzahltypen nur noch 64Bit Signed/Unsigned
-     *
-     * Viele Datentypen unterscheiden sich nur in den übertragenen Typen.
-     * Jedoch ganz spezielle Besonderheiten bei String, WString, Datum/Zeiten usw., ansonsten ließe sich das
-     * generisch lösen anstatt jeden Typ explizit auszuprogrammieren.
+    /* Ideas for improvement:
+     * - Optional initial value in constructor
+     * - Uniform the different PLC datatypes on the biggest .Net type,
+     *   to reduce the amount of types (e.g. on integer types only 64 bit).
+     * Many datatypes differ only by the type in the protocol.
+     * But there's some special handling needed for type like String, WString, date/time etc.
      */
     public abstract class PlcTag
     {
@@ -27,7 +24,7 @@ namespace S7CommPlusDriver.ClientApi
             Datatype = softdatatype;
             Quality = PlcTagQC.TAG_QUALITY_WAITING_FOR_INITIAL_DATA;
         }
-        // TODO: Dürfte nur für PlcTags sichtbar sein
+        // TODO: Should be only accessible for PlcTags
         public abstract void ProcessRead(object obj, UInt64 error);
 
         protected static int CheckErrorAndType(ulong error, object valueObj, Type checkType)
@@ -66,7 +63,6 @@ namespace S7CommPlusDriver.ClientApi
         }
     }
 
-    //------------------------------------------------------------------------------------------------
     public class PlcTagBool : PlcTag
     {
         bool Value;
@@ -314,10 +310,9 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagDate : PlcTag
     {
-        // Gibt die Anzahl Tage vom 1.1.1990 an.
-        // .Net besitzt in dieser Version keinen Datentyp der nur das Datum oder nur die Zeit beinhaltet.
-        // TODO: Entweder einen eigenen Datentyp generieren, das als UInt-Wert belassen, oder so wie jetzt als Datetime?
-        // Wobei das and DateTime eigentlich nicht richtig ist. In .Net 6 soll es ein DateOnly geben?
+        // Specifies the number of days from January 1, 1990.
+        // .Net has no type with only date or only time
+        // TODO: Switch to .Net 6 (for DateOnly) or stay just as UInt?
 
         DateTime Value = new DateTime(1990, 1, 1);
 
@@ -351,9 +346,8 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagTimeOfDay : PlcTag
     {
-        // TODO: Gleiches wie bei Date, gibt es in .Net keinen Typ der nur die Uhrzeit beinhaltet, bzw. erst bei .Net 6.
-        // Format: 01:02:03 Uhr = 3723000 Anzahl Millisekunden seit 0 Uhr
-
+        // TODO: .Net has no type with only date or only time
+        // Specification: 01:02:03 = 3723000 number of milliseconds since 00:00:00
         uint Value;
 
         public PlcTagTimeOfDay(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -403,7 +397,7 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagTime: PlcTag
     {
-        int Value; // Anzahl Millisekunden, mit Vorzeichen
+        int Value; // In milliseconds, with sign
 
         public PlcTagTime(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
@@ -469,12 +463,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagS5Time : PlcTag
     {
-        // Aufbau S5Time:
-        // Bits 15, 14: irrelevant
-        // Bits 13, 12: Zeitbasis binär, 00=10ms, 01=100ms, 10=1s, 11=10s
-        // Bits 11..0: Zeitwert im BCD-Format (0 bis 999)
-        // S5Time_9S_990MS         <Value type="Word">2457</Value>
-        // S5Time_2H_46M_30S_0MS    <Value type="Word">14745</Value>
+        // Specification S5Time:
+        // Bits 15, 14: not used
+        // Bits 13, 12: time base in binary, 00=10ms, 01=100ms, 10=1s, 11=10s
+        // Bits 11..0: time values BCD coded (0 to 999)
+        // S5Time_9S_990MS = <Value type="Word">2457</Value>
+        // S5Time_2H_46M_30S_0MS = <Value type="Word">14745</Value>
         ushort TimeValue;
         ushort TimeBase;
 
@@ -508,7 +502,7 @@ namespace S7CommPlusDriver.ClientApi
         public override string ToString()
         {
             string s = String.Empty;
-            // Vorerst alles auf Millisekunden normieren
+            // Scale down to milliseconds
             switch(TimeBase)
             {
                 case 0:
@@ -532,7 +526,7 @@ namespace S7CommPlusDriver.ClientApi
     {
         /* BCD coded:
          * YYMMDDhhmmssuuuQ
-         * uuu = Millisekunden
+         * uuu = milliseconds
          * Q = Weekday 1=Su, 2=Mo, 3=Tu, 4=We, 5=Th, 6=Fr, 7=Sa
          */
         DateTime Value = new DateTime(1990, 1, 1);
@@ -1030,8 +1024,8 @@ namespace S7CommPlusDriver.ClientApi
 
         private string ValueAsString()
         {
-            // TODO: Duplikat von ToString() von ValueTimespan.
-            // Dort gibt es darum herum aber ein XML Element.
+            // TODO: Duplicate of ToString() from ValueTimespan.
+            // But that returns an additional XML element around the raw value.
             string str;
             long[] divs = { 86400000000000, 3600000000000, 60000000000, 1000000000, 1000000, 1000, 1 };
             string[] vfmt = { "{0}d", "{0:00}h", "{0:00}m", "{0:00}s", "{0:000}ms", "{0:000}us", "{0:000}ns" };
@@ -1089,8 +1083,8 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLTOD : PlcTag
     {
-        // TODO: Wie bei den 32 Bit Typen Date/TOD, gibt es in .Net keinen Typ der nur die Uhrzeit beinhaltet, bzw. erst bei .Net 6.
-        // Anzahl Nanosekunden seit 0 Uhr
+        // TODO: Like the 32 Bit Types Date/TOD, in .Net there's not type for date / time only. Only in .Net 6.
+        // Specification: Number of nanoseconds since 00:00:00.
         ulong Value;
 
         public PlcTagLTOD(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1158,8 +1152,8 @@ namespace S7CommPlusDriver.ClientApi
 
         private string ValueAsString()
         {
-            // TODO: Duplikat von ToString() von ValueTimestamp.
-            // Dort gibt es darum herum aber ein XML Element.
+            // TODO: Duplicate of ToString() from ValueTimespan.
+            // But that returns an additional XML element around the raw value.
             DateTime dt = new DateTime(1970, 1, 1);
             ulong v, ns;
             string fmt;
@@ -1203,8 +1197,7 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagDTL : PlcTag
     {
-        // TODO: Einheitliche Typen über alle Zeitformate einsetzen.
-        // Leider existiert unter .Net kein Typ mit Nanosekunden-Auflösung.
+        // TODO: Unify all date / time datatypes
         byte[] Value = new byte[12];
 
         public PlcTagDTL(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1214,10 +1207,10 @@ namespace S7CommPlusDriver.ClientApi
             if (CheckErrorAndType(error, valueObj, typeof(ValueStruct)) == 0)
             {
                 var struct_val = (ValueStruct)valueObj;
-                // Der Wert ist die ID mit der Typbeschreibung
-                // Für DTL 33554499 = TI_LIB.SimpleType.67
-                // Dann folgt eine PackedStruct, mit Interface timestamp, transportflags, und einem ByteArray mit 12 bytes.
-                // Aus den Arraywerten wieder die Einzelwertezusammensetzen:
+                // That value is the ID which has the type description
+                // E.g. DTL 33554499 = TI_LIB.SimpleType.67
+                // Then comes a PackedStruct, with Interface timestamp, transportflags, and a ByteArray with 12 bytes.
+                // Generate the separate values back from the array:
                 // 0, 1: YEAR, UInt
                 // 2: MONTH, USInt
                 // 3: DAY, USInt

@@ -18,15 +18,6 @@ using System.Collections.Generic;
 
 namespace S7CommPlusDriver
 {
-    // Diese Klasse verwaltet übergeordnete Funktionen.
-    // Sie baut aus der Antwort zu einem ExploreRequest mit dem root node den kompletten Variablenhaushalt zusammen.
-    // ----DB100
-    //        +--Int
-    //        +--Real
-    //        +--Struct
-    //              +---Int
-    // ----MArea
-    //        +--Int
     public class Browser
     {
         VarRoot m_Root;
@@ -43,6 +34,7 @@ namespace S7CommPlusDriver
         {
             return m_varInfoList;
         }
+
         public void SetTypeInfoContainerObjects(List<PObject> objs)
         {
             m_objs = objs;
@@ -63,11 +55,9 @@ namespace S7CommPlusDriver
         public void BuildFlatList()
         {
             m_varInfoList = new List<VarInfo>();
-            // Liste aufbauen
             foreach (var node in m_Root.Nodes)
             {
-                // Ggf. leere Listen in einem Bereich wie Merker oder Timer nicht verarbeiten. Würde
-                // sonst zu einem Eintrag mit nur dem root-node führen.
+                // Skip empty lists in any area like marker or timers.
                 if (node.Childs.Count > 0)
                 {
                     AddFlatSubnodes(node, String.Empty, String.Empty);
@@ -89,8 +79,7 @@ namespace S7CommPlusDriver
                     break;
                 case eNodeType.StructArray:
                     names += node.Name;
-                    // TODO: Hier Besonderheit: Zwischen Array-Index und Zugriffs-ID steht noch eine 1.
-                    // Unklar ob die 1 fix ist, oder sich aus einem weiteren Wert ergibt.
+                    // TODO: Special: Between an array-indes and the access-id is an additional 1. It's not known if it's a fixed or variable value.
                     accessIds += "." + String.Format("{0:X}", node.AccessId + ".1");
                     break;
                 default:
@@ -101,7 +90,7 @@ namespace S7CommPlusDriver
             
             if (node.Childs.Count == 0)
             {
-                // Am Blatt des Baums angekommen
+                // We are at the leaf of our tree
                 if (IsSoftdatatypeSupported(node.Softdatatype))
                 {
                     var info = new VarInfo
@@ -146,7 +135,7 @@ namespace S7CommPlusDriver
             int[] MdimArrayLowerBounds;
 
             int element_index = 0;
-            // Sind in einem Bereich überhaupt keine Variablen vorhanden, dann ist diese Liste auch nicht vorhanden.
+            // If there are no variables at all in an area, then this list does not exist (no error).
             if (o.VartypeList != null)
             {
                 foreach (var vte in o.VartypeList.Elements)
@@ -158,22 +147,18 @@ namespace S7CommPlusDriver
                         AccessId = vte.LID
                     };
                     node.Childs.Add(subnode);
-                    // Arrays verarbeiten
-                    // TODO: Besonderheiten der Übersichtlichkeit wegen in eigene Methoden auslagern.
-
+                    // Process arrays. TODO: Put the processing to separate methods, to shorten this method.
                     if (vte.OffsetInfoType.Is1Dim())
                     {
-                        #region Struct/UDT oder flaches Array mit einer Dimension
-
+                        #region Struct/UDT or flat arrays with one dimension
                         var ioit = (IOffsetInfoType_1Dim)vte.OffsetInfoType;
                         ArrayElementCount = ioit.GetArrayElementCount();
                         ArrayLowerBounds = ioit.GetArrayLowerBounds();
 
-                        // Die Zugriffs-ID beginnt hier immer bei 0, unabhängig von Lowerbounds
+                        // The access-id always starts with 0, independant of lowerbounds
                         for (uint i = 0; i < ArrayElementCount; i++)
                         {
-                            // Struct/FB Array gesondert behandeln/kennzeichnen. Hier ist noch eine zusätzliche ID hinter Array Index
-                            // und Zugriffs-LID vorhanden.
+                            // Handle Struct/FB Array separate: Has an additional ID between array index and access-LID.
                             if (vte.OffsetInfoType.HasRelation())
                             {
                                 var arraynode = new Node
@@ -185,7 +170,7 @@ namespace S7CommPlusDriver
                                 };
                                 subnode.Childs.Add(arraynode);
 
-                                // Alle OffsetInfoTypes die hier kommen, sollten eine Relation Id besitzen.
+                                // All OffsetInfoTypes which occure at this point should have a Relation Id
                                 var ioit2 = (IOffsetInfoType_Relation)vte.OffsetInfoType;
 
                                 foreach (var ob in m_objs)
@@ -213,15 +198,14 @@ namespace S7CommPlusDriver
                     }
                     else if (vte.OffsetInfoType.IsMDim())
                     {
-                        #region Struct/UDT oder flaches Array mehr als einer Dimension
-
+                        #region Struct/UDT or flat array with more than one dimension
                         var ioit = (IOffsetInfoType_MDim)vte.OffsetInfoType;
                         ArrayElementCount = ioit.GetArrayElementCount();
                         ArrayLowerBounds = ioit.GetArrayLowerBounds();
                         MdimArrayElementCount = ioit.GetMdimArrayElementCount();
                         MdimArrayLowerBounds = ioit.GetMdimArrayLowerBounds();
 
-                        // Feststellen wie viele Dimensionen das Array besitzt
+                        // Determine the actual number of dimensions
                         int actdimensions = 0;
                         for (int d = 0; d < 6; d++)
                         {
@@ -262,7 +246,7 @@ namespace S7CommPlusDriver
                                 };
                                 subnode.Childs.Add(arraynode);
 
-                                // Alle OffsetInfoTypes die hier kommen, sollten eine Relation Id besitzen.
+                                // All OffsetInfoTypes which occure at this point should have a Relation Id
                                 var ioit2 = (IOffsetInfoType_Relation)vte.OffsetInfoType;
 
                                 foreach (var ob in m_objs)
@@ -286,7 +270,7 @@ namespace S7CommPlusDriver
                                 subnode.Childs.Add(arraynode);
                             }
                             xx[0]++;
-                            // Bei BBOOL-Arrays wird die ID bei Überlauf des kleinsten Array-Index immer auf ein Vielfaches von 8 gerundet.
+                            // BBOOL-Arrays on overflow the ID of the lowest array index goes only up to 8.
                             if (subnode.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL && xx[0] >= MdimArrayElementCount[0])
                             {
                                 if (MdimArrayElementCount[0] % 8 != 0)
@@ -309,7 +293,7 @@ namespace S7CommPlusDriver
                     }
                     else if (vte.OffsetInfoType.HasRelation())
                     {
-                        #region Struct / UDT / System-Biliotheks-Strukturen (DTL, IEC_TIMER, ...) aber keine Art von Array
+                        #region Struct / UDT / system library types (DTL, IEC_TIMER, ...) but not an array ...
                         var ioit = (IOffsetInfoType_Relation)vte.OffsetInfoType;
 
                         foreach (var ob in m_objs)
@@ -320,8 +304,7 @@ namespace S7CommPlusDriver
                                 break;
                             }
                         }
-                        // Es kann durchaus vorkommen, dass kein Eintrag gefunden wird, z.B. wenn ein Bereich wie Merker oder
-                        // Ausgänge leer ist. Darum nicht weiter als Fehler auswerten.
+                        // Empty areas are allowed, so don't return this as an error.
                         #endregion
                     }
                     element_index++;

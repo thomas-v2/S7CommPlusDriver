@@ -174,11 +174,11 @@ namespace OpenSsl
                     case Native.SSL_ERROR_ZERO_RETURN:
                     case Native.SSL_ERROR_NONE:
                     case Native.SSL_ERROR_WANT_READ:
-                        // Zustände die normal vorkommen können
+                        // States that can occur in a normal state
                         break;
                     default:
-                        // TOOO: Alle anderen Fehler die nicht auftreten sollten korrekt behandeln.
-                        // 5 mit SSL_ASYNC_PAUSED ist schon einmal aufgetreten
+                        // TOOO: Handle all other errors which don't should occur.
+                        // 5 with SSL_ASYNC_PAUSED has been seen...
                         Trace.WriteLine("OpenSSL HandleError: Error = " + error);
                         break;
                 }
@@ -321,7 +321,7 @@ namespace OpenSsl
             }
             else if (result == pBuffer.used)
             {
-                // Alle Daten aus dem Buffer wurden verwendet, kann neu genutzt werden.
+                // All data from buffer was uses, can be used for new data
             }
         }
 

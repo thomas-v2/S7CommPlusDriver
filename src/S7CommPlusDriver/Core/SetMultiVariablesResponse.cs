@@ -56,7 +56,7 @@ namespace S7CommPlusDriver
             {
                 ret += S7p.DecodeUInt64Vlq(buffer, out retval);
                 ErrorValues.Add(itemnr, retval);
-                ret += S7p.DecodeUInt32Vlq(buffer, out itemnr); /// ????? Ist das richtig?
+                ret += S7p.DecodeUInt32Vlq(buffer, out itemnr); /// TODO: Is this correct?
             }
             ret += S7p.DecodeUInt32Vlq(buffer, out uint iid);
             IntegrityId = iid;
@@ -93,7 +93,7 @@ namespace S7CommPlusDriver
             byte opcode;
             UInt16 function;
             UInt16 reserved;
-            // ProtocolVersion wird vorab als ein Byte in den Stream geschrieben, Sonderbehandlung
+            // Special handling of ProtocolVersion, which is written to the stream before
             S7p.DecodeByte(pdu, out protocolVersion);
             S7p.DecodeByte(pdu, out opcode);
             if (opcode != Opcode.Response)

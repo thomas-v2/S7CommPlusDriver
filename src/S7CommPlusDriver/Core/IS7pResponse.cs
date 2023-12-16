@@ -13,7 +13,6 @@
  /****************************************************************************/
 #endregion
 
-
 namespace S7CommPlusDriver
 {
     public interface IS7pResponse

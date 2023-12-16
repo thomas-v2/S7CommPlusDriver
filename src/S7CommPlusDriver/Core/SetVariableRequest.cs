@@ -58,12 +58,12 @@ namespace S7CommPlusDriver
 
             // Request set
             ret += S7p.EncodeUInt32(buffer, InObjectId);
-            ret += S7p.EncodeUInt32Vlq(buffer, 1); // Immer 1 (?)
+            ret += S7p.EncodeUInt32Vlq(buffer, 1); // Always 1 (?)
             ret += S7p.EncodeUInt32Vlq(buffer, Address);
             ret += Value.Serialize(buffer);
 
             ret += S7p.EncodeObjectQualifier(buffer);
-            // 1 Byte unbekannter Funktion
+            // 1 Byte unknown
             ret += S7p.EncodeByte(buffer, 0x00);
 
             if (WithIntegrityId)
@@ -71,7 +71,7 @@ namespace S7CommPlusDriver
                 ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
             }
 
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
 
             return ret;

@@ -90,7 +90,7 @@ namespace S7CommPlusDriver
             // Object 
             ret += RequestObject.Serialize(buffer);
 
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
             return ret;
         }

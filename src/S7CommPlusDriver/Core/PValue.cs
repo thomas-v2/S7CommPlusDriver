@@ -19,11 +19,7 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    // TODO:
-    // Sinnvoller wäre es die Array-Verarbeitung außerhalb der Klassen zu platzieren,
-    // da jetzt in jeder Array-Klasse viel duplizierter Code vorhanden ist.
-    //
-    // Ein S7String beim Variablen Browsen wird in der Antwort als USInt-Array übertragen!
+    // TODO: Maybe there's room for improvement, as the array classes duplicate many code of the base classes
     public abstract class PValue : IS7pSerialize
     {
         protected static byte FLAGS_ARRAY = 0x10;
@@ -48,8 +44,7 @@ namespace S7CommPlusDriver
             return ((DatatypeFlags & FLAGS_SPARSEARRAY) != 0);
         }
 
-        // TODO: Sollte wie Serialize die Länge zurückgeben??
-        // Wobei die Länge nie weiter benötigt wird, ggf. den Rückgabewert dann sinnvoller verwenden.
+        // TODO: Should return the length similar to Serialize? But we don't need the length any more
         public static PValue Deserialize(Stream buffer)
         {
             byte flags;
@@ -57,7 +52,7 @@ namespace S7CommPlusDriver
             S7p.DecodeByte(buffer, out flags);
             S7p.DecodeByte(buffer, out datatype);
 
-            // Sparsearray ist komplett anders, wie auch Adressarray bei Struct
+            // Sparsearray and Adressarray of Struct are different
             if (flags == FLAGS_ARRAY || flags == FLAGS_ADDRESSARRAY)
             {
                 switch (datatype)
@@ -560,10 +555,10 @@ namespace S7CommPlusDriver
         }
     }
     
-    // Sparsearray ist vom Aufbau her ähnlich wie das Lesen einer Struct.
-    // Alle Elemente in der Liste sind vom Eintrag key,value. Value ist immer von diesem Typ.
-    // Die Liste ist dabei Null-Terminiert.
-    // Beispiel: Lesen von 1037 (SystemLimits) via GetVarSubStreamed in der Response.
+    // The construction of Sparsearray is almost similar to reading a struct.
+    // All elementy are kind of key,value. And Value is of the selected type.
+    // The list is terminated by Null.
+    // E.g.: Reading 1037 (SystemLimits) via GetVarSubStreamed
     public class ValueUDIntSparseArray : PValue
     {
         Dictionary<UInt32, UInt32> Value;
@@ -1037,10 +1032,6 @@ namespace S7CommPlusDriver
         }
     }
 
-    // Sparsearray ist vom Aufbau her ähnlich wie das Lesen einer Struct.
-    // Alle Elemente in der Liste sind vom Eintrag key,value. Value ist immer von diesem Typ.
-    // Die Liste ist dabei Null-Terminiert.
-    // Beispiel: Lesen von 1037 (SystemLimits) via GetVarSubStreamed in der Response.
     public class ValueDIntSparseArray : PValue
     {
         Dictionary<UInt32, Int32> Value;
@@ -2184,7 +2175,7 @@ namespace S7CommPlusDriver
         {
             BlobRootId = blobRootId;
             DatatypeFlags = flags;
-            // Im Protokoll ist ein Blob mit Größe Null erlaubt
+            // A blob with size zero is allowed and no error.
             if (value != null)
             {
                 Value = new byte[value.Length];
@@ -2622,10 +2613,8 @@ namespace S7CommPlusDriver
             if ((value > 0x90000000 && value < 0x9fffffff) || (value > 0x02000000 && value < 0x02ffffff))
             {
                 // Packed Struct
-                // TODO: 
-                // Es handelt sich hierbei um System-Datentypen. Entweder es muss der Aufbau online aus der CPU angefragt werden,
-                // oder vorher bekannt sein. Erkennung ist anhand value des ValueStruct möglich.
-                // Daten vorerst hier als Bytearray abglegen, so werden sie auch übertragen. Interpretation bei Bedarf später.
+                // These are system datatypes. Either the informations about them must be read out of the CPU before,
+                // or must be known before. As the data are transmitted as Bytearrays, return them in this type. Interpretation must be done later.
                 stru = new ValueStruct(value);
 
                 UInt64 interfaceTimestamp;
@@ -2636,7 +2625,7 @@ namespace S7CommPlusDriver
                 S7p.DecodeUInt32Vlq(buffer, out elementcount);
                 if ((transp_flags & 0x400) != 0)
                 {
-                    // Hier gibt es eine zusätzliche Zählung, warum auch immer...
+                    // Here's an additional counter value, for whatever reason...
                     S7p.DecodeUInt32Vlq(buffer, out elementcount);
                 }
                 

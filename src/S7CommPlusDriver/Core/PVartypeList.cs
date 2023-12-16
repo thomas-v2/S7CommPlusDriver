@@ -34,7 +34,7 @@ namespace S7CommPlusDriver
 
             ret += S7p.DecodeUInt16(buffer, out blocklen);
             maxret = ret + blocklen;
-            // Diese ID ist nur im ersten Block vorhanden
+            // This ID occurs only on the first block.
             ret += S7p.DecodeUInt32LE(buffer, out FirstId);
 
             while (blocklen > 0)
@@ -167,16 +167,14 @@ namespace S7CommPlusDriver
         public int Deserialize(Stream buffer)
         {
             int ret = 0;
-
             byte bval = 0;
             int offsetinfotype;
 
             ret += S7p.DecodeUInt32LE(buffer, out LID);
             ret += S7p.DecodeUInt32LE(buffer, out SymbolCrc);
             ret += S7p.DecodeByte(buffer, out bval);
-            Softdatatype = bval;    // Um die Typen gleich zu halten
+            Softdatatype = bval;    // For keepint the type similar
             ret += S7p.DecodeUInt16(buffer, out AttributeFlags);
-
 
             offsetinfotype = ((AttributeFlags & S7COMMP_TAGDESCR_ATTRIBUTE2_OFFSETINFOTYPE) >> 12);
 
@@ -202,6 +200,4 @@ namespace S7CommPlusDriver
             return s;
         }
     }
-}
-
-    
+}    

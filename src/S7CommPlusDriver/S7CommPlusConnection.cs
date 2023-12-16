@@ -314,7 +314,7 @@ namespace S7CommPlusDriver
         private int ReadSystemLimits()
         {
             // Read SystemLimits
-            // Assumption (so far, because for all CPUs which have be seen both values wer the same):
+            // Assumption (so far, because for all CPUs which have be seen both values were the same):
             // 1000 = Number for Reading
             // 1001 = Number for Writing
             int res;

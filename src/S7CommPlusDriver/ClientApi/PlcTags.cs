@@ -116,7 +116,7 @@ namespace S7CommPlusDriver.ClientApi
                 case Softdatatype.S7COMMP_SOFTDATATYPE_WSTRING:
                     return new PlcTagWString(name, address, softdatatype);
                 //case Softdatatype.S7COMMP_SOFTDATATYPE_VARIANT:
-                //-> Variant wird auch im Instanz-DB nicht als Variable angelegt!
+                //-> Variant isn't added int the instance-db as a variable!
                 case Softdatatype.S7COMMP_SOFTDATATYPE_LTIME:
                     return new PlcTagLTime(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_LTOD:

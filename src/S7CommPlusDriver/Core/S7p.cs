@@ -349,7 +349,7 @@ namespace S7CommPlusDriver
                     break;
                 }
             }
-            if (cont > 0)         /* 8*7 bit + 8 bit = 64 bit -> Sonderfall im letzten Octett! */
+            if (cont > 0)         /* 8*7 bit + 8 bit = 64 bit -> Special case in last octet! */
             {
                 octet = (byte)buffer.ReadByte();
                 length++;
@@ -391,7 +391,7 @@ namespace S7CommPlusDriver
             }
             if (cont > 0)
             {
-                // 8*7 bit + 8 bit = 64 bit -> Sonderfall im letzten Octett!
+                // 8*7 bit + 8 bit = 64 bit -> Special case in last octet!
                 octet = (byte)buffer.ReadByte();
                 length++;
                 val <<= 8;
@@ -449,7 +449,7 @@ namespace S7CommPlusDriver
             v[2] = (byte)buffer.ReadByte();
             v[1] = (byte)buffer.ReadByte();
             v[0] = (byte)buffer.ReadByte();
-            value = BitConverter.ToSingle(v, 0); ;
+            value = BitConverter.ToSingle(v, 0);
             return 4;
         }
 
@@ -518,7 +518,7 @@ namespace S7CommPlusDriver
 
         ///////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////
-        // High Level Decode/Encode Funktionen
+        // High Level Decode/Encode methods
 
         public static int DecodeObject(System.IO.Stream buffer, ref PObject obj)
         {
@@ -560,8 +560,7 @@ namespace S7CommPlusDriver
                         obj.AddAttribute(id, PValue.Deserialize(buffer));
                         break;
                     case ElementID.StartOfTagDescription:
-                        // Nur 1200 FW2 und evtl. älter. Unterstützt definitiv kein TLS
-
+                        // Skip, only 1200 FW2 and maybe older, which definitively don't support TLS
                         break;
                     case ElementID.VartypeList:
                         PVartypeList typelist = new PVartypeList();

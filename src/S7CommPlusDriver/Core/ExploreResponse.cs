@@ -47,13 +47,13 @@ namespace S7CommPlusDriver
             // Response Set
             ret += S7p.DecodeUInt64Vlq(buffer, out ReturnValue);
             ret += S7p.DecodeUInt32(buffer, out ExploreId);
-            // TODO: Hier ist noch eine Sonderfunktion bei allen anderen CPUs (1500 oder Protoversion 3) notwendig!
+
             if (WithIntegrityId)
             {
                 ret += S7p.DecodeUInt32Vlq(buffer, out uint iid);
                 IntegrityId = iid;
             }
-            // Siehe Kommentar im Wireshark Code
+            // See comment in Wireshark dissector code
             ret += S7p.DecodeObject(buffer, ref ResponseObject);
             return ret;
         }
@@ -80,7 +80,7 @@ namespace S7CommPlusDriver
             byte opcode;
             UInt16 function;
             UInt16 reserved;
-            // ProtocolVersion wird vorab als ein Byte in den Stream geschrieben, Sonderbehandlung
+            // Special handling of ProtocolVersion, which is written to the stream before
             S7p.DecodeByte(pdu, out protocolVersion);
             S7p.DecodeByte(pdu, out opcode);
             if (opcode != Opcode.Response)
