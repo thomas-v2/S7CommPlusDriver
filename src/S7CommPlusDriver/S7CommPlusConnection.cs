@@ -28,15 +28,11 @@ namespace S7CommPlusDriver
         private MemoryStream m_ReceivedStream;
         private bool m_ReceivedNeedMorePdus;
         private bool m_NewS7CommPlusReceived;
-
         private UInt32 m_SessionId;
         private int m_ReadTimeout = 5000;
-
-        
         private UInt16 m_SequenceNumber = 0;
         private UInt32 m_IntegrityId = 0;
         private UInt32 m_IntegrityId_Set = 0;
-        
         // Initialize the max values to 20, 50 is possibly the lowest value.
         // The actual supported value is read after connection setup via a ReadRequest, which returns a DInt.
         private Int32 m_MaxTagsPerReadRequestLimit = 20;
@@ -83,11 +79,9 @@ namespace S7CommPlusDriver
                     {
                         m_IntegrityId_Set++;
                     }
-
                     ret = m_IntegrityId_Set;
                     break;
                 default:
-
                     if (m_IntegrityId == UInt32.MaxValue)
                     {
                         m_IntegrityId = 0;
@@ -96,7 +90,6 @@ namespace S7CommPlusDriver
                     {
                         m_IntegrityId++;
                     }
-
                     ret = m_IntegrityId;
                     break;
             }
@@ -121,7 +114,6 @@ namespace S7CommPlusDriver
             }
             m_NewS7CommPlusReceived = false;
         }
-
 
         private int SendS7plusFunctionObject(IS7pRequest funcObj)
         {
@@ -455,7 +447,6 @@ namespace S7CommPlusDriver
             m_SessionId = createObjectResponse.ObjectIds[0];
             Console.WriteLine("S7CommPlusConnection - Connect: Using SessionId=0x" + String.Format("{0:X04}", m_SessionId));
 
-            ////////////////////////////////////////////////
             // Evaluate Struct 314
             PValue sval = createObjectResponse.ResponseObject.GetAttribute(Ids.ServerSessionVersion);
             ValueStruct serverSession = (ValueStruct)sval;
@@ -572,7 +563,6 @@ namespace S7CommPlusDriver
                 {
                     errors[chunk_startIndex + (int)ev.Key - 1] = ev.Value;
                 }
-
                 chunk_startIndex += count_perChunk;
 
             } while (chunk_startIndex < addresslist.Count);
@@ -646,7 +636,6 @@ namespace S7CommPlusDriver
         public int SetPlcOperatingState(Int32 state)
         {
             int res;
-
             SetVariableRequest setVariableRequest = new SetVariableRequest(ProtocolVersion.V2);
             setVariableRequest.InObjectId = Ids.NativeObjects_theCPUexecUnit_Rid;
             setVariableRequest.Address = Ids.CPUexecUnit_operatingStateReq;
