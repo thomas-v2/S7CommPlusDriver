@@ -44,13 +44,30 @@ namespace S7CommPlusDriver
             return ((DatatypeFlags & FLAGS_SPARSEARRAY) != 0);
         }
 
-        // TODO: Should return the length similar to Serialize? But we don't need the length any more
+        /// <summary>
+        /// Deserializes the buffer to the protocol values
+        /// </summary>
+        /// <param name="buffer">Stream of bytes from the network</param>
+        /// <param name="disableVlq">If true, the variable length encoding is disables for all underlying values (so far only neccessary on SystemEvent)</param>
+        /// <returns>The protocol value</returns>
         public static PValue Deserialize(Stream buffer, bool disableVlq = false)
         {
             byte flags;
             byte datatype;
-            S7p.DecodeByte(buffer, out flags);
-            S7p.DecodeByte(buffer, out datatype);
+
+            if (!disableVlq)
+            {
+                S7p.DecodeByte(buffer, out flags);
+                S7p.DecodeByte(buffer, out datatype);
+            }
+            else
+            {
+                // If VLQ is disabled, there are two additional bytes we just skip here.
+                S7p.DecodeByte(buffer, out _);
+                S7p.DecodeByte(buffer, out flags);
+                S7p.DecodeByte(buffer, out _);
+                S7p.DecodeByte(buffer, out datatype);
+            }
 
             // Sparsearray and Adressarray of Struct are different
             if (flags == FLAGS_ARRAY || flags == FLAGS_ADDRESSARRAY)
@@ -503,7 +520,14 @@ namespace S7CommPlusDriver
         public static ValueUDInt Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32 value;
-            S7p.DecodeUInt32Vlq(buffer, out value);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out value);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out value);
+            }
             return new ValueUDInt(value, flags);
         }
     }
@@ -698,7 +722,14 @@ namespace S7CommPlusDriver
         public static ValueULInt Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt64 value;
-            S7p.DecodeUInt64Vlq(buffer, out value);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt64Vlq(buffer, out value);
+            }
+            else
+            {
+                S7p.DecodeUInt64(buffer, out value);
+            }
             return new ValueULInt(value, flags);
         }
     }
