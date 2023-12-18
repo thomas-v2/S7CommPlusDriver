@@ -62,5 +62,6 @@ namespace S7CommPlusDriver
         public const int ASObjectES_Comment = 4288;
         public const int MultipleSTAI_Class_Rid = 7854;
         public const int MultipleSTAI_STAIs = 7859;
+        public const int ReturnValue = 40305;
     }
 }

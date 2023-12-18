@@ -245,23 +245,28 @@ namespace S7CommPlusDriver
                 // Special handling for SystemEvent 0xfe PDUs:
                 // This only confirms a few data, but also reports major protocol errors (e.g.incorrect sequence numbers).
                 // The confirms can be discarded (for now), but the errors are relevant, because a connection termination is neccessary.
-                // On the confirms, the datalength is always 16 bytes. If it's more, then it's an error.
                 // As we don't have a trailer on this types, it's not possible that they are transmitted as fragments.
                 if (protoVersion == ProtocolVersion.SystemEvent)
                 {
                     Console.WriteLine("S7CommPlusConnection - OnDataReceived: ProtocolVersion 0xfe SystemEvent received");
                     m_ReceivedStream.Write(PDU, pos, s7HeaderDataLen);
                     pos += s7HeaderDataLen;
-                    if (s7HeaderDataLen > 16)
+                    // Create SystemEventObject
+                    m_ReceivedNeedMorePdus = false;
+                    m_ReceivedStream.Position = 0;
+                    m_NewS7CommPlusReceived = false;
+
+                    var sysevt = SystemEvent.DeserializeFromPdu(m_ReceivedStream);
+                    if (sysevt.IsFatalError())
                     {
-                        Console.WriteLine("S7CommPlusConnection - OnDataReceived: SystemEvent with s7HeaderDataLen > 16, possibly ERROR.");
+                        Console.WriteLine("S7CommPlusConnection - OnDataReceived: SystemEvent has fatal error");
                         // Termination neccessary
                         m_LastError = S7Consts.errIsoInvalidPDU;
                     }
-                    // Discard all data
-                    m_ReceivedNeedMorePdus = false;
-                    m_ReceivedStream.Position = 0;    // Set position back to zero, ready for readout
-                    m_NewS7CommPlusReceived = false;
+                    else
+                    {
+                        Console.WriteLine("S7CommPlusConnection - OnDataReceived: SystemEvent with non fatal error, do nothing");
+                    }
                 }
                 else
                 {
