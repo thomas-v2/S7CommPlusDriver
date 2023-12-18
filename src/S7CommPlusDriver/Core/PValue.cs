@@ -45,7 +45,7 @@ namespace S7CommPlusDriver
         }
 
         // TODO: Should return the length similar to Serialize? But we don't need the length any more
-        public static PValue Deserialize(Stream buffer)
+        public static PValue Deserialize(Stream buffer, bool disableVlq = false)
         {
             byte flags;
             byte datatype;
@@ -58,46 +58,46 @@ namespace S7CommPlusDriver
                 switch (datatype)
                 {
                     case Datatype.USInt:
-                        return ValueUSIntArray.Deserialize(buffer, flags);
+                        return ValueUSIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.UInt:
-                        return ValueUIntArray.Deserialize(buffer, flags);
+                        return ValueUIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.UDInt:
-                        return ValueUDIntArray.Deserialize(buffer, flags);
+                        return ValueUDIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.ULInt:
-                        return ValueUDIntArray.Deserialize(buffer, flags);
+                        return ValueUDIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.SInt:
-                        return ValueSIntArray.Deserialize(buffer, flags);
+                        return ValueSIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Int:
-                        return ValueIntArray.Deserialize(buffer, flags);
+                        return ValueIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.DInt:
-                        return ValueDIntArray.Deserialize(buffer, flags);
+                        return ValueDIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.LInt:
-                        return ValueLIntArray.Deserialize(buffer, flags);
+                        return ValueLIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Byte:
-                        return ValueByteArray.Deserialize(buffer, flags);
+                        return ValueByteArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Word:
-                        return ValueWordArray.Deserialize(buffer, flags);
+                        return ValueWordArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.DWord:
-                        return ValueDWordArray.Deserialize(buffer, flags);
+                        return ValueDWordArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.LWord:
-                        return ValueLWordArray.Deserialize(buffer, flags);
+                        return ValueLWordArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Real:
-                        return ValueRealArray.Deserialize(buffer, flags);
+                        return ValueRealArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.LReal:
-                        return ValueLRealArray.Deserialize(buffer, flags);
+                        return ValueLRealArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.RID:
-                        return ValueRIDArray.Deserialize(buffer, flags);
+                        return ValueRIDArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.AID:
-                        return ValueAIDArray.Deserialize(buffer, flags);
+                        return ValueAIDArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Blob:
-                        return ValueBlobArray.Deserialize(buffer, flags);
+                        return ValueBlobArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Timestamp:
                         throw new NotImplementedException();
                     case Datatype.Timespan:
                         throw new NotImplementedException();
 
                     case Datatype.WString:
-                        return ValueWStringArray.Deserialize(buffer, flags);
+                        return ValueWStringArray.Deserialize(buffer, flags, disableVlq);
                     default:
                         throw new NotImplementedException();
                 }
@@ -107,13 +107,13 @@ namespace S7CommPlusDriver
                 switch (datatype)
                 {
                     case Datatype.DInt:
-                        return ValueDIntSparseArray.Deserialize(buffer, flags);
+                        return ValueDIntSparseArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.UDInt:
-                        return ValueUDIntSparseArray.Deserialize(buffer, flags);
+                        return ValueUDIntSparseArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Blob:
-                        return ValueBlobSparseArray.Deserialize(buffer, flags);
+                        return ValueBlobSparseArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.WString:
-                        return ValueWStringSparseArray.Deserialize(buffer, flags);
+                        return ValueWStringSparseArray.Deserialize(buffer, flags, disableVlq);
                     default:
                         throw new NotImplementedException();
                 }
@@ -131,17 +131,17 @@ namespace S7CommPlusDriver
                     case Datatype.UInt:
                         return ValueUInt.Deserialize(buffer, flags);
                     case Datatype.UDInt:
-                        return ValueUDInt.Deserialize(buffer, flags);
+                        return ValueUDInt.Deserialize(buffer, flags, disableVlq);
                     case Datatype.ULInt:
-                        return ValueULInt.Deserialize(buffer, flags);
+                        return ValueULInt.Deserialize(buffer, flags, disableVlq);
                     case Datatype.SInt:
                         return ValueSInt.Deserialize(buffer, flags);
                     case Datatype.Int:
                         return ValueInt.Deserialize(buffer, flags);
                     case Datatype.DInt:
-                        return ValueDInt.Deserialize(buffer, flags);
+                        return ValueDInt.Deserialize(buffer, flags, disableVlq);
                     case Datatype.LInt:
-                        return ValueLInt.Deserialize(buffer, flags);
+                        return ValueLInt.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Byte:
                         return ValueByte.Deserialize(buffer, flags);
                     case Datatype.Word:
@@ -157,19 +157,19 @@ namespace S7CommPlusDriver
                     case Datatype.Timestamp:
                         return ValueTimestamp.Deserialize(buffer, flags);
                     case Datatype.Timespan:
-                        return ValueTimespan.Deserialize(buffer, flags);
+                        return ValueTimespan.Deserialize(buffer, flags, disableVlq);
                     case Datatype.RID:
                         return ValueRID.Deserialize(buffer, flags);
                     case Datatype.AID:
-                        return ValueAID.Deserialize(buffer, flags);
+                        return ValueAID.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Blob:
-                        return ValueBlob.Deserialize(buffer, flags);
+                        return ValueBlob.Deserialize(buffer, flags, disableVlq);
                     case Datatype.WString:
-                        return ValueWString.Deserialize(buffer, flags);
+                        return ValueWString.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Variant:
                         throw new NotImplementedException();
                     case Datatype.Struct:
-                        return ValueStruct.Deserialize(buffer, flags);
+                        return ValueStruct.Deserialize(buffer, flags, disableVlq);
                     case Datatype.S7String:
                         throw new NotImplementedException();
                 }
@@ -337,11 +337,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueUSIntArray Deserialize(Stream buffer, byte flags)
+        public static ValueUSIntArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             byte[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new byte[size];
             for (int i = 0; i < size; i++)
             {
@@ -439,11 +446,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueUIntArray Deserialize(Stream buffer, byte flags)
+        public static ValueUIntArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt16[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new UInt16[size];
             for (int i = 0; i < size; i++)
             {
@@ -486,7 +500,7 @@ namespace S7CommPlusDriver
             return "<Value type=\"UDInt\">" + Value.ToString() + "</Value>";
         }
 
-        public static ValueUDInt Deserialize(Stream buffer, byte flags)
+        public static ValueUDInt Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32 value;
             S7p.DecodeUInt32Vlq(buffer, out value);
@@ -541,16 +555,29 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueUDIntArray Deserialize(Stream buffer, byte flags)
+        public static ValueUDIntArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
-            value = new UInt32[size];
-            for (int i = 0; i < size; i++)
+            if (!disableVlq)
             {
-                S7p.DecodeUInt32Vlq(buffer, out value[i]);
+                S7p.DecodeUInt32Vlq(buffer, out size);
+                value = new UInt32[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeUInt32Vlq(buffer, out value[i]);
+                }
             }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+                value = new UInt32[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeUInt32(buffer, out value[i]);
+                }
+            }
+            
             return new ValueUDIntArray(value, flags);
         }
     }
@@ -606,17 +633,30 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueUDIntSparseArray Deserialize(Stream buffer, byte flags)
+        public static ValueUDIntSparseArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Dictionary<UInt32, UInt32> value = new Dictionary<uint, uint>();
             UInt32 k = 0;
             UInt32 v = 0;
-            S7p.DecodeUInt32Vlq(buffer, out k);
-            while (k > 0)
+            if (!disableVlq)
             {
-                S7p.DecodeUInt32Vlq(buffer, out v);
-                value.Add(k, v);
                 S7p.DecodeUInt32Vlq(buffer, out k);
+                while (k > 0)
+                {
+                    S7p.DecodeUInt32Vlq(buffer, out v);
+                    value.Add(k, v);
+                    S7p.DecodeUInt32Vlq(buffer, out k);
+                }
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out k);
+                while (k > 0)
+                {
+                    S7p.DecodeUInt32(buffer, out v);
+                    value.Add(k, v);
+                    S7p.DecodeUInt32(buffer, out k);
+                }
             }
             return new ValueUDIntSparseArray(value, flags);
         }
@@ -655,7 +695,7 @@ namespace S7CommPlusDriver
             return "<Value type=\"ULInt\">" + Value.ToString() + "</Value>";
         }
 
-        public static ValueULInt Deserialize(Stream buffer, byte flags)
+        public static ValueULInt Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt64 value;
             S7p.DecodeUInt64Vlq(buffer, out value);
@@ -710,15 +750,27 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueULIntArray Deserialize(Stream buffer, byte flags)
+        public static ValueULIntArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt64[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
-            value = new UInt64[size];
-            for (int i = 0; i < size; i++)
+            if (!disableVlq)
             {
-                S7p.DecodeUInt64Vlq(buffer, out value[i]);
+                S7p.DecodeUInt32Vlq(buffer, out size);
+                value = new UInt64[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeUInt64Vlq(buffer, out value[i]);
+                }
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+                value = new UInt64[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeUInt64(buffer, out value[i]);
+                }
             }
             return new ValueULIntArray(value, flags);
         }
@@ -812,11 +864,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueSIntArray Deserialize(Stream buffer, byte flags)
+        public static ValueSIntArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             sbyte[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new sbyte[size];
             byte b;
             for (int i = 0; i < size; i++)
@@ -916,11 +975,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueIntArray Deserialize(Stream buffer, byte flags)
+        public static ValueIntArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Int16[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new Int16[size];
             for (int i = 0; i < size; i++)
             {
@@ -963,10 +1029,17 @@ namespace S7CommPlusDriver
             return "<Value type=\"DInt\">" + Value.ToString() + "</Value>";
         }
 
-        public static ValueDInt Deserialize(Stream buffer, byte flags)
+        public static ValueDInt Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Int32 value;
-            S7p.DecodeInt32Vlq(buffer, out value);
+            if (!disableVlq)
+            {
+                S7p.DecodeInt32Vlq(buffer, out value);
+            }
+            else
+            {
+                S7p.DecodeInt32(buffer, out value);
+            }
             return new ValueDInt(value, flags);
         }
     }
@@ -1018,15 +1091,27 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueDIntArray Deserialize(Stream buffer, byte flags)
+        public static ValueDIntArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Int32[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
-            value = new Int32[size];
-            for (int i = 0; i < size; i++)
+            if (!disableVlq)
             {
-                S7p.DecodeInt32Vlq(buffer, out value[i]);
+                S7p.DecodeUInt32Vlq(buffer, out size);
+                value = new Int32[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeInt32Vlq(buffer, out value[i]);
+                }
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+                value = new Int32[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeInt32(buffer, out value[i]);
+                }
             }
             return new ValueDIntArray(value, flags);
         }
@@ -1079,17 +1164,30 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueDIntSparseArray Deserialize(Stream buffer, byte flags)
+        public static ValueDIntSparseArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Dictionary<UInt32, Int32> value = new Dictionary<UInt32, Int32>();
             UInt32 k = 0;
             Int32 v = 0;
-            S7p.DecodeUInt32Vlq(buffer, out k);
-            while (k > 0)
+            if (!disableVlq)
             {
-                S7p.DecodeInt32Vlq(buffer, out v);
-                value.Add(k, v);
                 S7p.DecodeUInt32Vlq(buffer, out k);
+                while (k > 0)
+                {
+                    S7p.DecodeInt32Vlq(buffer, out v);
+                    value.Add(k, v);
+                    S7p.DecodeUInt32Vlq(buffer, out k);
+                }
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out k);
+                while (k > 0)
+                {
+                    S7p.DecodeInt32(buffer, out v);
+                    value.Add(k, v);
+                    S7p.DecodeUInt32(buffer, out k);
+                }
             }
             return new ValueDIntSparseArray(value, flags);
         }
@@ -1128,10 +1226,17 @@ namespace S7CommPlusDriver
             return "<Value type=\"LInt\">" + Value.ToString() + "</Value>";
         }
 
-        public static ValueLInt Deserialize(Stream buffer, byte flags)
+        public static ValueLInt Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Int64 value;
-            S7p.DecodeInt64Vlq(buffer, out value);
+            if (!disableVlq)
+            {
+                S7p.DecodeInt64Vlq(buffer, out value);
+            }
+            else
+            {
+                S7p.DecodeInt64(buffer, out value);
+            }
             return new ValueLInt(value, flags);
         }
     }
@@ -1183,15 +1288,27 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueLIntArray Deserialize(Stream buffer, byte flags)
+        public static ValueLIntArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Int64[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
-            value = new Int64[size];
-            for (int i = 0; i < size; i++)
+            if (!disableVlq)
             {
-                S7p.DecodeInt64Vlq(buffer, out value[i]);
+                S7p.DecodeUInt32Vlq(buffer, out size);
+                value = new Int64[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeInt64Vlq(buffer, out value[i]);
+                }
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+                value = new Int64[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeInt64(buffer, out value[i]);
+                }
             }
             return new ValueLIntArray(value, flags);
         }
@@ -1285,11 +1402,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueByteArray Deserialize(Stream buffer, byte flags)
+        public static ValueByteArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             byte[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new byte[size];
             for (int i = 0; i < size; i++)
             {
@@ -1387,11 +1511,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueWordArray Deserialize(Stream buffer, byte flags)
+        public static ValueWordArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt16[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new UInt16[size];
             for (int i = 0; i < size; i++)
             {
@@ -1489,11 +1620,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueDWordArray Deserialize(Stream buffer, byte flags)
+        public static ValueDWordArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new UInt32[size];
             for (int i = 0; i < size; i++)
             {
@@ -1591,11 +1729,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueLWordArray Deserialize(Stream buffer, byte flags)
+        public static ValueLWordArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt64[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new UInt64[size];
             for (int i = 0; i < size; i++)
             {
@@ -1693,11 +1838,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueRealArray Deserialize(Stream buffer, byte flags)
+        public static ValueRealArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             float[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new float[size];
             for (int i = 0; i < size; i++)
             {
@@ -1795,11 +1947,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueLRealArray Deserialize(Stream buffer, byte flags)
+        public static ValueLRealArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             double[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new double[size];
             for (int i = 0; i < size; i++)
             {
@@ -1950,10 +2109,17 @@ namespace S7CommPlusDriver
             return ("<Value type=\"Timespan\">" + str + "</Value>");
         }
 
-        public static ValueTimespan Deserialize(Stream buffer, byte flags)
+        public static ValueTimespan Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Int64 value;
-            S7p.DecodeInt64Vlq(buffer, out value);
+            if (!disableVlq)
+            {
+                S7p.DecodeInt64Vlq(buffer, out value);
+            }
+            else
+            {
+                S7p.DecodeInt64(buffer, out value);
+            }
             return new ValueTimespan(value, flags);
         }
     }
@@ -2046,11 +2212,18 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueRIDArray Deserialize(Stream buffer, byte flags)
+        public static ValueRIDArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             value = new UInt32[size];
             for (int i = 0; i < size; i++)
             {
@@ -2093,10 +2266,17 @@ namespace S7CommPlusDriver
             return "<Value type=\"AID\">" + Value.ToString() + "</Value>";
         }
 
-        public static ValueAID Deserialize(Stream buffer, byte flags)
+        public static ValueAID Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32 value;
-            S7p.DecodeUInt32Vlq(buffer, out value);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out value);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out value);
+            }
             return new ValueAID(value, flags);
         }
     }
@@ -2148,15 +2328,27 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueAIDArray Deserialize(Stream buffer, byte flags)
+        public static ValueAIDArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32[] value;
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
-            value = new UInt32[size];
-            for (int i = 0; i < size; i++)
+            if (!disableVlq)
             {
-                S7p.DecodeUInt32Vlq(buffer, out value[i]);
+                S7p.DecodeUInt32Vlq(buffer, out size);
+                value = new UInt32[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeUInt32Vlq(buffer, out value[i]);
+                }
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+                value = new UInt32[size];
+                for (int i = 0; i < size; i++)
+                {
+                    S7p.DecodeUInt32(buffer, out value[i]);
+                }
             }
             return new ValueAIDArray(value, flags);
         }
@@ -2210,13 +2402,21 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueBlob Deserialize(Stream buffer, byte flags)
+        public static ValueBlob Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32 blobRootId;
             UInt32 blobSize;
             byte[] value;
-            S7p.DecodeUInt32Vlq(buffer, out blobRootId);
-            S7p.DecodeUInt32Vlq(buffer, out blobSize);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out blobRootId);
+                S7p.DecodeUInt32Vlq(buffer, out blobSize);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out blobRootId);
+                S7p.DecodeUInt32(buffer, out blobSize);
+            }
             value = new byte[blobSize];
             S7p.DecodeOctets(buffer, (int)blobSize, out value);
             return new ValueBlob(blobRootId, value, flags);
@@ -2270,14 +2470,21 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueBlobArray Deserialize(Stream buffer, byte flags)
+        public static ValueBlobArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32 size = 0;
-            S7p.DecodeUInt32Vlq(buffer, out size);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
             ValueBlob[] value = new ValueBlob[size];
             for (int i = 0; i < size; i++)
             {
-                value[i] = ValueBlob.Deserialize(buffer, flags);
+                value[i] = ValueBlob.Deserialize(buffer, flags, disableVlq);
             }
             return new ValueBlobArray(value, flags);
         }
@@ -2343,22 +2550,39 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueBlobSparseArray Deserialize(Stream buffer, byte flags)
+        public static ValueBlobSparseArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Dictionary<UInt32, BlobEntry> value = new Dictionary<UInt32, BlobEntry>();
             UInt32 k = 0;
             BlobEntry v = new BlobEntry();
             UInt32 blobSize = 0;
-            S7p.DecodeUInt32Vlq(buffer, out k);
-            while (k > 0)
+            if (!disableVlq)
             {
-                S7p.DecodeUInt32Vlq(buffer, out v.blobRootId);
-                S7p.DecodeUInt32Vlq(buffer, out blobSize);
-                v.value = new byte[blobSize];
-                S7p.DecodeOctets(buffer, (int)blobSize, out v.value);
-                value.Add(k, v);
-
                 S7p.DecodeUInt32Vlq(buffer, out k);
+                while (k > 0)
+                {
+                    S7p.DecodeUInt32Vlq(buffer, out v.blobRootId);
+                    S7p.DecodeUInt32Vlq(buffer, out blobSize);
+                    v.value = new byte[blobSize];
+                    S7p.DecodeOctets(buffer, (int)blobSize, out v.value);
+                    value.Add(k, v);
+
+                    S7p.DecodeUInt32Vlq(buffer, out k);
+                }
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out k);
+                while (k > 0)
+                {
+                    S7p.DecodeUInt32(buffer, out v.blobRootId);
+                    S7p.DecodeUInt32(buffer, out blobSize);
+                    v.value = new byte[blobSize];
+                    S7p.DecodeOctets(buffer, (int)blobSize, out v.value);
+                    value.Add(k, v);
+
+                    S7p.DecodeUInt32(buffer, out k);
+                }
             }
             return new ValueBlobSparseArray(value, flags);
         }
@@ -2398,11 +2622,18 @@ namespace S7CommPlusDriver
             return "<Value type=\"WString\">" + Value + "</Value>";
         }
 
-        public static ValueWString Deserialize(Stream buffer, byte flags)
+        public static ValueWString Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             string value;
             UInt32 stringlen;
-            S7p.DecodeUInt32Vlq(buffer, out stringlen);
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out stringlen);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out stringlen);
+            }
             S7p.DecodeWString(buffer, (int)stringlen, out value);
             return new ValueWString(value, flags);
         }
@@ -2452,18 +2683,31 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueWStringArray Deserialize(Stream buffer, byte flags)
+        public static ValueWStringArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             string[] value;
             UInt32 stringlen;
             UInt32 arraySize;
-            S7p.DecodeUInt32Vlq(buffer, out arraySize);
-            value = new string[arraySize];
-            for (int i = 0; i < arraySize; i++)
+            if (!disableVlq)
             {
-                S7p.DecodeUInt32Vlq(buffer, out stringlen);
-                S7p.DecodeWString(buffer, (int)stringlen, out value[i]);
-            }                
+                S7p.DecodeUInt32Vlq(buffer, out arraySize);
+                value = new string[arraySize];
+                for (int i = 0; i < arraySize; i++)
+                {
+                    S7p.DecodeUInt32Vlq(buffer, out stringlen);
+                    S7p.DecodeWString(buffer, (int)stringlen, out value[i]);
+                }
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out arraySize);
+                value = new string[arraySize];
+                for (int i = 0; i < arraySize; i++)
+                {
+                    S7p.DecodeUInt32(buffer, out stringlen);
+                    S7p.DecodeWString(buffer, (int)stringlen, out value[i]);
+                }
+            }
             return new ValueWStringArray(value, flags);
         }
     }
@@ -2516,27 +2760,37 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueWStringSparseArray Deserialize(Stream buffer, byte flags)
+        public static ValueWStringSparseArray Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             Dictionary<UInt32, string> value = new Dictionary<UInt32, string>();
             UInt32 k = 0;
             UInt32 stringlen;
             string v = String.Empty;
-
-            S7p.DecodeUInt32Vlq(buffer, out k);
-            while (k > 0)
+            if (!disableVlq)
             {
-                S7p.DecodeUInt32Vlq(buffer, out stringlen);
-                S7p.DecodeWString(buffer, (int)stringlen, out v);
-                value.Add(k, v);
                 S7p.DecodeUInt32Vlq(buffer, out k);
+                while (k > 0)
+                {
+                    S7p.DecodeUInt32Vlq(buffer, out stringlen);
+                    S7p.DecodeWString(buffer, (int)stringlen, out v);
+                    value.Add(k, v);
+                    S7p.DecodeUInt32Vlq(buffer, out k);
+                }
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out k);
+                while (k > 0)
+                {
+                    S7p.DecodeUInt32(buffer, out stringlen);
+                    S7p.DecodeWString(buffer, (int)stringlen, out v);
+                    value.Add(k, v);
+                    S7p.DecodeUInt32(buffer, out k);
+                }
             }
             return new ValueWStringSparseArray(value, flags);
         }
     }
-
-
-    // TODO: Variant
 
     public class ValueStruct : PValue
     {
@@ -2601,7 +2855,7 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static ValueStruct Deserialize(System.IO.Stream buffer, byte flags)
+        public static ValueStruct Deserialize(Stream buffer, byte flags, bool disableVlq)
         {
             UInt32 value;
             ValueStruct stru;
@@ -2620,13 +2874,26 @@ namespace S7CommPlusDriver
                 UInt64 interfaceTimestamp;
                 S7p.DecodeUInt64(buffer, out interfaceTimestamp);
                 UInt32 transp_flags;
-                S7p.DecodeUInt32Vlq(buffer, out transp_flags);
                 UInt32 elementcount;
-                S7p.DecodeUInt32Vlq(buffer, out elementcount);
-                if ((transp_flags & 0x400) != 0)
+                if (!disableVlq)
                 {
-                    // Here's an additional counter value, for whatever reason...
+                    S7p.DecodeUInt32Vlq(buffer, out transp_flags);
                     S7p.DecodeUInt32Vlq(buffer, out elementcount);
+                    if ((transp_flags & 0x400) != 0)
+                    {
+                        // Here's an additional counter value, for whatever reason...
+                        S7p.DecodeUInt32Vlq(buffer, out elementcount);
+                    }
+                }
+                else
+                {
+                    S7p.DecodeUInt32(buffer, out transp_flags);
+                    S7p.DecodeUInt32(buffer, out elementcount);
+                    if ((transp_flags & 0x400) != 0)
+                    {
+                        // Here's an additional counter value, for whatever reason...
+                        S7p.DecodeUInt32(buffer, out elementcount);
+                    }
                 }
                 
                 byte[] barr = new byte[elementcount];
@@ -2641,12 +2908,25 @@ namespace S7CommPlusDriver
             {
                 PValue elem;
                 stru = new ValueStruct(value);
-                S7p.DecodeUInt32Vlq(buffer, out value);
-                while (value > 0)
+                if (!disableVlq)
                 {
-                    elem = PValue.Deserialize(buffer);
-                    stru.AddStructElement(value, elem);
                     S7p.DecodeUInt32Vlq(buffer, out value);
+                    while (value > 0)
+                    {
+                        elem = PValue.Deserialize(buffer, disableVlq);
+                        stru.AddStructElement(value, elem);
+                        S7p.DecodeUInt32Vlq(buffer, out value);
+                    }
+                }
+                else
+                {
+                    S7p.DecodeUInt32(buffer, out value);
+                    while (value > 0)
+                    {
+                        elem = PValue.Deserialize(buffer, disableVlq);
+                        stru.AddStructElement(value, elem);
+                        S7p.DecodeUInt32(buffer, out value);
+                    }
                 }
             }
             return stru;
