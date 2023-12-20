@@ -81,7 +81,7 @@ namespace S7CommPlusDriver
                     case Datatype.UDInt:
                         return ValueUDIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.ULInt:
-                        return ValueUDIntArray.Deserialize(buffer, flags, disableVlq);
+                        return ValueULIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.SInt:
                         return ValueSIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Int:
