@@ -74,6 +74,8 @@ namespace S7CommPlusDriver
             {
                 switch (datatype)
                 {
+                    case Datatype.Bool:
+                        return ValueBoolArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.USInt:
                         return ValueUSIntArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.UInt:
@@ -102,17 +104,16 @@ namespace S7CommPlusDriver
                         return ValueRealArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.LReal:
                         return ValueLRealArray.Deserialize(buffer, flags, disableVlq);
+                    case Datatype.Timestamp:
+                        throw new NotImplementedException();
+                    case Datatype.Timespan:
+                        throw new NotImplementedException();
                     case Datatype.RID:
                         return ValueRIDArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.AID:
                         return ValueAIDArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Blob:
                         return ValueBlobArray.Deserialize(buffer, flags, disableVlq);
-                    case Datatype.Timestamp:
-                        throw new NotImplementedException();
-                    case Datatype.Timespan:
-                        throw new NotImplementedException();
-
                     case Datatype.WString:
                         return ValueWStringArray.Deserialize(buffer, flags, disableVlq);
                     default:
@@ -263,6 +264,83 @@ namespace S7CommPlusDriver
             byte value;
             S7p.DecodeByte(buffer, out value);
             return new ValueBool(Convert.ToBoolean(value), flags);
+        }
+    }
+
+    /// <summary>
+    /// ValueBoolArray: Important: The length of the array is always a multiple of 8.
+    /// E.g. reading an Array [0..2] of Bool will be transmitted with 8 elements with actal values at index 0, 1, 2.
+    /// An Array[0..9] will be transmitted with 16 elements and so on.
+    /// At this time, serialize doesn't respect the padding elements, must be done on a higher level.
+    /// </summary>
+    public class ValueBoolArray : PValue
+    {
+        bool[] Value;
+
+        public ValueBoolArray(bool[] value) : this(value, FLAGS_ARRAY)
+        {
+        }
+
+        public ValueBoolArray(bool[] value, byte flags)
+        {
+            DatatypeFlags = flags;
+            if (value != null)
+            {
+                Value = new bool[value.Length];
+                Array.Copy(value, Value, value.Length);
+            }
+        }
+
+        public bool[] GetValue()
+        {
+            return Value;
+        }
+
+        public override int Serialize(Stream buffer)
+        {
+            int ret = 0;
+            ret += S7p.EncodeByte(buffer, DatatypeFlags);
+            ret += S7p.EncodeByte(buffer, Datatype.Bool);
+            // TODO: Should we respect the padding inside this class, or at a higher level?
+            ret += S7p.EncodeUInt32Vlq(buffer, (uint)Value.Length);
+            for (int i = 0; i < Value.Length; i++)
+            {
+                ret += S7p.EncodeByte(buffer, Convert.ToByte(Value[i]));
+            }
+            return ret;
+        }
+
+        public override string ToString()
+        {
+            string s = "<Value type =\"BoolArray\" size=\"" + Value.Length.ToString() + "\">";
+            for (int i = 0; i < Value.Length; i++)
+            {
+                s += String.Format("<Value>{0}</Value>", Value[i].ToString());
+            }
+            s += "</Value>";
+            return s;
+        }
+
+        public static ValueBoolArray Deserialize(Stream buffer, byte flags, bool disableVlq)
+        {
+            bool[] value;
+            byte bv;
+            UInt32 size = 0;
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
+            value = new bool[size];
+            for (int i = 0; i < size; i++)
+            {
+                S7p.DecodeByte(buffer, out bv);
+                value[i] = Convert.ToBoolean(bv);
+            }
+            return new ValueBoolArray(value, flags);
         }
     }
 
