@@ -578,13 +578,7 @@ namespace S7CommPlusDriver
         public int WriteValues(List<ItemAddress> addresslist, List<PValue> values, out List<UInt64> errors)
         {
             int res;
-
             errors = new List<UInt64>();
-            // Initialize error fields to error value
-            for (int i = 0; i < addresslist.Count; i++)
-            {
-                errors.Add(0xffffffffffffffff);
-            }
 
             // Split request into chunks, taking the MaxTags per request into account
             int chunk_startIndex = 0;
