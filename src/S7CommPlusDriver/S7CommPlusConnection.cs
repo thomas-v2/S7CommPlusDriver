@@ -579,6 +579,11 @@ namespace S7CommPlusDriver
         {
             int res;
             errors = new List<UInt64>();
+            for (int i = 0; i < addresslist.Count; i++)
+            {
+                // Initialize to no error value, as there's no explicit value for write success.
+                errors.Add(0);
+            }
 
             // Split request into chunks, taking the MaxTags per request into account
             int chunk_startIndex = 0;
