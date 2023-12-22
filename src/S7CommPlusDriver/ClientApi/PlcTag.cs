@@ -17,6 +17,9 @@ namespace S7CommPlusDriver.ClientApi
         public short Quality;
         public uint Datatype;
 
+        public ulong LastReadError;
+        public ulong LastWriteError;
+
         public PlcTag(string name, ItemAddress address, uint softdatatype)
         {
             Name = name;
@@ -24,8 +27,15 @@ namespace S7CommPlusDriver.ClientApi
             Datatype = softdatatype;
             Quality = PlcTagQC.TAG_QUALITY_WAITING_FOR_INITIAL_DATA;
         }
-        // TODO: Should be only accessible for PlcTags
-        public abstract void ProcessRead(object obj, UInt64 error);
+
+        public abstract void ProcessReadResult(object obj, UInt64 error);
+
+        public virtual void ProcessWriteResult(UInt64 error)
+        {
+            LastWriteError = error;
+        }
+
+        public abstract PValue GetWriteValue();
 
         protected static int CheckErrorAndType(ulong error, object valueObj, Type checkType)
         {
@@ -52,25 +62,47 @@ namespace S7CommPlusDriver.ClientApi
             return String.Format("{0:X02}: {1}", tag.Quality, value);
         }
 
-        protected static int BCD_Byte_to_int(byte value)
+        protected static int BcdByteToInt(byte value)
         {
             return (10 * (value / 16)) + (value % 16);
         }
 
-        protected static ushort BCD_ushort_to_ushort(ushort value)
+        protected static byte IntToBcdByte(int value)
+        {
+            return (byte)((value / 10 * 16) + (value % 10));
+        }
+
+        protected static ushort BcdUshortToUshort(ushort value)
         {
             return (ushort)((value & 0x000f) + ((value & 0x00f0) >> 4) * 10 + ((value & 0x0f00) >> 8) * 100 + ((value & 0xf000) >> 12) * 1000);
+        }
+
+        protected static ushort UshortToBcdUshort(ushort value)
+        {
+            var b = new byte[4];
+            b[0] = (byte)(value % 10);
+            value /= 10;
+            b[1] = (byte)(value % 10);
+            value /= 10;
+            b[2] = (byte)(value % 10);
+            value /= 10;
+            b[3] = (byte)(value % 10);
+            return (ushort)(b[0] + (b[1] << 4) + (b[2] << 8) + (b[3]) << 12);
         }
     }
 
     public class PlcTagBool : PlcTag
     {
-        bool Value;
+        public bool Value
+        {
+            get; set;
+        }
 
         public PlcTagBool(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueBool)) == 0)
             {
                 Value = ((ValueBool)valueObj).GetValue();
@@ -82,9 +114,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public bool GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueBool(Value);
         }
 
         public override string ToString()
@@ -95,12 +127,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagByte : PlcTag
     {
-        byte Value;
+        public byte Value
+        {
+            get; set;
+        }
 
         public PlcTagByte(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueByte)) == 0)
             {
                 Value = ((ValueByte)valueObj).GetValue();
@@ -112,9 +148,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public byte GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueByte(Value);
         }
 
         public override string ToString()
@@ -125,12 +161,17 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagChar : PlcTag
     {
-        char Value;
+        public char Value
+        {
+            get; set;
+        }
+
         string m_Encoding = "ISO-8859-1";
         public PlcTagChar(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUSInt)) == 0)
             {
                 var v = new byte[1];
@@ -144,14 +185,20 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public char GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            var c = new char[1];
+            c[0] = Value;
+            byte[] b = Encoding.GetEncoding(m_Encoding).GetBytes(c);
+            var pv = new ValueUSInt(b[0]);
+            return pv;
         }
+
         public void SetCharEncoding(string encoding)
         {
             m_Encoding = encoding;
         }
+
         public override string ToString()
         {
             return ResultString(this, Value.ToString());
@@ -160,12 +207,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagWord : PlcTag
     {
-        ushort Value;
+        public ushort Value
+        {
+            get; set;
+        } 
 
         public PlcTagWord(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueWord)) == 0)
             {
                 Value = ((ValueWord)valueObj).GetValue();
@@ -177,9 +228,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public ushort GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueWord(Value);
         }
 
         public override string ToString()
@@ -190,12 +241,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagInt : PlcTag
     {
-        short Value;
+        public short Value
+        {
+            get; set;
+        } 
 
         public PlcTagInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueInt)) == 0)
             {
                 Value = ((ValueInt)valueObj).GetValue();
@@ -207,9 +262,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public short GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueInt(Value);
         }
 
         public override string ToString()
@@ -220,12 +275,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagDWord : PlcTag
     {
-        uint Value;
+        public uint Value
+        {
+            get; set;
+        } 
 
         public PlcTagDWord(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueDWord)) == 0)
             {
                 Value = ((ValueDWord)valueObj).GetValue();
@@ -237,9 +296,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public uint GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueDWord(Value);
         }
 
         public override string ToString()
@@ -250,12 +309,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagDInt : PlcTag
     {
-        int Value;
+        public int Value
+        {
+            get; set;
+        }
 
         public PlcTagDInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueDInt)) == 0)
             {
                 Value = ((ValueDInt)valueObj).GetValue();
@@ -267,9 +330,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public int GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueDInt(Value);
         }
 
         public override string ToString()
@@ -280,12 +343,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagReal : PlcTag
     {
-        float Value;
+        public float Value
+        {
+            get; set;
+        }
 
         public PlcTagReal(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueReal)) == 0)
             {
                 Value = ((ValueReal)valueObj).GetValue();
@@ -297,9 +364,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public float GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueReal(Value);
         }
 
         public override string ToString()
@@ -314,12 +381,30 @@ namespace S7CommPlusDriver.ClientApi
         // .Net has no type with only date or only time
         // TODO: Switch to .Net 6 (for DateOnly) or stay just as UInt?
 
-        DateTime Value = new DateTime(1990, 1, 1);
-
-        public PlcTagDate(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
-
-        public override void ProcessRead(object valueObj, ulong error)
+        public DateTime Value
         {
+            get
+            {
+                return Value;
+            }
+
+            set
+            {
+                if (value >= new DateTime(1990, 1, 1))
+                {
+                    Value = value;
+                }
+            }
+        }
+
+        public PlcTagDate(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
+        {
+            Value = new DateTime(1990, 1, 1);
+        }
+
+        public override void ProcessReadResult(object valueObj, ulong error)
+        {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUInt)) == 0)
             {
                 ushort v = ((ValueUInt)valueObj).GetValue();
@@ -333,9 +418,10 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public DateTime GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            var dtbase = new DateTime(1990, 1, 1);
+            return new ValueUInt((ushort)(Value - dtbase).Days);
         }
 
         public override string ToString()
@@ -348,12 +434,16 @@ namespace S7CommPlusDriver.ClientApi
     {
         // TODO: .Net has no type with only date or only time
         // Specification: 01:02:03 = 3723000 number of milliseconds since 00:00:00
-        uint Value;
+        public uint Value
+        {
+            get; set;
+        }
 
         public PlcTagTimeOfDay(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUDInt)) == 0)
             {
                 Value = ((ValueUDInt)valueObj).GetValue();
@@ -366,9 +456,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public uint GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueUDInt(Value);
         }
 
         public override string ToString()
@@ -397,12 +487,19 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagTime: PlcTag
     {
-        int Value; // In milliseconds, with sign
-
+        /// <summary>
+        /// In milliseconds, with sign
+        /// </summary>
+        public int Value
+        {
+            get; set;
+        }
+        
         public PlcTagTime(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueDInt)) == 0)
             {
                 Value = ((ValueDInt)valueObj).GetValue();
@@ -414,9 +511,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public int GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueDInt(Value);
         }
 
         public override string ToString()
@@ -469,17 +566,51 @@ namespace S7CommPlusDriver.ClientApi
         // Bits 11..0: time values BCD coded (0 to 999)
         // S5Time_9S_990MS = <Value type="Word">2457</Value>
         // S5Time_2H_46M_30S_0MS = <Value type="Word">14745</Value>
-        ushort TimeValue;
-        ushort TimeBase;
+
+        /// <summary>
+        /// TimeValue: between 0..999, factor is TimeBase
+        /// </summary>
+        public ushort TimeValue
+        {
+            get
+            { 
+                return TimeValue;
+            }
+            set
+            {
+                if (TimeValue >= 0 && TimeValue <= 999)
+                {
+                    TimeValue = value;
+                }
+            }
+        }
+        /// <summary>
+        /// TimeBase 0=10ms, 1=100ms, 2=1s, 3=10s
+        /// </summary>
+        public ushort TimeBase
+        {
+            get
+            {
+                return TimeBase;
+            }
+            set
+            {
+                if (TimeBase >= 0 && TimeBase <= 3)
+                {
+                    TimeBase = value;
+                }
+            }
+        }
 
         public PlcTagS5Time(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueWord)) == 0)
             {
                 var v = ((ValueWord)valueObj).GetValue();
-                TimeValue = BCD_ushort_to_ushort((ushort)(v & (ushort)0x0FFF));
+                TimeValue = BcdUshortToUshort((ushort)(v & (ushort)0x0FFF));
                 TimeBase = (ushort)((v & (ushort)0x3000) >> 12);
                 Quality = PlcTagQC.TAG_QUALITY_GOOD;
             }
@@ -489,14 +620,12 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public ushort GetTimeValue()
+        public override PValue GetWriteValue()
         {
-            return TimeValue;
-        }
-
-        public ushort GetTimeBase()
-        {
-            return TimeValue;
+            ushort v;
+            v = UshortToBcdUshort(TimeValue);
+            v |= (ushort)((TimeBase & 0x3) << 12);
+            return new ValueWord(v);
         }
 
         public override string ToString()
@@ -529,19 +658,37 @@ namespace S7CommPlusDriver.ClientApi
          * uuu = milliseconds
          * Q = Weekday 1=Su, 2=Mo, 3=Tu, 4=We, 5=Th, 6=Fr, 7=Sa
          */
-        DateTime Value = new DateTime(1990, 1, 1);
-
-        public PlcTagDateAndTime(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
-
-        public override void ProcessRead(object valueObj, ulong error)
+        public DateTime Value
         {
+            get
+            {
+                return Value;
+            }
+
+            set
+            {
+                if (value >= new DateTime(1990, 1, 1) && value < new DateTime(2090, 1, 1))
+                {
+                    Value = value;
+                }
+            }
+        }
+
+        public PlcTagDateAndTime(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
+        {
+            Value = new DateTime(1990, 1, 1);
+        }
+
+        public override void ProcessReadResult(object valueObj, ulong error)
+        {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUSIntArray)) == 0)
             {
                 var v = ((ValueUSIntArray)valueObj).GetValue();
                 int[] ts = new int[8];
                 for (int i = 0; i < 7; i++)
                 {
-                    ts[i] = BCD_Byte_to_int(v[i]);
+                    ts[i] = BcdByteToInt(v[i]);
                 }
                 // The left nibble of the last byte contains the LSD of milliseconds,
                 // the right nibble the weekday (which we don't process here).
@@ -567,9 +714,32 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public DateTime GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            int[] ts = new int[8];
+            byte[] b = new byte[8];
+            if (Value.Year < 2000)
+            {
+                // 90-99 = 1990-1999
+                ts[0] = Value.Year - 1900;
+            }
+            else
+            {
+                // 00-89 = 2000-2089
+                ts[0] = Value.Year - 2000;
+            }
+            ts[1] = Value.Month;
+            ts[2] = Value.Day;
+            ts[3] = Value.Hour;
+            ts[4] = Value.Minute;
+            ts[5] = Value.Second;
+            ts[6] = Value.Millisecond / 10;
+            ts[7] = (Value.Millisecond % 10) << 4; // Don't set the weekday
+            for (int i = 0; i < 7; i++)
+            {
+                b[i] = IntToBcdByte(ts[i]);
+            }
+            return new ValueUSIntArray(b);
         }
 
         public override string ToString()
@@ -585,12 +755,33 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagString : PlcTag
     {
-        string Value;
-        string m_Encoding = "ISO-8859-1";
-        public PlcTagString(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
-
-        public override void ProcessRead(object valueObj, ulong error)
+        public string Value
         {
+            get
+            {
+                return Value;
+            }
+
+            set
+            {
+                if (value.Length <= MaxLength)
+                {
+                    Value = value;
+                }
+            }
+        }
+
+        byte MaxLength = 254;
+        string m_Encoding = "ISO-8859-1";
+
+        public PlcTagString(string name, ItemAddress address, uint softdatatype, byte maxlength = 254) : base(name, address, softdatatype)
+        {
+            MaxLength = maxlength;
+        }
+
+        public override void ProcessReadResult(object valueObj, ulong error)
+        {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUSIntArray)) == 0)
             {
                 var v = ((ValueUSIntArray)valueObj).GetValue();
@@ -608,14 +799,23 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
+        public override PValue GetWriteValue()
+        {
+            // Must write the complete array of MaxLength of the string (plus two bytes header).
+            byte[] sb = Encoding.GetEncoding(m_Encoding).GetBytes(Value);
+            var b = new byte[MaxLength + 2];
+            b[0] = MaxLength;
+            b[1] = (byte)sb.Length;
+            for (int i = 0; i < sb.Length; i++)
+            {
+                b[i + 2] = sb[i];
+            }
+            return new ValueUSIntArray(b);
+        }
+
         public void SetStringEncoding(string encoding)
         {
             m_Encoding = encoding;
-        }
-
-        public string GetValue()
-        {
-            return Value;
         }
 
         public override string ToString()
@@ -626,12 +826,19 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagPointer : PlcTag
     {
-        byte[] Value = new byte[6];
-
-        public PlcTagPointer(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
-
-        public override void ProcessRead(object valueObj, ulong error)
+        public byte[] Value
         {
+            get; set;
+        }
+
+        public PlcTagPointer(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
+        {
+            Value = new byte[6];
+        }
+
+        public override void ProcessReadResult(object valueObj, ulong error)
+        {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUSIntArray)) == 0)
             {
                 Value = ((ValueUSIntArray)valueObj).GetValue();
@@ -644,9 +851,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public byte[] GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueUSIntArray(Value);
         }
 
         public override string ToString()
@@ -662,12 +869,19 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagAny: PlcTag
     {
-        byte[] Value = new byte[10];
-
-        public PlcTagAny(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
-
-        public override void ProcessRead(object valueObj, ulong error)
+        public byte[] Value
         {
+            get; set;
+        } 
+
+        public PlcTagAny(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
+        {
+            Value = new byte[10];
+        }
+
+        public override void ProcessReadResult(object valueObj, ulong error)
+        {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUSIntArray)) == 0)
             {
                 Value = ((ValueUSIntArray)valueObj).GetValue();
@@ -680,9 +894,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public byte[] GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueUSIntArray(Value);
         }
 
         public override string ToString()
@@ -701,11 +915,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLReal : PlcTag
     {
-        double Value;
+        public double Value
+        {
+            get; set;
+        }
+
         public PlcTagLReal(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueLReal)) == 0)
             {
                 Value = ((ValueLReal)valueObj).GetValue();
@@ -717,9 +936,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public double GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueLReal(Value);
         }
 
         public override string ToString()
@@ -730,12 +949,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagULInt : PlcTag
     {
-        ulong Value;
+        public ulong Value
+        {
+            get; set;
+        }
 
         public PlcTagULInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueULInt)) == 0)
             {
                 Value = ((ValueULInt)valueObj).GetValue();
@@ -747,9 +970,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public ulong GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueULInt(Value);
         }
 
         public override string ToString()
@@ -760,12 +983,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLInt : PlcTag
     {
-        long Value;
+        public long Value
+        {
+            get; set;
+        }
 
         public PlcTagLInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueLInt)) == 0)
             {
                 Value = ((ValueLInt)valueObj).GetValue();
@@ -777,9 +1004,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public long GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueLInt(Value);
         }
 
         public override string ToString()
@@ -790,12 +1017,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLWord : PlcTag
     {
-        ulong Value;
+        public ulong Value
+        {
+            get; set;
+        }
 
         public PlcTagLWord(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueLWord)) == 0)
             {
                 Value = ((ValueLWord)valueObj).GetValue();
@@ -807,9 +1038,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public ulong GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueLWord(Value);
         }
 
         public override string ToString()
@@ -820,12 +1051,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagUSInt : PlcTag
     {
-        byte Value;
+        public byte Value
+        {
+            get; set;
+        }
 
         public PlcTagUSInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUSInt)) == 0)
             {
                 Value = ((ValueUSInt)valueObj).GetValue();
@@ -837,9 +1072,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public byte GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueUSInt(Value);
         }
 
         public override string ToString()
@@ -850,12 +1085,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagUInt : PlcTag
     {
-        ushort Value;
+        public ushort Value
+        {
+            get; set;
+        }
 
         public PlcTagUInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUInt)) == 0)
             {
                 Value = ((ValueUInt)valueObj).GetValue();
@@ -867,9 +1106,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public ushort GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueUInt(Value);
         }
 
         public override string ToString()
@@ -880,12 +1119,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagUDInt : PlcTag
     {
-        uint Value;
+        public uint Value
+        {
+            get; set;
+        }
 
         public PlcTagUDInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUDInt)) == 0)
             {
                 Value = ((ValueUDInt)valueObj).GetValue();
@@ -897,9 +1140,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public uint GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueUDInt(Value);
         }
 
         public override string ToString()
@@ -910,12 +1153,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagSInt : PlcTag
     {
-        sbyte Value;
+        public sbyte Value
+        {
+            get; set;
+        }
 
         public PlcTagSInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueSInt)) == 0)
             {
                 Value = ((ValueSInt)valueObj).GetValue();
@@ -927,9 +1174,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public sbyte GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueSInt(Value);
         }
 
         public override string ToString()
@@ -940,12 +1187,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagWChar : PlcTag
     {
-        char Value;
+        public char Value
+        {
+            get; set;
+        }
 
         public PlcTagWChar(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUInt)) == 0)
             {
                 Value = (char)((ValueUInt)valueObj).GetValue();
@@ -957,9 +1208,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public char GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueUInt((ushort)Char.GetNumericValue(Value));
         }
 
         public override string ToString()
@@ -970,11 +1221,32 @@ namespace S7CommPlusDriver.ClientApi
   
     public class PlcTagWString : PlcTag
     {
-        string Value;
-        public PlcTagWString(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
-
-        public override void ProcessRead(object valueObj, ulong error)
+        public string Value
         {
+            get
+            {
+                return Value;
+            }
+
+            set
+            {
+                if (value.Length <= MaxLength)
+                {
+                    Value = value;
+                }
+            }
+        }
+
+        ushort MaxLength = 254;
+
+        public PlcTagWString(string name, ItemAddress address, uint softdatatype, ushort maxlength = 254) : base(name, address, softdatatype)
+        {
+            MaxLength = maxlength;
+        }
+
+        public override void ProcessReadResult(object valueObj, ulong error)
+        {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueUIntArray)) == 0)
             {
                 var v = ((ValueUIntArray)valueObj).GetValue();
@@ -992,9 +1264,17 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public string GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            // Must write the complete array of MaxLength of the string (plus two ushort for the header).
+            var b = new ushort[Value.Length + 2];
+            b[0] = MaxLength;
+            b[1] = (ushort)Value.Length;
+            for (int i = 0; i < Value.Length; i++)
+            {
+                b[i + 2] = (ushort)Char.GetNumericValue(Value[i]);
+            }
+            return new ValueUIntArray(b);
         }
 
         public override string ToString()
@@ -1005,12 +1285,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLTime : PlcTag
     {
-        long Value;
+        public long Value
+        {
+            get; set;
+        }
 
         public PlcTagLTime(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueTimespan)) == 0)
             {
                 Value = ((ValueTimespan)valueObj).GetValue();
@@ -1020,6 +1304,11 @@ namespace S7CommPlusDriver.ClientApi
             {
                 Quality = PlcTagQC.TAG_QUALITY_BAD;
             }
+        }
+
+        public override PValue GetWriteValue()
+        {
+            return new ValueTimespan(Value);
         }
 
         private string ValueAsString()
@@ -1070,11 +1359,6 @@ namespace S7CommPlusDriver.ClientApi
             return str;
         }
 
-        public long GetValue()
-        {
-            return Value;
-        }
-
         public override string ToString()
         {
             return ResultString(this, ValueAsString());
@@ -1085,12 +1369,16 @@ namespace S7CommPlusDriver.ClientApi
     {
         // TODO: Like the 32 Bit Types Date/TOD, in .Net there's not type for date / time only. Only in .Net 6.
         // Specification: Number of nanoseconds since 00:00:00.
-        ulong Value;
+        public ulong Value
+        {
+            get; set;
+        }
 
         public PlcTagLTOD(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueULInt)) == 0)
             {
                 Value = ((ValueULInt)valueObj).GetValue();
@@ -1102,9 +1390,9 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public ulong GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            return new ValueULInt(Value);
         }
 
         public override string ToString()
@@ -1133,12 +1421,16 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLDT: PlcTag
     {
-        ulong Value;
+        public ulong Value
+        {
+            get; set;
+        }
 
         public PlcTagLDT(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
-        public override void ProcessRead(object valueObj, ulong error)
+        public override void ProcessReadResult(object valueObj, ulong error)
         {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueTimestamp)) == 0)
             {
                 Value = ((ValueTimestamp)valueObj).GetValue();
@@ -1148,6 +1440,11 @@ namespace S7CommPlusDriver.ClientApi
             {
                 Quality = PlcTagQC.TAG_QUALITY_BAD;
             }
+        }
+
+        public override PValue GetWriteValue()
+        {
+            return new ValueTimestamp(Value);
         }
 
         private string ValueAsString()
@@ -1184,11 +1481,6 @@ namespace S7CommPlusDriver.ClientApi
             return String.Format(fmt, dt.ToString(), ns);
         }
 
-        public ulong GetValue()
-        {
-            return Value;
-        }
-
         public override string ToString()
         {
             return ResultString(this, ValueAsString());
@@ -1198,12 +1490,19 @@ namespace S7CommPlusDriver.ClientApi
     public class PlcTagDTL : PlcTag
     {
         // TODO: Unify all date / time datatypes
-        byte[] Value = new byte[12];
-
-        public PlcTagDTL(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
-
-        public override void ProcessRead(object valueObj, ulong error)
+        byte[] Value
         {
+            get; set;
+        }
+
+        public PlcTagDTL(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
+        {
+            Value = new byte[12];
+        }
+
+        public override void ProcessReadResult(object valueObj, ulong error)
+        {
+            LastReadError = error;
             if (CheckErrorAndType(error, valueObj, typeof(ValueStruct)) == 0)
             {
                 var struct_val = (ValueStruct)valueObj;
@@ -1243,9 +1542,13 @@ namespace S7CommPlusDriver.ClientApi
             }
         }
 
-        public byte[] GetValue()
+        public override PValue GetWriteValue()
         {
-            return Value;
+            // TODO! This won't work, because ValueStruct can't handle to serialize a packed struct
+            //var struct_val = new ValueStruct(33554499);
+            //struct_val.AddStructElement(33554499, new ValueByteArray(Value));
+            //return  struct_val;
+            return null;
         }
 
         public override string ToString()

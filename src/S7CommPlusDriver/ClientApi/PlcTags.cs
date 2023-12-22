@@ -33,12 +33,41 @@ namespace S7CommPlusDriver.ClientApi
             {
                 for (int i = 0; i < readlist.Count; i++)
                 {
-                    m_Tags[i].ProcessRead(values[i], errors[i]);
+                    m_Tags[i].ProcessReadResult(values[i], errors[i]);
                 }
             } 
             else
             {
                 Console.WriteLine("ReadTags: Error res=" + res);
+            }
+            return res;
+        }
+
+        public int WriteTags(S7CommPlusConnection conn)
+        {
+            var writelist = new List<ItemAddress>();
+            var values = new List<PValue>();
+            List<UInt64> errors;
+            int res;
+
+            foreach (var tag in m_Tags)
+            {
+                writelist.Add(tag.Address);
+                values.Add(tag.GetWriteValue());
+            }
+
+            res = conn.WriteValues(writelist, values, out errors);
+
+            if (res == 0)
+            {
+                for (int i = 0; i < writelist.Count; i++)
+                {
+                    m_Tags[i].ProcessWriteResult(errors[i]);
+                }
+            }
+            else
+            {
+                Console.WriteLine("WriteTags: Error res=" + res);
             }
             return res;
         }
