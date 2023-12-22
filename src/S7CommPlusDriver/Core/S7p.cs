@@ -309,15 +309,17 @@ namespace S7CommPlusDriver
             }
             
             b[0] = (byte)(value & 0x7f);
+            //Console.WriteLine(String.Format("B{0}: v={1,-20} abs_v={2,-20} B={3:X2}     BX={4:X2}", 0, value, abs_v, b[0], (byte)(value & 0xff)));
             int length = 1;
             for (int i = 1; i < 5; i++)
             {
-                if (abs_v > 0x40)
+                if (abs_v >= 0x40)
                 {
                     length++;
                     abs_v >>= 7;
                     value >>= 7;
                     b[i] = (byte)((value & 0x7f) + 0x80);
+                    //Console.WriteLine(String.Format("B{0}: v={1,-20} abs_v={2,-20} B={3:X2}     BX={4:X2}", i, value, abs_v, b[i], (byte)(value & 0xff)));
                 }
                 else
                 {
@@ -357,7 +359,7 @@ namespace S7CommPlusDriver
             int length = 1;
             for (int i = 1; i < 9; i++)
             {
-                if (value > 0x80)
+                if (value >= 0x80)
                 {
                     length++;
                     if (i == 1 && special)
@@ -498,7 +500,7 @@ namespace S7CommPlusDriver
             int length = 1;
             for (int i = 1; i < 9; i++)
             {
-                if (abs_v > 0x40)
+                if (abs_v >= 0x40)
                 {
                     length++;
                     if (i == 1 && special)
@@ -524,8 +526,16 @@ namespace S7CommPlusDriver
             {
                 // See comment at EncodeUInt64Vlq.
                 // Because of the sign bit, the special handling starts here at > 0x007fffffffffffff
+                // And we need a different value for negative numbers.
                 length++;
-                b[8] = 0x80;
+                if (value >= 0)
+                {
+                    b[8] = 0x80;
+                }
+                else
+                {
+                    b[8] = 0xff;
+                }
             }
 
             // Reverse order of bytes
