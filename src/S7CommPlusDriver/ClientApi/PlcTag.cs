@@ -93,9 +93,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagBool : PlcTag
     {
+        private bool m_Value;
+
         public bool Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagBool(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -127,9 +130,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagByte : PlcTag
     {
+        private byte m_Value;
+
         public byte Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagByte(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -161,12 +167,15 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagChar : PlcTag
     {
+        private char m_Value;
+        string m_Encoding = "ISO-8859-1";
+
         public char Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
-
-        string m_Encoding = "ISO-8859-1";
+        
         public PlcTagChar(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
 
         public override void ProcessReadResult(object valueObj, ulong error)
@@ -207,9 +216,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagWord : PlcTag
     {
+        private ushort m_Value;
+
         public ushort Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         } 
 
         public PlcTagWord(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -241,9 +253,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagInt : PlcTag
     {
+        private short m_Value;
+
         public short Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         } 
 
         public PlcTagInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -275,9 +290,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagDWord : PlcTag
     {
+        private uint m_Value;
+
         public uint Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         } 
 
         public PlcTagDWord(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -309,9 +327,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagDInt : PlcTag
     {
+        private int m_Value;
+
         public int Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagDInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -343,9 +364,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagReal : PlcTag
     {
+        private float m_Value;
+
         public float Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagReal(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -380,26 +404,31 @@ namespace S7CommPlusDriver.ClientApi
         // Specifies the number of days from January 1, 1990.
         // .Net has no type with only date or only time
         // TODO: Switch to .Net 6 (for DateOnly) or stay just as UInt?
+        private DateTime m_Value;
 
         public DateTime Value
         {
             get
             {
-                return Value;
+                return m_Value;
             }
 
             set
             {
-                if (value >= new DateTime(1990, 1, 1))
+                if (value >= new DateTime(1990, 1, 1) && value <= new DateTime(2169, 6, 6))
                 {
-                    Value = value;
+                    m_Value = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "Date must be >= 1990-01-01 and <= 2169-06-06");
                 }
             }
         }
 
         public PlcTagDate(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
         {
-            Value = new DateTime(1990, 1, 1);
+            m_Value = new DateTime(1990, 1, 1);
         }
 
         public override void ProcessReadResult(object valueObj, ulong error)
@@ -434,9 +463,12 @@ namespace S7CommPlusDriver.ClientApi
     {
         // TODO: .Net has no type with only date or only time
         // Specification: 01:02:03 = 3723000 number of milliseconds since 00:00:00
+        private uint m_Value;
+
         public uint Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagTimeOfDay(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -487,12 +519,15 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagTime: PlcTag
     {
+        private int m_Value;
+
         /// <summary>
         /// In milliseconds, with sign
         /// </summary>
         public int Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
         
         public PlcTagTime(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -567,6 +602,9 @@ namespace S7CommPlusDriver.ClientApi
         // S5Time_9S_990MS = <Value type="Word">2457</Value>
         // S5Time_2H_46M_30S_0MS = <Value type="Word">14745</Value>
 
+        private ushort m_TimeValue;
+        private ushort m_TimeBase;
+
         /// <summary>
         /// TimeValue: between 0..999, factor is TimeBase
         /// </summary>
@@ -574,13 +612,17 @@ namespace S7CommPlusDriver.ClientApi
         {
             get
             { 
-                return TimeValue;
+                return m_TimeValue;
             }
             set
             {
-                if (TimeValue >= 0 && TimeValue <= 999)
+                if (value >= 0 && value <= 999)
                 {
-                    TimeValue = value;
+                    m_TimeValue = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "TimeValue must be >= 0 and <= 999");
                 }
             }
         }
@@ -591,13 +633,17 @@ namespace S7CommPlusDriver.ClientApi
         {
             get
             {
-                return TimeBase;
+                return m_TimeBase;
             }
             set
             {
-                if (TimeBase >= 0 && TimeBase <= 3)
+                if (value >= 0 && value <= 3)
                 {
-                    TimeBase = value;
+                    m_TimeBase = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "TimeBase must be >= 0 and <= 3");
                 }
             }
         }
@@ -658,18 +704,24 @@ namespace S7CommPlusDriver.ClientApi
          * uuu = milliseconds
          * Q = Weekday 1=Su, 2=Mo, 3=Tu, 4=We, 5=Th, 6=Fr, 7=Sa
          */
+        private DateTime m_Value;
+
         public DateTime Value
         {
             get
             {
-                return Value;
+                return m_Value;
             }
 
             set
             {
                 if (value >= new DateTime(1990, 1, 1) && value < new DateTime(2090, 1, 1))
                 {
-                    Value = value;
+                    m_Value = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "DateTime must be >= 1990-01-01 and < 2090-01-01");
                 }
             }
         }
@@ -755,28 +807,33 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagString : PlcTag
     {
+        private string m_Value;
+        private byte m_MaxLength = 254;
+        private string m_Encoding = "ISO-8859-1";
+
         public string Value
         {
             get
             {
-                return Value;
+                return m_Value;
             }
 
             set
             {
-                if (value.Length <= MaxLength)
+                if (value.Length <= m_MaxLength)
                 {
-                    Value = value;
+                    m_Value = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "String is longer than the allowed max. length of " + m_MaxLength);
                 }
             }
         }
 
-        byte MaxLength = 254;
-        string m_Encoding = "ISO-8859-1";
-
         public PlcTagString(string name, ItemAddress address, uint softdatatype, byte maxlength = 254) : base(name, address, softdatatype)
         {
-            MaxLength = maxlength;
+            m_MaxLength = maxlength;
         }
 
         public override void ProcessReadResult(object valueObj, ulong error)
@@ -803,8 +860,8 @@ namespace S7CommPlusDriver.ClientApi
         {
             // Must write the complete array of MaxLength of the string (plus two bytes header).
             byte[] sb = Encoding.GetEncoding(m_Encoding).GetBytes(Value);
-            var b = new byte[MaxLength + 2];
-            b[0] = MaxLength;
+            var b = new byte[m_MaxLength + 2];
+            b[0] = m_MaxLength;
             b[1] = (byte)sb.Length;
             for (int i = 0; i < sb.Length; i++)
             {
@@ -820,20 +877,23 @@ namespace S7CommPlusDriver.ClientApi
 
         public override string ToString()
         {
-            return ResultString(this, Value);
+            return ResultString(this, "abc"); //ResultString(this, Value);
         }
     }
 
     public class PlcTagPointer : PlcTag
     {
+        private byte[] m_Value;
+
         public byte[] Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagPointer(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
         {
-            Value = new byte[6];
+            m_Value = new byte[6];
         }
 
         public override void ProcessReadResult(object valueObj, ulong error)
@@ -869,14 +929,17 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagAny: PlcTag
     {
+        private byte[] m_Value;
+
         public byte[] Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         } 
 
         public PlcTagAny(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
         {
-            Value = new byte[10];
+            m_Value = new byte[10];
         }
 
         public override void ProcessReadResult(object valueObj, ulong error)
@@ -915,9 +978,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLReal : PlcTag
     {
+        private double m_Value;
+
         public double Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagLReal(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -949,9 +1015,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagULInt : PlcTag
     {
+        private ulong m_Value;
+
         public ulong Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagULInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -983,9 +1052,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLInt : PlcTag
     {
+        private long m_Value;
+
         public long Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagLInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1017,9 +1089,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLWord : PlcTag
     {
+        private ulong m_Value;
+
         public ulong Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagLWord(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1051,9 +1126,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagUSInt : PlcTag
     {
+        private byte m_Value;
+
         public byte Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagUSInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1085,9 +1163,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagUInt : PlcTag
     {
+        private ushort m_Value;
+
         public ushort Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagUInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1119,9 +1200,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagUDInt : PlcTag
     {
+        private uint m_Value;
+
         public uint Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagUDInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1153,9 +1237,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagSInt : PlcTag
     {
+        private sbyte m_Value;
+
         public sbyte Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagSInt(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1187,9 +1274,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagWChar : PlcTag
     {
+        private char m_Value;
+
         public char Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagWChar(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1221,27 +1311,32 @@ namespace S7CommPlusDriver.ClientApi
   
     public class PlcTagWString : PlcTag
     {
+        private string m_Value;
+        ushort m_MaxLength = 254;
+
         public string Value
         {
             get
             {
-                return Value;
+                return m_Value;
             }
 
             set
             {
-                if (value.Length <= MaxLength)
+                if (value.Length <= m_MaxLength)
                 {
-                    Value = value;
+                    m_Value = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "String is longer than the allowed max. length of " + m_MaxLength);
                 }
             }
         }
 
-        ushort MaxLength = 254;
-
         public PlcTagWString(string name, ItemAddress address, uint softdatatype, ushort maxlength = 254) : base(name, address, softdatatype)
         {
-            MaxLength = maxlength;
+            m_MaxLength = maxlength;
         }
 
         public override void ProcessReadResult(object valueObj, ulong error)
@@ -1268,7 +1363,7 @@ namespace S7CommPlusDriver.ClientApi
         {
             // Must write the complete array of MaxLength of the string (plus two ushort for the header).
             var b = new ushort[Value.Length + 2];
-            b[0] = MaxLength;
+            b[0] = m_MaxLength;
             b[1] = (ushort)Value.Length;
             for (int i = 0; i < Value.Length; i++)
             {
@@ -1285,9 +1380,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLTime : PlcTag
     {
+        private long m_Value;
+
         public long Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagLTime(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1369,9 +1467,12 @@ namespace S7CommPlusDriver.ClientApi
     {
         // TODO: Like the 32 Bit Types Date/TOD, in .Net there's not type for date / time only. Only in .Net 6.
         // Specification: Number of nanoseconds since 00:00:00.
+        private ulong m_Value;
+
         public ulong Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagLTOD(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1421,9 +1522,12 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLDT: PlcTag
     {
+        private ulong m_Value;
+
         public ulong Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagLDT(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1490,14 +1594,17 @@ namespace S7CommPlusDriver.ClientApi
     public class PlcTagDTL : PlcTag
     {
         // TODO: Unify all date / time datatypes
-        byte[] Value
+        private byte[] m_Value;
+
+        public byte[] Value
         {
-            get; set;
+            get { return m_Value; }
+            set { m_Value = value; }
         }
 
         public PlcTagDTL(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
         {
-            Value = new byte[12];
+            m_Value = new byte[12];
         }
 
         public override void ProcessReadResult(object valueObj, ulong error)
