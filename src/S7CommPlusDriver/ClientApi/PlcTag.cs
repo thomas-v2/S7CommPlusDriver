@@ -465,10 +465,27 @@ namespace S7CommPlusDriver.ClientApi
         // Specification: 01:02:03 = 3723000 number of milliseconds since 00:00:00
         private uint m_Value;
 
+        /// <summary>
+        /// Number of milliseconds since 00:00:00, must be below 86400000ms
+        /// </summary>
         public uint Value
         {
-            get { return m_Value; }
-            set { m_Value = value; }
+            get
+            {
+                return m_Value;
+            }
+
+            set
+            { 
+                if (value < 86400000)
+                {
+                    m_Value = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "Number if milliseconds must be < 86400000");
+                }
+            }
         }
 
         public PlcTagTimeOfDay(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
