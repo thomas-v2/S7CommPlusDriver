@@ -20,6 +20,10 @@ NON_RETAIN
       SInt_Max_127 : SInt;   // SInt: Max
       SInt_123 : SInt;   // SInt: Testvalue 1
       SInt_n123 : SInt;   // SInt: Testvalue 2
+      DInt_Min_n2147483648 : DInt;   // DInt: Min
+      DInt_Max_2147483647 : DInt;   // DInt: Max
+      DInt_1234567890 : DInt;   // DInt: Testvalue 1
+      DInt_n987654321 : DInt;   // DInt: Testvalue 2
    END_VAR
 
 
@@ -38,6 +42,10 @@ BEGIN
    SInt_Max_127 := 127;
    SInt_123 := 123;
    SInt_n123 := -123;
+   DInt_Min_n2147483648 := -2_147_483_648;
+   DInt_Max_2147483647 := 2_147_483_647;
+   DInt_1234567890 := 1_234_567_890;
+   DInt_n987654321 := -987_654_321;
 
 END_DATA_BLOCK
 
