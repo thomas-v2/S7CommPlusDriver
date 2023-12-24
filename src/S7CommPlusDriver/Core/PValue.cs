@@ -1,7 +1,7 @@
 ﻿#region License
 /******************************************************************************
  * S7CommPlusDriver
- * 
+ *
  * Copyright (C) 2023 Thomas Wiens, th.wiens@gmx.de
  *
  * This file is part of S7CommPlusDriver.
@@ -679,11 +679,10 @@ namespace S7CommPlusDriver
                     S7p.DecodeUInt32(buffer, out value[i]);
                 }
             }
-            
             return new ValueUDIntArray(value, flags);
         }
     }
-    
+
     // The construction of Sparsearray is almost similar to reading a struct.
     // All elementy are kind of key,value. And Value is of the selected type.
     // The list is terminated by Null.
@@ -2777,7 +2776,7 @@ namespace S7CommPlusDriver
             {
                 ret += S7p.EncodeUInt32Vlq(buffer, (uint)Value[i].Length);
                 ret += S7p.EncodeWString(buffer, Value[i]);
-            }               
+            }
             return ret;
         }
 
@@ -2905,6 +2904,11 @@ namespace S7CommPlusDriver
     {
         UInt32 Value;
         private Dictionary<uint, PValue> Elements = new Dictionary<uint, PValue>();
+        /// <summary>
+        /// InterfaceTimestamp: Only relevant if Value is transmitted as Packed Struct.
+        /// Used on transmitting Systemdatatypes in a compact way (e.g. DTL).
+        /// </summary>
+        public UInt64 PackedStructInterfaceTimestamp;
 
         public ValueStruct(UInt32 value) : this (value, 0)
         {
@@ -2939,12 +2943,47 @@ namespace S7CommPlusDriver
             ret += S7p.EncodeByte(buffer, DatatypeFlags);
             ret += S7p.EncodeByte(buffer, Datatype.Struct);
             ret += S7p.EncodeUInt32(buffer, Value);
-            foreach (var elem in Elements)
+            // TODO: EXPERIMENTAL!
+            // Packed Struct, see comment in Deserialize
+            if ((Value > 0x90000000 && Value < 0x9fffffff) || (Value > 0x02000000 && Value < 0x02ffffff))
             {
-                ret += S7p.EncodeUInt32Vlq(buffer, elem.Key);
-                ret += elem.Value.Serialize(buffer);
+                // There should be only one Element? The key from the dictionary element is not used.
+                // It's somewhat all hacked into the Struct variant...
+                foreach (var elem in Elements)
+                {
+                    // The timestamp must be exactly the same as from browsing the Plc, otherwise we
+                    // get an Error "InvalidTimestampInTypeSafeBlob"
+                    ret += S7p.EncodeUInt64(buffer, PackedStructInterfaceTimestamp);
+
+                    UInt32 transp_flags = 0x0002;
+                    ret += S7p.EncodeUInt32Vlq(buffer, transp_flags);
+
+                    if (elem.Value.GetType() == typeof(ValueByteArray))
+                    {
+                        var barr = ((ValueByteArray)elem.Value).GetValue();
+                        UInt32 elementcount = (UInt32)barr.Length;
+                        ret += S7p.EncodeUInt32Vlq(buffer, elementcount);
+                        // Don't use the Serialize method of ValueByteArray, because there is an additional header we don't want here.
+                        for (int i = 0; i < barr.Length; i++)
+                        {
+                            ret += S7p.EncodeByte(buffer, barr[i]);
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("ValueStruct.Serialize(): Elements[0] is not of type ValueByteArray");
+                    }
+                }
             }
-            ret += S7p.EncodeByte(buffer, 0); // List Terminator
+            else
+            {
+                foreach (var elem in Elements)
+                {
+                    ret += S7p.EncodeUInt32Vlq(buffer, elem.Key);
+                    ret += elem.Value.Serialize(buffer);
+                }
+                ret += S7p.EncodeByte(buffer, 0); // List Terminator
+            }
             return ret;
         }
 
@@ -2953,6 +2992,10 @@ namespace S7CommPlusDriver
             string s = "";
             s += "<Value type =\"Struct\">" + Environment.NewLine;
             s += "<ID>" + Value.ToString() + "</ID>" + Environment.NewLine;
+            if ((Value > 0x90000000 && Value < 0x9fffffff) || (Value > 0x02000000 && value < 0x02ffffff))
+            {
+                s += "<PackedStructInterfaceTimestamp>" + PackedStructInterfaceTimestamp.ToString() + "</PackedStructInterfaceTimestamp>" + Environment.NewLine;
+            }
             foreach (var elem in Elements)
             {
                 s += "<Element>" + Environment.NewLine;
@@ -2980,8 +3023,7 @@ namespace S7CommPlusDriver
                 // or must be known before. As the data are transmitted as Bytearrays, return them in this type. Interpretation must be done later.
                 stru = new ValueStruct(value);
 
-                UInt64 interfaceTimestamp;
-                S7p.DecodeUInt64(buffer, out interfaceTimestamp);
+                S7p.DecodeUInt64(buffer, out PackedStructInterfaceTimestamp);
                 UInt32 transp_flags;
                 UInt32 elementcount;
                 if (!disableVlq)
@@ -3004,7 +3046,7 @@ namespace S7CommPlusDriver
                         S7p.DecodeUInt32(buffer, out elementcount);
                     }
                 }
-                
+
                 byte[] barr = new byte[elementcount];
                 for (int i = 0; i < elementcount; i++)
                 {
