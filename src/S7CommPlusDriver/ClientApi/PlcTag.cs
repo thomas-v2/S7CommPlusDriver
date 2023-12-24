@@ -1487,10 +1487,28 @@ namespace S7CommPlusDriver.ClientApi
         // Specification: Number of nanoseconds since 00:00:00.
         private ulong m_Value;
 
+        /// <summary>
+        /// Number of nanoseconds since 00:00:00, must be below 86400000000000ns
+        /// </summary>
         public ulong Value
         {
-            get { return m_Value; }
-            set { m_Value = value; }
+            get
+            {
+                return m_Value;
+            }
+
+            set
+            {
+                if (value < 86400000000000)
+                {
+                    m_Value = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "Number if nanoseconds must be < 86400000000000");
+                }
+                m_Value = value;
+            }
         }
 
         public PlcTagLTOD(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
