@@ -87,7 +87,7 @@ namespace S7CommPlusDriver.ClientApi
             b[2] = (byte)(value % 10);
             value /= 10;
             b[3] = (byte)(value % 10);
-            return (ushort)(b[0] + (b[1] << 4) + (b[2] << 8) + (b[3]) << 12);
+            return (ushort)(b[0] + (b[1] << 4) + (b[2] << 8) + (b[3] << 12));
         }
     }
 
