@@ -2992,7 +2992,7 @@ namespace S7CommPlusDriver
             string s = "";
             s += "<Value type =\"Struct\">" + Environment.NewLine;
             s += "<ID>" + Value.ToString() + "</ID>" + Environment.NewLine;
-            if ((Value > 0x90000000 && Value < 0x9fffffff) || (Value > 0x02000000 && value < 0x02ffffff))
+            if ((Value > 0x90000000 && Value < 0x9fffffff) || (Value > 0x02000000 && Value < 0x02ffffff))
             {
                 s += "<PackedStructInterfaceTimestamp>" + PackedStructInterfaceTimestamp.ToString() + "</PackedStructInterfaceTimestamp>" + Environment.NewLine;
             }
@@ -3023,7 +3023,7 @@ namespace S7CommPlusDriver
                 // or must be known before. As the data are transmitted as Bytearrays, return them in this type. Interpretation must be done later.
                 stru = new ValueStruct(value);
 
-                S7p.DecodeUInt64(buffer, out PackedStructInterfaceTimestamp);
+                S7p.DecodeUInt64(buffer, out stru.PackedStructInterfaceTimestamp);
                 UInt32 transp_flags;
                 UInt32 elementcount;
                 if (!disableVlq)
