@@ -791,6 +791,7 @@ namespace S7CommPlusDriver.ClientApi
             {
                 b[i] = IntToBcdByte(ts[i]);
             }
+            b[7] = (byte)ts[7];
             return new ValueUSIntArray(b);
         }
 
