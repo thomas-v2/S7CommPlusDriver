@@ -173,7 +173,7 @@ namespace S7CommPlusDriver.ClientApi
         public char Value
         {
             get { return m_Value; }
-            set { m_Value = value; }
+            set { m_Value = value; } // TODO: check if fits in ASCII area, include the encoding?
         }
         
         public PlcTagChar(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype) { }
@@ -1300,7 +1300,7 @@ namespace S7CommPlusDriver.ClientApi
 
         public override PValue GetWriteValue()
         {
-            return new ValueUInt((ushort)Char.GetNumericValue(Value));
+            return new ValueUInt(Convert.ToUInt16(Value));
         }
 
         public override string ToString()
@@ -1367,7 +1367,7 @@ namespace S7CommPlusDriver.ClientApi
             b[1] = (ushort)Value.Length;
             for (int i = 0; i < Value.Length; i++)
             {
-                b[i + 2] = (ushort)Char.GetNumericValue(Value[i]);
+                b[i + 2] = Convert.ToUInt16(Value[i]);
             }
             return new ValueUIntArray(b);
         }
