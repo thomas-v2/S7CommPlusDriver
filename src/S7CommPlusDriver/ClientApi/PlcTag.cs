@@ -1629,18 +1629,54 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagDTL : PlcTag
     {
-        // TODO: Unify all date / time datatypes
-        private byte[] m_Value;
+        private DateTime m_Value;
+        private uint m_ValueNanosecond;
 
-        public byte[] Value
+        public DateTime Value
         {
-            get { return m_Value; }
-            set { m_Value = value; }
+            get
+            {
+                return m_Value;
+            }
+
+            set
+            {
+                if (value >= new DateTime(1970, 1, 1) && value <= new DateTime(2262, 4, 11, 23, 47, 16))
+                {
+                    m_Value = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "DateTime must be >= 1970-01-01 and <= 2262-04-11 23:47:16");
+                }
+            }
         }
+
+        public uint ValueNanosecond
+        {
+            get
+            {
+                return m_ValueNanosecond;
+            }
+
+            set
+            {
+                if (value <= 999999999)
+                {
+                    m_ValueNanosecond = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Value", "Nanosecond must be <= 999999999");
+                }
+            }
+        }
+
+        public UInt64 DTLInterfaceTimestamp = 0x10ff4ad6dfd5774c; // Oct 23, 2008 16:38:30.406829900 UTC. Should be used from first browse method (or read) and set correctly
 
         public PlcTagDTL(string name, ItemAddress address, uint softdatatype) : base(name, address, softdatatype)
         {
-            m_Value = new byte[12];
+            Value = new DateTime(1970, 1, 1);
         }
 
         public override void ProcessReadResult(object valueObj, ulong error)
@@ -1661,12 +1697,19 @@ namespace S7CommPlusDriver.ClientApi
                 // 6: MINUTE, USInt
                 // 7: SECOND, USInt
                 // 8, 9, 10, 11: NANOSECOND, UDInt
-                if (struct_val.GetValue() == 33554499)
+                
+                // Use the default timestamp, or refresh it from browsing the plc, or from reading dtl first
+                DTLInterfaceTimestamp = struct_val.PackedStructInterfaceTimestamp;
+
+                if (struct_val.GetValue() == 0x02000043)
                 {
-                    var elem = struct_val.GetStructElement(33554499);
+                    var elem = struct_val.GetStructElement(0x02000043);
                     if (elem.GetType() == typeof(ValueByteArray))
                     {
-                        Value = ((ValueByteArray)elem).GetValue();
+                        var barr = ((ValueByteArray)elem).GetValue();
+                        int year = (int)barr[0] * 256 + (int)barr[1];
+                        ValueNanosecond = (uint)barr[8] * 16777216 + (uint)barr[9] * 65536 + (uint)barr[10] * 256 + (uint)barr[11];
+                        Value = new DateTime(year, barr[2], barr[3], barr[5], barr[6], barr[7]);
                         Quality = PlcTagQC.TAG_QUALITY_GOOD;
                     }
                     else
@@ -1687,21 +1730,29 @@ namespace S7CommPlusDriver.ClientApi
 
         public override PValue GetWriteValue()
         {
-            // TODO! This won't work, because ValueStruct can't handle to serialize a packed struct
-            //var struct_val = new ValueStruct(33554499);
-            //struct_val.AddStructElement(33554499, new ValueByteArray(Value));
-            //return  struct_val;
-            return null;
+            var struct_val = new ValueStruct(0x02000043); // 0x02000043 = TI_LIB.SimpleType.67 -> DTL Systemdatatype
+            struct_val.PackedStructInterfaceTimestamp = DTLInterfaceTimestamp;
+            var barr = new byte[12];
+            barr[0] = (byte)(Value.Year >> 8);
+            barr[1] = (byte)Value.Year;
+            barr[2] = (byte)Value.Month;
+            barr[3] = (byte)Value.Day;
+            barr[4] = 0; // Weekday, don't set
+            barr[5] = (byte)Value.Hour;
+            barr[6] = (byte)Value.Minute;
+            barr[7] = (byte)Value.Second;
+            barr[8] = (byte)(ValueNanosecond >> 24);
+            barr[9] = (byte)(ValueNanosecond >> 16);
+            barr[10] = (byte)(ValueNanosecond >> 8);
+            barr[11] = (byte)(ValueNanosecond);
+            struct_val.AddStructElement(0x02000043, new ValueByteArray(barr));
+            return struct_val;
         }
 
         public override string ToString()
         {
             string fmt;
-            int year = (int)Value[0] * 256 + (int)Value[1];
-            uint ns = (uint)Value[8] * 16777216 + (uint)Value[9] * 65536 + (uint)Value[10] * 256 + (uint)Value[11];
-
-            DateTime dt = new DateTime(year, Value[2], Value[3], Value[5], Value[6], Value[7]);
-
+            uint ns = ValueNanosecond;
             if ((ns % 1000) > 0)
             {
                 fmt = "{0}.{1:D09}";
@@ -1718,9 +1769,9 @@ namespace S7CommPlusDriver.ClientApi
             }
             else
             {
-                return dt.ToString();
+                return Value.ToString();
             }
-            return String.Format(fmt, dt.ToString(), ns);
+            return String.Format(fmt, Value.ToString(), ns);
         }
     }
 }
