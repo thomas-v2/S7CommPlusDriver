@@ -15,6 +15,7 @@
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 
 namespace S7CommPlusDriver
 {
@@ -23,7 +24,7 @@ namespace S7CommPlusDriver
         public byte TransportFlags;
         public UInt64 ReturnValue;
         public UInt32 ExploreId;
-        public PObject ResponseObject;
+        public List<PObject> Objects;
 
         public byte ProtocolVersion { get; set; }
         public ushort FunctionCode { get => Functioncode.Explore; }
@@ -53,8 +54,10 @@ namespace S7CommPlusDriver
                 ret += S7p.DecodeUInt32Vlq(buffer, out uint iid);
                 IntegrityId = iid;
             }
-            // See comment in Wireshark dissector code
-            ret += S7p.DecodeObject(buffer, ref ResponseObject);
+
+            // This is a List of objects
+            Objects = new List<PObject>();
+            ret += S7p.DecodeObjectList(buffer, ref Objects);
             return ret;
         }
 
@@ -68,7 +71,12 @@ namespace S7CommPlusDriver
             s += "<ResponseSet>" + Environment.NewLine;
             s += "<ReturnValue>" + ReturnValue.ToString() + "</ReturnValue>" + Environment.NewLine;
             s += "<ExploreId>" + ExploreId.ToString() + "</ExploreId>" + Environment.NewLine;
-            s += "<ResponseObject>" + ResponseObject.ToString() + "</ResponseObject>" + Environment.NewLine;
+            s += "<Objects>";
+            foreach (var obj in Objects)
+            {
+                s += obj.ToString();
+            }
+            s += "</Objects>" + Environment.NewLine;
             s += "</ResponseSet>" + Environment.NewLine;
             s += "</ExploreResponse>" + Environment.NewLine;
             return s;

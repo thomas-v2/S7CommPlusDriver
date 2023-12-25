@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace S7CommPlusDriver
 {
@@ -66,10 +67,13 @@ namespace S7CommPlusDriver
             {
                 return res;
             }
-            List<PObject> staiclass = exploreRes.ResponseObject.GetObjectsByClassId(Ids.MultipleSTAI_Class_Rid);
-            if (staiclass != null && staiclass.Count > 0)
+
+            var alarmobjs = exploreRes.Objects.First(o => o.RelationId == 0x8a7e0000).GetObjects();
+            var staiclass = alarmobjs.First(o => o.ClassId == Ids.MultipleSTAI_Class_Rid);
+
+            if (staiclass != null)
             {
-                PValue stais = staiclass[0].GetAttribute(Ids.MultipleSTAI_STAIs);
+                PValue stais = staiclass.GetAttribute(Ids.MultipleSTAI_STAIs);
                 if (stais != null)
                 {
                     if (stais.GetType() == typeof(ValueBlobSparseArray))
@@ -133,14 +137,14 @@ namespace S7CommPlusDriver
             }
 
             // All objects which have Alarm AP inside, have a sub-Object with ID 7854 = MultipleSTAI.Class_Rid
-            List<PObject> objList = exploreRes.ResponseObject.GetObjects();
+            var obj = exploreRes.Objects.First(o => o.ClassId == Ids.PLCProgram_Class_Rid);
 
-            foreach (var ob in objList)
+            foreach (var ob in obj.GetObjects())
             {
-                staiclass = ob.GetObjectsByClassId(Ids.MultipleSTAI_Class_Rid);
-                if (staiclass != null && staiclass.Count > 0)
+                var staiclasses = ob.GetObjectsByClassId(Ids.MultipleSTAI_Class_Rid);
+                if (staiclasses != null && staiclasses.Count > 0)
                 {
-                    PValue stais = staiclass[0].GetAttribute(Ids.MultipleSTAI_STAIs);
+                    PValue stais = staiclasses[0].GetAttribute(Ids.MultipleSTAI_STAIs);
                     if (stais != null)
                     {
                         if (stais.GetType() == typeof(ValueBlobSparseArray))
@@ -200,9 +204,11 @@ namespace S7CommPlusDriver
             // [0] contains informations of how to get infos from [1], which has infos about offsets in [2].
             // [2] contains the resulting offsets for the strings in TextLibraryStringArea.
             // TODO: Check if all fields are present, or use try/catch?
-
-            var tloa = ((ValueBlobArray)exploreRes.ResponseObject.GetAttribute(Ids.TextLibraryOffsetArea)).GetValue();
-            var tlsa = ((ValueBlob)exploreRes.ResponseObject.GetAttribute(Ids.TextLibraryStringArea)).GetValue();
+            ValueBlob[] tloa = null;
+            byte[] tlsa = null;
+            var textlib = exploreRes.Objects.First(o => o.ClassId == Ids.TextLibraryClassRID);
+            tloa = ((ValueBlobArray)textlib.GetAttribute(Ids.TextLibraryOffsetArea)).GetValue();
+            tlsa = ((ValueBlob)textlib.GetAttribute(Ids.TextLibraryStringArea)).GetValue();
 
             var tloa_1 = tloa[0].GetValue();
             var tloa_2 = tloa[1].GetValue();

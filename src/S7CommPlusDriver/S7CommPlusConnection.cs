@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.IO;
+using System.Linq;
 
 namespace S7CommPlusDriver
 {
@@ -717,9 +718,9 @@ namespace S7CommPlusDriver
 
             #region Evaluate all data blocks that then need to be browsed
 
-            List<PObject> objList = exploreRes.ResponseObject.GetObjects();
+            var obj = exploreRes.Objects.First(o => o.ClassId == Ids.PLCProgram_Class_Rid);
 
-            foreach (var ob in objList)
+            foreach (var ob in obj.GetObjects())
             {
                 switch (ob.ClassId)
                 {
@@ -836,9 +837,9 @@ namespace S7CommPlusDriver
             {
                 return res;
             }
-            List<PObject> objs = exploreResponse.ResponseObject.GetObjectsByClassId(Ids.ClassTypeInfo);
+            var objs = exploreResponse.Objects.First(o => o.ClassId == Ids.ClassOMSTypeInfoContainer);
 
-            vars.SetTypeInfoContainerObjects(objs);
+            vars.SetTypeInfoContainerObjects(objs.GetObjects());
             vars.BuildTree();
             vars.BuildFlatList();
             varInfoList = vars.GetVarInfoList();
@@ -919,7 +920,7 @@ namespace S7CommPlusDriver
             }
 
             // Get the datablock information we want further informations from.
-            var objList = exploreRes.ResponseObject.GetObjects();
+            var objList = exploreRes.Objects;
 
             foreach (var ob in objList)
             {
@@ -1027,7 +1028,7 @@ namespace S7CommPlusDriver
             {
                 return res;
             }
-            objList.Add(exploreRes.ResponseObject);
+            objList = exploreRes.Objects;
 
             return 0;
         }

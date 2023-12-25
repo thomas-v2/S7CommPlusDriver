@@ -15,6 +15,7 @@
 
 using System;
 using System.Text;
+using System.Collections.Generic;
 
 namespace S7CommPlusDriver
 {
@@ -634,7 +635,26 @@ namespace S7CommPlusDriver
         ///////////////////////////////////////////////////////////////////////////////////////
         // High Level Decode/Encode methods
 
-        public static int DecodeObject(System.IO.Stream buffer, ref PObject obj)
+        public static int DecodeObjectList(System.IO.Stream buffer, ref List<PObject> objList)
+        {
+            int ret = 0;
+            byte tagId;
+            objList = new List<PObject>();
+            // Peek one byte and set buffer back
+            S7p.DecodeByte(buffer, out tagId);
+            buffer.Position -= 1;
+            while (tagId == ElementID.StartOfObject)
+            {
+                PObject obj = null;
+                ret += S7p.DecodeObject(buffer, ref obj, AsList: true);
+                objList.Add(obj);
+                S7p.DecodeByte(buffer, out tagId);
+                buffer.Position -= 1;
+            }
+            return ret;
+        }
+
+        public static int DecodeObject(System.IO.Stream buffer, ref PObject obj, bool AsList = false)
         {
             byte tagId;
             UInt32 id;
@@ -653,7 +673,12 @@ namespace S7CommPlusDriver
                             ret += DecodeUInt32Vlq(buffer, out obj.ClassId);
                             ret += DecodeUInt32Vlq(buffer, out obj.ClassFlags);
                             ret += DecodeUInt32Vlq(buffer, out obj.AttributeId);
-                            ret += DecodeObject(buffer, ref obj);
+                            // If a List is expected, don't add the objects coming next to the parent object
+                            // TODO: May be it's better to always expect a list? Adding the following objects to the first as children must always be wrong.
+                            if (AsList == false)
+                            {
+                                ret += DecodeObject(buffer, ref obj);
+                            }
                         }
                         else
                         {

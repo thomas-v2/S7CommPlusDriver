@@ -37,7 +37,9 @@ namespace S7CommPlusDriver
         public const int ServerSessionClientRID = 300;
         public const int ServerSessionVersion = 306;
         public const int ClassTypeInfo = 511;
+        public const int ClassOMSTypeInfoContainer = 534;
         public const int ObjectOMSTypeInfoContainer = 537;
+        public const int TextLibraryClassRID = 606;
         public const int TextLibraryOffsetArea = 608;
         public const int TextLibraryStringArea = 609;
         public const int SystemLimits = 1037;
@@ -51,6 +53,7 @@ namespace S7CommPlusDriver
         public const int CompositionAID = 1258;
         public const int KeyQualifier = 1259;
         public const int CPUexecUnit_operatingStateReq = 2167;
+        public const int PLCProgram_Class_Rid = 2520;
         public const int Block_BlockNumber = 2521;
         public const int DB_ValueInitial = 2548;
         public const int DB_ValueActual = 2550;
