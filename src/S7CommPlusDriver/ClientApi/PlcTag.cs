@@ -939,8 +939,7 @@ namespace S7CommPlusDriver.ClientApi
             int dbnr = Value[0] * 256 + Value[1];
             int area = Value[2];
             int bitnr = Value[5] & 0x7;
-            int bytenr = Value[5] >> 3 + Value[4] * 32 + (Value[3] & 0x7) * 8192;
-
+            int bytenr = (int)(Value[5] >> 3) + ((int)Value[4]) * 32 + (int)(Value[3] & 0x7) * 8192;
             return ResultString(this, String.Format("DB={0} Area=0x{1:X02} Byte={2} Bit={3}", dbnr, area, bytenr, bitnr));
         }
     }
@@ -988,7 +987,7 @@ namespace S7CommPlusDriver.ClientApi
             int dbnr = Value[4] * 256 + Value[5];
             int area = Value[6];
             int bitnr = Value[9] & 0x7;
-            int bytenr = Value[9] >> 3 + Value[8] * 32 + (Value[7] & 0x7) * 8192;
+            int bytenr = (int)(Value[9] >> 3) + ((int)Value[8]) * 32 + (int)(Value[7] & 0x7) * 8192;
 
             return ResultString(this, String.Format("HDR={0:X02} Type={1:X02} Factor={2} DB={3} Area=0x{4:X02} Byte={5} Bit={6}", hdr, datatype, factor, dbnr, area, bytenr, bitnr));
         }
