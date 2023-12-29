@@ -571,14 +571,14 @@ namespace S7CommPlusDriver.ClientApi
         public override string ToString()
         {
             int[] divs = { 86400000, 3600000, 60000, 1000, 1 };
-            string[] vfmt = { "{0}D", "{0:D02}H", "{0:D02}M", "{0:D02}S", "{0:D03}MS" };
+            string[] vfmt = { "{0}d", "{0:D02}h", "{0:D02}m", "{0:D02}s", "{0:D03}ms" };
             int vtime = Value;
             bool time_negative = false;
             int val;
             string ts = String.Empty;
             if (vtime == 0)
             {
-                ts = "0MS";
+                ts = "0ms";
             }
             else
             {
@@ -895,7 +895,7 @@ namespace S7CommPlusDriver.ClientApi
 
         public override string ToString()
         {
-            return ResultString(this, "abc"); //ResultString(this, Value);
+            return ResultString(this, Value);
         }
     }
 
@@ -1428,50 +1428,7 @@ namespace S7CommPlusDriver.ClientApi
 
         private string ValueAsString()
         {
-            // TODO: Duplicate of ToString() from ValueTimespan.
-            // But that returns an additional XML element around the raw value.
-            string str;
-            long[] divs = { 86400000000000, 3600000000000, 60000000000, 1000000000, 1000000, 1000, 1 };
-            string[] vfmt = { "{0}d", "{0:00}h", "{0:00}m", "{0:00}s", "{0:000}ms", "{0:000}us", "{0:000}ns" };
-            long val;
-            long timespan = Value;
-            bool time_negative = false;
-            if (timespan == 0)
-            {
-                str = "000ns";
-            }
-            else
-            {
-                if (timespan < 0)
-                {
-                    str = "-";
-                    time_negative = true;
-                    for (int i = 0; i < 7; i++)
-                    {
-                        divs[i] = -divs[i];
-                    }
-                }
-                else
-                {
-                    str = "";
-                }
-
-                for (int i = 0; i < 7; i++)
-                {
-                    val = timespan / divs[i];
-                    timespan -= val * divs[i];
-                    if (val > 0)
-                    {
-                        str += String.Format(vfmt[i], (Int32)val);
-                        if ((!time_negative && timespan > 0) || (time_negative && timespan < 0))
-                        {
-                            str += "_";
-                        }
-                    }
-
-                }
-            }
-            return str;
+            return ValueTimespan.ToString(Value);
         }
 
         public override string ToString()
@@ -1588,36 +1545,7 @@ namespace S7CommPlusDriver.ClientApi
 
         private string ValueAsString()
         {
-            // TODO: Duplicate of ToString() from ValueTimespan.
-            // But that returns an additional XML element around the raw value.
-            DateTime dt = new DateTime(1970, 1, 1);
-            ulong v, ns;
-            string fmt;
-            v = Value;
-            ns = v % 1000000000;
-            v /= 1000000000;
-
-            dt = dt.AddSeconds(v);
-
-            if ((ns % 1000) > 0)
-            {
-                fmt = "{0}.{1:D09}";
-            }
-            else if ((ns % 1000000) > 0)
-            {
-                fmt = "{0}.{1:D06}";
-                ns /= 1000;
-            }
-            else if ((ns % 1000000000) > 0)
-            {
-                fmt = "{0}.{1:D03}";
-                ns /= 1000000;
-            }
-            else
-            {
-                return dt.ToString();
-            }
-            return String.Format(fmt, dt.ToString(), ns);
+            return ValueTimestamp.ToString(Value);
         }
 
         public override string ToString()
