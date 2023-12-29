@@ -30,6 +30,13 @@ namespace S7CommPlusDriver
         private bool m_ReceivedNeedMorePdus;
         private bool m_NewS7CommPlusReceived;
         private UInt32 m_SessionId;
+        private UInt32 m_SessionId2;
+        public UInt32 SessionId2
+        {
+            get { return m_SessionId2; }
+            private set { m_SessionId2 = value; }
+        }
+
         private int m_ReadTimeout = 5000;
         private UInt16 m_SequenceNumber = 0;
         private UInt32 m_IntegrityId = 0;
@@ -72,6 +79,7 @@ namespace S7CommPlusDriver
                 case Functioncode.SetMultiVariables:
                 case Functioncode.SetVariable:
                 case Functioncode.SetVarSubStreamed:
+                case Functioncode.DeleteObject:
                     if (m_IntegrityId_Set == UInt32.MaxValue)
                     {
                         m_IntegrityId_Set = 0;
@@ -450,7 +458,10 @@ namespace S7CommPlusDriver
                 m_client.Disconnect();
                 return S7Consts.errIsoInvalidPDU;
             }
+            // There are (always?) at least two IDs in the response.
+            // Usually the first is used for polling data, and the 2nd for jobs which use notifications, e.g. alarming, subscriptions.
             m_SessionId = createObjectResponse.ObjectIds[0];
+            m_SessionId2 = createObjectResponse.ObjectIds[1];
             Console.WriteLine("S7CommPlusConnection - Connect: Using SessionId=0x" + String.Format("{0:X04}", m_SessionId));
 
             // Evaluate Struct 314
@@ -504,7 +515,52 @@ namespace S7CommPlusDriver
 
         public void Disconnect()
         {
+            DeleteObject(m_SessionId);
             m_client.Disconnect();
+        }
+
+        /// <summary>
+        /// Deletes the object with the given Id.
+        /// </summary>
+        /// <param name="deleteObjectId">The object Id to delete</param>
+        /// <returns>0 on success</returns>
+        private int DeleteObject(uint deleteObjectId)
+        {
+            int res;
+            var delReq = new DeleteObjectRequest(ProtocolVersion.V2);
+            delReq.DeleteObjectId = deleteObjectId;
+            res = SendS7plusFunctionObject(delReq);
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                return m_LastError;
+            }
+            // If we delete our own session id, then there's no IntegrityId in the response.
+            // And the error code gives an error, but not a fatal one.
+            // If we delete another object, there should be an IntegrityId in the response, and
+            // the response gives no error.
+            var delRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream);
+            if (deleteObjectId == m_SessionId)
+            {
+                Console.WriteLine("S7CommPlusConnection - DeleteSession: Deleted our own Session Id object, not checking the response.");
+                m_SessionId = 0; // not valid anymore
+                m_SessionId2 = 0;
+            }
+            else
+            {
+                res = checkResponseWithIntegrity(delReq, delRes);
+                if (res != 0)
+                {
+                    return res;
+                }
+                if (delRes.ReturnValue != 0)
+                {
+                    Console.WriteLine("S7CommPlusConnection - DeleteSession: Executed with Error! ReturnValue=" + delRes.ReturnValue);
+                    res = -1;
+                }
+            }
+            return res;
         }
 
         public int ReadValues(List<ItemAddress> addresslist, out List<object> values, out List<UInt64> errors)

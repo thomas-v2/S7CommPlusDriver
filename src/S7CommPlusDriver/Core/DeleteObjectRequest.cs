@@ -33,6 +33,7 @@ namespace S7CommPlusDriver
         public DeleteObjectRequest(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = true;
         }
 
         public byte GetProtocolVersion()
