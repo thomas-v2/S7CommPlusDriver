@@ -105,9 +105,9 @@ namespace S7CommPlusDriver
                     case Datatype.LReal:
                         return ValueLRealArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Timestamp:
-                        throw new NotImplementedException();
+                        return ValueTimestampArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.Timespan:
-                        throw new NotImplementedException();
+                        return ValueTimespanArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.RID:
                         return ValueRIDArray.Deserialize(buffer, flags, disableVlq);
                     case Datatype.AID:
@@ -269,7 +269,7 @@ namespace S7CommPlusDriver
 
     /// <summary>
     /// ValueBoolArray: Important: The length of the array is always a multiple of 8.
-    /// E.g. reading an Array [0..2] of Bool will be transmitted with 8 elements with actal values at index 0, 1, 2.
+    /// E.g. reading an Array [0..2] of Bool will be transmitted with 8 elements with actual values at index 0, 1, 2.
     /// An Array[0..9] will be transmitted with 16 elements and so on.
     /// At this time, serialize doesn't respect the padding elements, must be done on a higher level.
     /// </summary>
@@ -2104,7 +2104,7 @@ namespace S7CommPlusDriver
             return ret;
         }
 
-        public override string ToString()
+        public static string ToString(UInt64 Value)
         {
             DateTime dt = new DateTime(1970, 1, 1);
             ulong v, ns;
@@ -2131,9 +2131,15 @@ namespace S7CommPlusDriver
             }
             else
             {
-                return "<Value type=\"Timestamp\">" + dt.ToString() + "</Value>";
+                return dt.ToString();
             }
-            return "<Value type=\"Timestamp\">" + String.Format(fmt, dt.ToString(), ns) + "</Value>";
+            return String.Format(fmt, dt.ToString(), ns);
+        }
+
+        public override string ToString()
+        {
+            string str = ToString(Value);
+            return "<Value type=\"Timestamp\">" + str + "</Value>";
         }
 
         public static ValueTimestamp Deserialize(Stream buffer, byte flags)
@@ -2141,6 +2147,69 @@ namespace S7CommPlusDriver
             UInt64 value;
             S7p.DecodeUInt64(buffer, out value);
             return new ValueTimestamp(value, flags);
+        }
+    }
+
+    public class ValueTimestampArray : PValue
+    {
+        UInt64[] Value;
+
+        public ValueTimestampArray(UInt64[] value) : this(value, 0)
+        {
+        }
+
+        public ValueTimestampArray(UInt64[] value, byte flags)
+        {
+            DatatypeFlags = flags;
+            Value = value;
+        }
+
+        public UInt64[] GetValue()
+        {
+            return Value;
+        }
+
+        public override int Serialize(Stream buffer)
+        {
+            int ret = 0;
+            ret += S7p.EncodeByte(buffer, DatatypeFlags);
+            ret += S7p.EncodeByte(buffer, Datatype.Timestamp);
+            for (int i = 0; i < Value.Length; i++)
+            {
+                ret += S7p.EncodeUInt64(buffer, Value[i]);
+            }
+            return ret;
+        }
+
+        public override string ToString()
+        {
+            string s = "<Value type =\"TimestampArray\" size=\"" + Value.Length.ToString() + "\">";
+            for (int i = 0; i < Value.Length; i++)
+            {
+                s += String.Format("<Value>{0}</Value>", ValueTimestamp.ToString(Value[i]));
+            }
+            s += "</Value>";
+            return s;
+        }
+
+        public static ValueTimestampArray Deserialize(Stream buffer, byte flags, bool disableVlq)
+        {
+            UInt64[] value;
+            UInt32 size = 0;
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
+            value = new UInt64[size];
+            for (int i = 0; i < size; i++)
+            {
+                S7p.DecodeUInt64(buffer, out value[i]);
+            }
+            return new ValueTimestampArray(value, flags);
         }
     }
 
@@ -2172,7 +2241,7 @@ namespace S7CommPlusDriver
             return ret;
         }
 
-        public override string ToString()
+        public static string ToString(Int64 Value)
         {
             string str;
             long[] divs = { 86400000000000, 3600000000000, 60000000000, 1000000000, 1000000, 1000, 1 };
@@ -2214,6 +2283,12 @@ namespace S7CommPlusDriver
                     }
                 }
             }
+            return str;
+        }
+
+        public override string ToString()
+        {
+            string str = ToString(Value);
             return ("<Value type=\"Timespan\">" + str + "</Value>");
         }
 
@@ -2229,6 +2304,81 @@ namespace S7CommPlusDriver
                 S7p.DecodeInt64(buffer, out value);
             }
             return new ValueTimespan(value, flags);
+        }
+    }
+
+    public class ValueTimespanArray : PValue
+    {
+        Int64[] Value;
+
+        public ValueTimespanArray(Int64[] value) : this(value, FLAGS_ARRAY)
+        {
+        }
+
+        public ValueTimespanArray(Int64[] value, byte flags)
+        {
+            DatatypeFlags = flags;
+            if (value != null)
+            {
+                Value = new Int64[value.Length];
+                Array.Copy(value, Value, value.Length);
+            }
+        }
+
+        public Int64[] GetValue()
+        {
+            return Value;
+        }
+
+        public override int Serialize(Stream buffer)
+        {
+            int ret = 0;
+            ret += S7p.EncodeByte(buffer, DatatypeFlags);
+            ret += S7p.EncodeByte(buffer, Datatype.LReal);
+            ret += S7p.EncodeUInt32Vlq(buffer, (uint)Value.Length);
+            for (int i = 0; i < Value.Length; i++)
+            {
+                ret += S7p.EncodeInt64Vlq(buffer, Value[i]);
+            }
+            return ret;
+        }
+
+        public override string ToString()
+        {
+            string s = "<Value type =\"ValueTimespanArray\" size=\"" + Value.Length.ToString() + "\">";
+            for (int i = 0; i < Value.Length; i++)
+            {
+                s += String.Format("<Value>{0}</Value>", ValueTimespan.ToString(Value[i]));
+            }
+            s += "</Value>";
+            return s;
+        }
+
+        public static ValueTimespanArray Deserialize(Stream buffer, byte flags, bool disableVlq)
+        {
+            Int64[] value;
+            UInt32 size = 0;
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out size);
+            }
+            else
+            {
+                S7p.DecodeUInt32(buffer, out size);
+            }
+            value = new Int64[size];
+            for (int i = 0; i < size; i++)
+            {
+                if (!disableVlq)
+                {
+                    S7p.DecodeInt64Vlq(buffer, out value[i]);
+                }
+                else
+                {
+                    S7p.DecodeInt64(buffer, out value[i]);
+                }
+            }
+            return new ValueTimespanArray(value, flags);
         }
     }
 
