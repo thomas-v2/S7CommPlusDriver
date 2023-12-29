@@ -2174,6 +2174,7 @@ namespace S7CommPlusDriver
             int ret = 0;
             ret += S7p.EncodeByte(buffer, DatatypeFlags);
             ret += S7p.EncodeByte(buffer, Datatype.Timestamp);
+            ret += S7p.EncodeUInt32Vlq(buffer, (uint)Value.Length);
             for (int i = 0; i < Value.Length; i++)
             {
                 ret += S7p.EncodeUInt64(buffer, Value[i]);
