@@ -32,11 +32,11 @@ namespace S7CommPlusDriver
         public uint IntegrityId { get; set; }
         public bool WithIntegrityId { get; set; }
 
-        public CreateObjectRequest(byte protocolVersion, UInt16 seqNum)
+        public CreateObjectRequest(byte protocolVersion, UInt16 seqNum, bool withIntegrityId)
         {
             ProtocolVersion = protocolVersion;
             SequenceNumber = seqNum;
-            WithIntegrityId = false;
+            WithIntegrityId = withIntegrityId;
         }
 
         public void SetRequestIdValue(UInt32 requestId, PValue requestValue)
@@ -80,12 +80,14 @@ namespace S7CommPlusDriver
             ret += S7p.EncodeByte(buffer, TransportFlags);
 
             // Request set
-            ret += S7p.EncodeUInt32(buffer, Ids.ObjectServerSessionContainer);
-            ret += S7p.EncodeByte(buffer, 0x00);
-            ret += S7p.EncodeByte(buffer, Datatype.UDInt);
-            ret += S7p.EncodeUInt32Vlq(buffer, 0);
-
+            ret += S7p.EncodeUInt32(buffer, RequestId);
+            ret += RequestValue.Serialize(buffer);
             ret += S7p.EncodeUInt32(buffer, 0); // Unknown value 1
+
+            if (WithIntegrityId)
+            {
+                ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
+            }
 
             // Object 
             ret += RequestObject.Serialize(buffer);

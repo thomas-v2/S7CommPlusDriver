@@ -81,6 +81,7 @@ namespace S7CommPlusDriver
                 case Functioncode.SetVariable:
                 case Functioncode.SetVarSubStreamed:
                 case Functioncode.DeleteObject:
+                case Functioncode.CreateObject:
                     if (m_IntegrityId_Set == UInt32.MaxValue)
                     {
                         m_IntegrityId_Set = 0;
@@ -435,7 +436,7 @@ namespace S7CommPlusDriver
 
             #region Step 3: CreateObjectRequest / Response (with TLS)
 
-            var createObjReq = new CreateObjectRequest(ProtocolVersion.V1, 0);
+            var createObjReq = new CreateObjectRequest(ProtocolVersion.V1, 0, false);
             createObjReq.SetNullServerSessionData();
             res = SendS7plusFunctionObject(createObjReq);
             if (res != 0)
