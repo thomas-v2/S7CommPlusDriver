@@ -41,7 +41,7 @@ namespace S7CommPlusDriver
             {
                 do
                 {
-                    PVartypeListElement elem = new PVartypeListElement();
+                    var elem = new PVartypeListElement();
                     ret += elem.Deserialize(buffer);
                     Elements.Add(elem);
                 } while (ret < maxret);

@@ -146,7 +146,7 @@ namespace S7CommPlusDriver
             {
                 return null;
             }
-            SystemEvent sysevt = new SystemEvent(protocolVersion);
+            var sysevt = new SystemEvent(protocolVersion);
             sysevt.Deserialize(pdu);
             return sysevt;
         }

@@ -325,17 +325,17 @@ namespace S7CommPlusDriver
             // 1000 = Number for Reading
             // 1001 = Number for Writing
             int res;
-            List<ItemAddress> readlist = new List<ItemAddress>();
-            List<object> values = new List<object>();
-            List<UInt64> errors = new List<UInt64>();
+            var readlist = new List<ItemAddress>();
+            var values = new List<object>();
+            var errors = new List<UInt64>();
 
-            ItemAddress adrMaxReadTags = new ItemAddress
+            var adrMaxReadTags = new ItemAddress
             {
                 AccessArea = Ids.ObjectRoot,
                 AccessSubArea = Ids.SystemLimits
             };
             adrMaxReadTags.LID.Add(1000);
-            ItemAddress adrMaxWriteTags = new ItemAddress
+            var adrMaxWriteTags = new ItemAddress
             {
                 AccessArea = Ids.ObjectRoot,
                 AccessSubArea = Ids.SystemLimits
@@ -397,8 +397,8 @@ namespace S7CommPlusDriver
 
             #region Step 1: Unencrypted InitSSL Request / Response
 
-            InitSslRequest sslrequest = new InitSslRequest(ProtocolVersion.V1, 0 , 0);
-            res = SendS7plusFunctionObject(sslrequest);
+            InitSslRequest sslReq = new InitSslRequest(ProtocolVersion.V1, 0 , 0);
+            res = SendS7plusFunctionObject(sslReq);
             if (res != 0)
             {
                 m_client.Disconnect();
@@ -411,9 +411,9 @@ namespace S7CommPlusDriver
                 m_client.Disconnect();
                 return m_LastError;
             }
-            InitSslResponse sslresponse;
-            sslresponse = InitSslResponse.DeserializeFromPdu(m_ReceivedStream);
-            if (sslresponse == null)
+            InitSslResponse sslRes;
+            sslRes = InitSslResponse.DeserializeFromPdu(m_ReceivedStream);
+            if (sslRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: InitSslResponse with Error!");
                 m_client.Disconnect();
@@ -435,9 +435,9 @@ namespace S7CommPlusDriver
 
             #region Step 3: CreateObjectRequest / Response (with TLS)
 
-            CreateObjectRequest createObjectRequest = new CreateObjectRequest(ProtocolVersion.V1, 0);
-            createObjectRequest.SetNullServerSessionData();
-            res = SendS7plusFunctionObject(createObjectRequest);
+            var createObjReq = new CreateObjectRequest(ProtocolVersion.V1, 0);
+            createObjReq.SetNullServerSessionData();
+            res = SendS7plusFunctionObject(createObjReq);
             if (res != 0)
             {
                 m_client.Disconnect();
@@ -451,9 +451,8 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            CreateObjectResponse createObjectResponse;
-            createObjectResponse = CreateObjectResponse.DeserializeFromPdu(m_ReceivedStream);
-            if (createObjectResponse == null)
+            var createObjRes = CreateObjectResponse.DeserializeFromPdu(m_ReceivedStream);
+            if (createObjRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: CreateObjectResponse with Error!");
                 m_client.Disconnect();
@@ -461,21 +460,21 @@ namespace S7CommPlusDriver
             }
             // There are (always?) at least two IDs in the response.
             // Usually the first is used for polling data, and the 2nd for jobs which use notifications, e.g. alarming, subscriptions.
-            m_SessionId = createObjectResponse.ObjectIds[0];
-            m_SessionId2 = createObjectResponse.ObjectIds[1];
+            m_SessionId = createObjRes.ObjectIds[0];
+            m_SessionId2 = createObjRes.ObjectIds[1];
             Console.WriteLine("S7CommPlusConnection - Connect: Using SessionId=0x" + String.Format("{0:X04}", m_SessionId));
 
             // Evaluate Struct 314
-            PValue sval = createObjectResponse.ResponseObject.GetAttribute(Ids.ServerSessionVersion);
+            PValue sval = createObjRes.ResponseObject.GetAttribute(Ids.ServerSessionVersion);
             ValueStruct serverSession = (ValueStruct)sval;
 
             #endregion
 
             #region Step 4: SetMultiVariablesRequest / Response
 
-            SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
-            setMultiVariablesRequest.SetSessionSetupData(m_SessionId, serverSession);
-            res = SendS7plusFunctionObject(setMultiVariablesRequest);
+            var setMultiVarReq = new SetMultiVariablesRequest(ProtocolVersion.V2);
+            setMultiVarReq.SetSessionSetupData(m_SessionId, serverSession);
+            res = SendS7plusFunctionObject(setMultiVarReq);
             if (res != 0)
             {
                 m_client.Disconnect();
@@ -489,9 +488,8 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            SetMultiVariablesResponse setMultiVariablesResponse;
-            setMultiVariablesResponse = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
-            if (setMultiVariablesResponse == null)
+            var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+            if (setMultiVarRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: SetMultiVariablesResponse with Error!");
                 m_client.Disconnect();
@@ -528,9 +526,9 @@ namespace S7CommPlusDriver
         private int DeleteObject(uint deleteObjectId)
         {
             int res;
-            var delReq = new DeleteObjectRequest(ProtocolVersion.V2);
-            delReq.DeleteObjectId = deleteObjectId;
-            res = SendS7plusFunctionObject(delReq);
+            var delObjReq = new DeleteObjectRequest(ProtocolVersion.V2);
+            delObjReq.DeleteObjectId = deleteObjectId;
+            res = SendS7plusFunctionObject(delObjReq);
             m_LastError = 0;
             WaitForNewS7plusReceived(m_ReadTimeout);
             if (m_LastError != 0)
@@ -543,22 +541,22 @@ namespace S7CommPlusDriver
             // the response gives no error.
             if (deleteObjectId == m_SessionId)
             {
-                var delRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, false);
+                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, false);
                 Trace.WriteLine("S7CommPlusConnection - DeleteSession: Deleted our own Session Id object, not checking the response.");
                 m_SessionId = 0; // not valid anymore
                 m_SessionId2 = 0;
             }
             else
             {
-                var delRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, true);
-                res = checkResponseWithIntegrity(delReq, delRes);
+                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, true);
+                res = checkResponseWithIntegrity(delObjReq, delObjRes);
                 if (res != 0)
                 {
                     return res;
                 }
-                if (delRes.ReturnValue != 0)
+                if (delObjRes.ReturnValue != 0)
                 {
-                    Console.WriteLine("S7CommPlusConnection - DeleteSession: Executed with Error! ReturnValue=" + delRes.ReturnValue);
+                    Console.WriteLine("S7CommPlusConnection - DeleteSession: Executed with Error! ReturnValue=" + delObjRes.ReturnValue);
                     res = -1;
                 }
             }
@@ -584,17 +582,17 @@ namespace S7CommPlusDriver
             do
             {
                 int res;
-                GetMultiVariablesRequest getMultiVariablesRequest = new GetMultiVariablesRequest(ProtocolVersion.V2);
+                var getMultiVarReq = new GetMultiVariablesRequest(ProtocolVersion.V2);
 
-                getMultiVariablesRequest.AddressList.Clear();
+                getMultiVarReq.AddressList.Clear();
                 count_perChunk = 0;
                 while (count_perChunk < m_MaxTagsPerReadRequestLimit && (chunk_startIndex + count_perChunk) < addresslist.Count)
                 {
-                    getMultiVariablesRequest.AddressList.Add(addresslist[chunk_startIndex + count_perChunk]);
+                    getMultiVarReq.AddressList.Add(addresslist[chunk_startIndex + count_perChunk]);
                     count_perChunk++;
                 }
 
-                res = SendS7plusFunctionObject(getMultiVariablesRequest);
+                res = SendS7plusFunctionObject(getMultiVarReq);
                 m_LastError = 0;
                 WaitForNewS7plusReceived(m_ReadTimeout);
                 if (m_LastError != 0)
@@ -602,28 +600,28 @@ namespace S7CommPlusDriver
                     return m_LastError;
                 }
 
-                GetMultiVariablesResponse getMultiVariablesResponse = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
-                res = checkResponseWithIntegrity(getMultiVariablesRequest, getMultiVariablesResponse);
+                var getMultiVarRes = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+                res = checkResponseWithIntegrity(getMultiVarReq, getMultiVarRes);
                 if (res != 0)
                 {
                     return res;
                 }
                 // ReturnValue shows also an error, if only one single variable could not be read
-                if (getMultiVariablesResponse.ReturnValue != 0)
+                if (getMultiVarRes.ReturnValue != 0)
                 {
-                    Console.WriteLine("S7CommPlusConnection - ReadValues: Executed with Error! ReturnValue=" + getMultiVariablesResponse.ReturnValue);
+                    Console.WriteLine("S7CommPlusConnection - ReadValues: Executed with Error! ReturnValue=" + getMultiVarRes.ReturnValue);
                 }
 
                 // TODO: If a variable could not be read, there is no value, but there is an ErrorValue.
                 // The user must therefore check whether Value != null. Maybe there's a more elegant solution.
-                foreach (var v in getMultiVariablesResponse.Values)
+                foreach (var v in getMultiVarRes.Values)
                 {
                     values[chunk_startIndex + (int)v.Key - 1] = v.Value;
                     // Initialize error to 0, will be overwritten below if there was an error on an item.
                     errors[chunk_startIndex + (int)v.Key - 1] = 0;
                 }
 
-                foreach (var ev in getMultiVariablesResponse.ErrorValues)
+                foreach (var ev in getMultiVarRes.ErrorValues)
                 {
                     errors[chunk_startIndex + (int)ev.Key - 1] = ev.Value;
                 }
@@ -649,18 +647,18 @@ namespace S7CommPlusDriver
             int count_perChunk = 0;
             do
             {
-                SetMultiVariablesRequest setMultiVariablesRequest = new SetMultiVariablesRequest(ProtocolVersion.V2);
-                setMultiVariablesRequest.AddressListVar.Clear();
-                setMultiVariablesRequest.ValueList.Clear();
+                var setMultiVarReq = new SetMultiVariablesRequest(ProtocolVersion.V2);
+                setMultiVarReq.AddressListVar.Clear();
+                setMultiVarReq.ValueList.Clear();
                 count_perChunk = 0;
                 while (count_perChunk < m_MaxTagsPerWriteRequestLimit && (chunk_startIndex + count_perChunk) < addresslist.Count)
                 {
-                    setMultiVariablesRequest.AddressListVar.Add(addresslist[chunk_startIndex + count_perChunk]);
-                    setMultiVariablesRequest.ValueList.Add(values[chunk_startIndex + count_perChunk]);
+                    setMultiVarReq.AddressListVar.Add(addresslist[chunk_startIndex + count_perChunk]);
+                    setMultiVarReq.ValueList.Add(values[chunk_startIndex + count_perChunk]);
                     count_perChunk++;
                 }
 
-                res = SendS7plusFunctionObject(setMultiVariablesRequest);
+                res = SendS7plusFunctionObject(setMultiVarReq);
                 if (res != 0)
                 {
                     return res;
@@ -672,20 +670,19 @@ namespace S7CommPlusDriver
                     return m_LastError;
                 }
 
-                SetMultiVariablesResponse setMultiVariablesResponse;
-                setMultiVariablesResponse = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
-                res = checkResponseWithIntegrity(setMultiVariablesRequest, setMultiVariablesResponse);
+                var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+                res = checkResponseWithIntegrity(setMultiVarReq, setMultiVarRes);
                 if (res != 0)
                 {
                     return res;
                 }
                 // ReturnValue shows also an error, if only one single variable could not be written
-                if (setMultiVariablesResponse.ReturnValue != 0)
+                if (setMultiVarRes.ReturnValue != 0)
                 {
-                    Console.WriteLine("S7CommPlusConnection - WriteValues: Write with errors. ReturnValue=" + setMultiVariablesResponse.ReturnValue);
+                    Console.WriteLine("S7CommPlusConnection - WriteValues: Write with errors. ReturnValue=" + setMultiVarRes.ReturnValue);
                 }
 
-                foreach (var ev in setMultiVariablesResponse.ErrorValues)
+                foreach (var ev in setMultiVarRes.ErrorValues)
                 {
                     errors[chunk_startIndex + (int)ev.Key - 1] = ev.Value;
                 }
@@ -699,12 +696,12 @@ namespace S7CommPlusDriver
         public int SetPlcOperatingState(Int32 state)
         {
             int res;
-            SetVariableRequest setVariableRequest = new SetVariableRequest(ProtocolVersion.V2);
-            setVariableRequest.InObjectId = Ids.NativeObjects_theCPUexecUnit_Rid;
-            setVariableRequest.Address = Ids.CPUexecUnit_operatingStateReq;
-            setVariableRequest.Value = new ValueDInt(state);
+            var setVarReq = new SetVariableRequest(ProtocolVersion.V2);
+            setVarReq.InObjectId = Ids.NativeObjects_theCPUexecUnit_Rid;
+            setVarReq.Address = Ids.CPUexecUnit_operatingStateReq;
+            setVarReq.Value = new ValueDInt(state);
 
-            res = SendS7plusFunctionObject(setVariableRequest);
+            res = SendS7plusFunctionObject(setVarReq);
             if (res != 0)
             {
                 m_client.Disconnect();
@@ -718,9 +715,8 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            SetVariableResponse setVariableResponse;
-            setVariableResponse = SetVariableResponse.DeserializeFromPdu(m_ReceivedStream);
-            if (setVariableResponse == null)
+            var setVarRes = SetVariableResponse.DeserializeFromPdu(m_ReceivedStream);
+            if (setVarRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: SetVariableResponse with Error!");
                 m_client.Disconnect();
@@ -740,7 +736,7 @@ namespace S7CommPlusDriver
 
             #region Read all objects
 
-            List<BrowseData> exploreData = new List<BrowseData>();
+            var exploreData = new List<BrowseData>();
 
             exploreReq = new ExploreRequest(ProtocolVersion.V2);
             exploreReq.ExploreId = Ids.NativeObjects_thePLCProgram_Rid;
@@ -805,16 +801,16 @@ namespace S7CommPlusDriver
             // By querying LID = 1 from all DBs you get the RID back with which the type information can be queried.
             // This is necessary because, for example, with instance DBs (e.g. TON), the type information must
             // not be accessed via the RID of the DB but of the TON.
-            List<ItemAddress> readlist = new List<ItemAddress>();
-            List<object> values = new List<object>();
-            List<UInt64> errors = new List<UInt64>();
+            var readlist = new List<ItemAddress>();
+            var values = new List<object>();
+            var errors = new List<UInt64>();
 
             foreach (var data in exploreData)
             {
                 if (data.db_number > 0) // only process datablocks here, no marker, timer etc.
                 {
                     // Insert the variable address
-                    ItemAddress adr1 = new ItemAddress();
+                    var adr1 = new ItemAddress();
                     adr1.AccessArea = data.db_block_relid;
                     adr1.AccessSubArea = Ids.DB_ValueActual;
                     adr1.LID.Add(1);
@@ -868,14 +864,14 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Read the Type Info Container (as a single big PDU, must be proven to be the way to go in big programs)
-            ExploreRequest exploreRequest = new ExploreRequest(ProtocolVersion.V2);
+            exploreReq = new ExploreRequest(ProtocolVersion.V2);
             // With ObjectOMSTypeInfoContainer we get all in a big PDU (with maybe hundreds of fragments)
-            exploreRequest.ExploreId = Ids.ObjectOMSTypeInfoContainer;
-            exploreRequest.ExploreRequestId = Ids.None;
-            exploreRequest.ExploreChildsRecursive = 1;
-            exploreRequest.ExploreParents = 0;
+            exploreReq.ExploreId = Ids.ObjectOMSTypeInfoContainer;
+            exploreReq.ExploreRequestId = Ids.None;
+            exploreReq.ExploreChildsRecursive = 1;
+            exploreReq.ExploreParents = 0;
 
-            res = SendS7plusFunctionObject(exploreRequest);
+            res = SendS7plusFunctionObject(exploreReq);
             if (res != 0)
             {
                 return res;
@@ -889,13 +885,13 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Process the response, and build the complete variables list
-            ExploreResponse exploreResponse = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
-            res = checkResponseWithIntegrity(exploreRequest, exploreResponse);
+            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
                 return res;
             }
-            var objs = exploreResponse.Objects.First(o => o.ClassId == Ids.ClassOMSTypeInfoContainer);
+            var objs = exploreRes.Objects.First(o => o.ClassId == Ids.ClassOMSTypeInfoContainer);
 
             vars.SetTypeInfoContainerObjects(objs.GetObjects());
             vars.BuildTree();

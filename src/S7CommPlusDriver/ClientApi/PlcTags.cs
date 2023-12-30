@@ -17,7 +17,7 @@ namespace S7CommPlusDriver.ClientApi
 
         public int ReadTags(S7CommPlusConnection conn)
         {
-            List<ItemAddress> readlist = new List<ItemAddress>();
+            var readlist = new List<ItemAddress>();
             List<object> values;
             List<UInt64> errors;
             int res;

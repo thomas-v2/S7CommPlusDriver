@@ -79,7 +79,7 @@ namespace S7CommPlusDriver
 
         public List<PObject> GetObjectsByClassId(UInt32 classId)
         {
-            List<PObject> objList = new List<PObject>();
+            var objList = new List<PObject>();
             foreach(var obj in Objects)
             {
                 if (obj.Key.Item1 == classId)
@@ -92,7 +92,7 @@ namespace S7CommPlusDriver
 
         public List<PObject> GetObjects()
         {
-            List<PObject> objList = new List<PObject>();
+            var objList = new List<PObject>();
             foreach (var obj in Objects)
             {
                 objList.Add(obj.Value);

@@ -310,7 +310,6 @@ namespace S7CommPlusDriver
             }
             
             b[0] = (byte)(value & 0x7f);
-            //Console.WriteLine(String.Format("B{0}: v={1,-20} abs_v={2,-20} B={3:X2}     BX={4:X2}", 0, value, abs_v, b[0], (byte)(value & 0xff)));
             int length = 1;
             for (int i = 1; i < 5; i++)
             {
@@ -320,7 +319,6 @@ namespace S7CommPlusDriver
                     abs_v >>= 7;
                     value >>= 7;
                     b[i] = (byte)((value & 0x7f) + 0x80);
-                    //Console.WriteLine(String.Format("B{0}: v={1,-20} abs_v={2,-20} B={3:X2}     BX={4:X2}", i, value, abs_v, b[i], (byte)(value & 0xff)));
                 }
                 else
                 {
@@ -355,8 +353,7 @@ namespace S7CommPlusDriver
             {
                 b[0] = (byte)(value & 0x7f);
             }
-            //Console.WriteLine(String.Format("value      : {0:X16}", value) + " special=" + special.ToString());
-            //Console.WriteLine(String.Format("B{0}: v={1,-20} B={2:X2}     BX={3:X2}", 0, value, b[0], (byte)(value & 0xff)));
+
             int length = 1;
             for (int i = 1; i < 9; i++)
             {
@@ -372,7 +369,6 @@ namespace S7CommPlusDriver
                         value >>= 7;
                     }
                     b[i] = (byte)((value & 0x7f) + 0x80);
-                    //Console.WriteLine(String.Format("B{0}: v={1,-20} B={2:X2}     BX={3:X2}", i, value, b[i], (byte)(value & 0xff)));
                 }
                 else
                 {
@@ -496,8 +492,7 @@ namespace S7CommPlusDriver
             {
                 b[0] = (byte)(value & 0x7f);
             }
-            //Console.WriteLine(String.Format("value      : {0:X16}", value) + " special=" + special.ToString());
-            //Console.WriteLine(String.Format("B{0}: v={1,-20} abs_v={2,-20} B={3:X2}     BX={4:X2}", 0, value, abs_v, b[0], (byte)(value & 0xff)));
+
             int length = 1;
             for (int i = 1; i < 9; i++)
             {
@@ -515,7 +510,6 @@ namespace S7CommPlusDriver
                         value >>= 7;
                     }
                     b[i] = (byte)((value & 0x7f) + 0x80);
-                    //Console.WriteLine(String.Format("B{0}: v={1,-20} abs_v={2,-20} B={3:X2}     BX={4:X2}", i, value, abs_v, b[i], (byte)(value & 0xff)));
                 }
                 else
                 {
@@ -741,9 +735,9 @@ namespace S7CommPlusDriver
 
             ret += EncodeUInt32(buffer, Ids.ObjectQualifier);
 
-            ValueRID parentRID = new ValueRID(0);
-            ValueAID compositionAID = new ValueAID(0);
-            ValueUDInt keyQualifier = new ValueUDInt(0);
+            var parentRID = new ValueRID(0);
+            var compositionAID = new ValueAID(0);
+            var keyQualifier = new ValueUDInt(0);
 
             ret += EncodeUInt32Vlq(buffer, Ids.ParentRID);
             ret += parentRID.Serialize(buffer);
