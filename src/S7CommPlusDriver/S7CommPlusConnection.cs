@@ -19,6 +19,7 @@ using System.Text;
 using System.Threading;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
 
 namespace S7CommPlusDriver
 {
@@ -540,15 +541,16 @@ namespace S7CommPlusDriver
             // And the error code gives an error, but not a fatal one.
             // If we delete another object, there should be an IntegrityId in the response, and
             // the response gives no error.
-            var delRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream);
             if (deleteObjectId == m_SessionId)
             {
-                Console.WriteLine("S7CommPlusConnection - DeleteSession: Deleted our own Session Id object, not checking the response.");
+                var delRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, false);
+                Trace.WriteLine("S7CommPlusConnection - DeleteSession: Deleted our own Session Id object, not checking the response.");
                 m_SessionId = 0; // not valid anymore
                 m_SessionId2 = 0;
             }
             else
             {
+                var delRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, true);
                 res = checkResponseWithIntegrity(delReq, delRes);
                 if (res != 0)
                 {

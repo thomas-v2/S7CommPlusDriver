@@ -30,10 +30,10 @@ namespace S7CommPlusDriver
         public uint IntegrityId { get; set; }
         public bool WithIntegrityId { get; set; }
 
-        public DeleteObjectResponse(byte protocolVersion)
+        public DeleteObjectResponse(byte protocolVersion, bool withIntegrityId)
         {
             ProtocolVersion = protocolVersion;
-            WithIntegrityId = false;
+            WithIntegrityId = withIntegrityId; // When deleting the Sesssion Object-Id, there's no Integrity-Id!
         }
 
         public int Deserialize(Stream buffer)
@@ -52,7 +52,11 @@ namespace S7CommPlusDriver
                 PObject errorObject = new PObject();
                 ret += S7p.DecodeObject(buffer, ref errorObject);
             }
-
+            if (WithIntegrityId)
+            {
+                ret += S7p.DecodeUInt32Vlq(buffer, out uint iid);
+                IntegrityId = iid;
+            }
             return ret;
         }
 
@@ -71,7 +75,7 @@ namespace S7CommPlusDriver
             return s;
         }
 
-        public static DeleteObjectResponse DeserializeFromPdu(Stream pdu)
+        public static DeleteObjectResponse DeserializeFromPdu(Stream pdu, bool withIntegrityId)
         {
             byte protocolVersion;
             byte opcode;
@@ -91,7 +95,7 @@ namespace S7CommPlusDriver
             {
                 return null;
             }
-            DeleteObjectResponse resp = new DeleteObjectResponse(protocolVersion);
+            DeleteObjectResponse resp = new DeleteObjectResponse(protocolVersion, withIntegrityId);
             resp.Deserialize(pdu);
 
             return resp;
