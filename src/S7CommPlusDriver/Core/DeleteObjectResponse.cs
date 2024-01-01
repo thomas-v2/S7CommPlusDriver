@@ -45,7 +45,7 @@ namespace S7CommPlusDriver
 
             // Response Set
             ret += S7p.DecodeUInt64Vlq(buffer, out ReturnValue);
-            ret += S7p.DecodeUInt32Vlq(buffer, out DeleteObjectId);
+            ret += S7p.DecodeUInt32(buffer, out DeleteObjectId);
             if ((ReturnValue & 0x4000000000000000) > 0) // Error Extension
             {
                 // Decode the error object, but don't use any informations from it. Must be processed on a higher level.
@@ -71,6 +71,8 @@ namespace S7CommPlusDriver
             s += "<ReturnValue>" + ReturnValue.ToString() + "</ReturnValue>" + Environment.NewLine;
             s += "<DeleteObjectId>" + DeleteObjectId.ToString() + "</DeleteObjectId>" + Environment.NewLine;
             s += "</ResponseSet>" + Environment.NewLine;
+            s += "<WithIntegrityId>" + WithIntegrityId.ToString() + "</WithIntegrityId>" + Environment.NewLine;
+            s += "<IntegrityId>" + IntegrityId.ToString() + "</IntegrityId>" + Environment.NewLine;
             s += "</DeleteObjectResponse>" + Environment.NewLine;
             return s;
         }
