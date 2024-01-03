@@ -18,11 +18,8 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class SetVariableRequest : IS7pSendableObject
+    public class SetVariableRequest : IS7pRequest
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         byte TransportFlags = 0x34;
 
         public UInt32 InObjectId;
@@ -30,12 +27,17 @@ namespace S7CommPlusDriver
         public UInt32 Address;
         public PValue Value;
 
-        public bool WithIntegrityId = true;
-        public UInt32 IntegrityId;
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.SetVariable; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public SetVariableRequest(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = true;
         }
 
         public byte GetProtocolVersion()
@@ -48,7 +50,7 @@ namespace S7CommPlusDriver
             int ret = 0;
             ret += S7p.EncodeByte(buffer, Opcode.Request);
             ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
-            ret += S7p.EncodeUInt16(buffer, Functioncode.SetVariable);
+            ret += S7p.EncodeUInt16(buffer, FunctionCode);
             ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
             ret += S7p.EncodeUInt16(buffer, SequenceNumber);
             ret += S7p.EncodeUInt32(buffer, SessionId);
@@ -56,12 +58,12 @@ namespace S7CommPlusDriver
 
             // Request set
             ret += S7p.EncodeUInt32(buffer, InObjectId);
-            ret += S7p.EncodeUInt32Vlq(buffer, 1); // Immer 1 (?)
+            ret += S7p.EncodeUInt32Vlq(buffer, 1); // Always 1 (?)
             ret += S7p.EncodeUInt32Vlq(buffer, Address);
             ret += Value.Serialize(buffer);
 
             ret += S7p.EncodeObjectQualifier(buffer);
-            // 1 Byte unbekannter Funktion
+            // 1 Byte unknown
             ret += S7p.EncodeByte(buffer, 0x00);
 
             if (WithIntegrityId)
@@ -69,7 +71,7 @@ namespace S7CommPlusDriver
                 ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
             }
 
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
 
             return ret;

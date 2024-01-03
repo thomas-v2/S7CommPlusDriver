@@ -15,6 +15,7 @@
 
 using System;
 using System.Text;
+using System.Collections.Generic;
 
 namespace S7CommPlusDriver
 {
@@ -207,18 +208,18 @@ namespace S7CommPlusDriver
         {
             byte[] bytes = new byte[5];
             int i, j;
-            for (i = 5; i > 0; i--)
+            for (i = 4; i > 0; i--)
             {
-                if ((value & 127UL << i * 7) > 0)
+                if ((value & (0x7f << (i * 7))) > 0)
                 {
                     break;
                 }
             }
             for (j = 0; j <= i; j++)
             {
-                bytes[j] = (byte)(((value >> ((i - j) * 7)) & 127UL) | 128UL);
+                bytes[j] = (byte)(((value >> ((i - j) * 7)) & 0x7f) | 0x80);
             }
-            bytes[i] ^= 128;
+            bytes[i] ^= 0x80;
             buffer.Write(bytes, 0, i + 1);
             return i + 1;
         }
@@ -281,52 +282,121 @@ namespace S7CommPlusDriver
 
         public static int EncodeInt32Vlq(System.IO.Stream buffer, Int32 value)
         {
-            byte[] bytes = new byte[5];
-            int i, j;
-            UInt32 usval = (UInt32)value;
+            // You can write negavtive Values like
+            // -1234567
+            // with full one complement bytes as:
+            // 8f ff b4 d2 79
+            // The read back value (from plc) is encoded as:
+            // ff b4 d2 79
+            //   or:
+            // -255
+            // Write with full one complement bytes as:
+            // 8f ff ff fe 01
+            // The read back value (from plc) is encoded as:
+            // fe 01
+            //
+            // The actual method writes the values in the 2nd compact variant.
+            // The decode algorithms can handle both variants.
 
-            for (i = 5; i > 0; i--)
+            byte[] b = new byte[5];
+            UInt32 abs_v;
+            if (value == Int32.MinValue) // Handle this, otherwise Math.Abs() will fail
             {
-                if ((usval & 127UL << i * 7) > 0)
+                abs_v = 2147483648;
+            }
+            else
+            {
+                abs_v = (UInt32)Math.Abs(value);
+            }
+            
+            b[0] = (byte)(value & 0x7f);
+            int length = 1;
+            for (int i = 1; i < 5; i++)
+            {
+                if (abs_v >= 0x40)
+                {
+                    length++;
+                    abs_v >>= 7;
+                    value >>= 7;
+                    b[i] = (byte)((value & 0x7f) + 0x80);
+                }
+                else
                 {
                     break;
                 }
             }
-            for (j = 0; j <= i; j++)
-            {
-                if (j == 0)
-                {
-                    bytes[j] = (byte)(((usval >> ((i - j) * 7)) & 127UL) | 128UL);
 
-                }
-                else
-                {
-                    bytes[j] = (byte)(((usval >> ((i - j) * 7)) & 127UL) | 128UL);
-                }
+            // Reverse order of bytes
+            for (int i = length - 1; i >= 0; i--)
+            {
+                buffer.Write(b, i, 1);
             }
-            bytes[i] ^= 128;
-            buffer.Write(bytes, 0, i + 1);
-            return i + 1;
+            return length;
         }
 
         public static int EncodeUInt64Vlq(System.IO.Stream buffer, UInt64 value)
         {
-            byte[] bytes = new byte[9];
-            int i, j;
-            for (i = 9; i > 0; i--)
+            // Special handling in the 64 bit VLQ variants:
+            // The special handling on the 64 bit variants is neccessary, because without this we would need
+            // max. 10 bytes than the max. 9 now.
+            // Every byte looses 1 bit for the "continue" flag. For 8 Bytes loosing 1 bit, we need 1 more byte.
+            // Which in the normal variant would have only 7 bit of space, because 1 bit is for the "continue" flag.
+            // The special handling allows to use all 8 bits in the additional 9th byte.
+            byte[] b = new byte[9];
+
+            bool special = value > 0x00ffffffffffffff;
+            if (special)
             {
-                if ((value & 127UL << i * 7) > 0)
+                b[0] = (byte)(value & 0xff);
+            }
+            else
+            {
+                b[0] = (byte)(value & 0x7f);
+            }
+
+            int length = 1;
+            for (int i = 1; i < 9; i++)
+            {
+                if (value >= 0x80)
+                {
+                    length++;
+                    if (i == 1 && special)
+                    {
+                        value >>= 8;
+                    }
+                    else
+                    {
+                        value >>= 7;
+                    }
+                    b[i] = (byte)((value & 0x7f) + 0x80);
+                }
+                else
                 {
                     break;
                 }
             }
-            for (j = 0; j <= i; j++)
+
+            if (special && length == 8)
             {
-                bytes[j] = (byte)(((value >> ((i - j) * 7)) & 127UL) | 128UL);
+                // If the guess from above is, that we need 9 bytes but the value encoding would still fit into 8 bytes, then we need
+                // to write an empty 0x80 value for continue flag.
+                // Example: 123456789012345678 would be "ed d3 b4 dd 98 e1 f3 4e" and fit into 8 bytes.
+                // But writing would fail.
+                // Testcases where the special handling is needed are values:
+                // - 0x00FFFFFFFFFFFFFF      -> standard
+                // - 0x00FFFFFFFFFFFFFF + 1  -> additional 0x80 needed
+                // The decode algorithm can handle both variants, but the plc accepts it only with the additional bytes (seems Siemens
+                // uses a different algorithm that we are using)
+                length++;
+                b[8] = 0x80;
             }
-            bytes[i] ^= 128;
-            buffer.Write(bytes, 0, i + 1);
-            return i + 1;
+
+            // Reverse order of bytes
+            for (int i = length - 1; i >= 0; i--)
+            {
+                buffer.Write(b, i, 1);
+            }
+            return length;
         }
 
         public static int DecodeUInt64Vlq(System.IO.Stream buffer, out UInt64 value)
@@ -349,7 +419,7 @@ namespace S7CommPlusDriver
                     break;
                 }
             }
-            if (cont > 0)         /* 8*7 bit + 8 bit = 64 bit -> Sonderfall im letzten Octett! */
+            if (cont > 0)         /* 8*7 bit + 8 bit = 64 bit -> Special case in last octet! */
             {
                 octet = (byte)buffer.ReadByte();
                 length++;
@@ -360,7 +430,6 @@ namespace S7CommPlusDriver
             return length;
         }
 
-        // TODO: Muss getestet werden!
         public static int DecodeInt64Vlq(System.IO.Stream buffer, out Int64 value)
         {
             int counter;
@@ -391,7 +460,7 @@ namespace S7CommPlusDriver
             }
             if (cont > 0)
             {
-                // 8*7 bit + 8 bit = 64 bit -> Sonderfall im letzten Octett!
+                // 8*7 bit + 8 bit = 64 bit -> Special case in last octet!
                 octet = (byte)buffer.ReadByte();
                 length++;
                 val <<= 8;
@@ -401,35 +470,75 @@ namespace S7CommPlusDriver
             return length;
         }
 
-        // TODO: Muss getestet werden!
         public static int EncodeInt64Vlq(System.IO.Stream buffer, Int64 value)
         {
-            byte[] bytes = new byte[8];
-            int i, j;
-            UInt64 usval = (UInt64)value;
-
-            for (i = 8; i > 0; i--)
+            byte[] b = new byte[9];
+            UInt64 abs_v;
+            if (value == Int64.MinValue) // Handle this, otherwise Math.Abs() will fail
             {
-                if ((usval & 127UL << i * 7) > 0)
+                abs_v = 9223372036854775808;
+            }
+            else
+            {
+                abs_v = (UInt64)Math.Abs(value);
+            }
+
+            bool special = abs_v > 0x007fffffffffffff;
+            if (special)
+            {
+                b[0] = (byte)(value & 0xff);
+            }
+            else
+            {
+                b[0] = (byte)(value & 0x7f);
+            }
+
+            int length = 1;
+            for (int i = 1; i < 9; i++)
+            {
+                if (abs_v >= 0x40)
+                {
+                    length++;
+                    if (i == 1 && special)
+                    {
+                        abs_v >>= 8;
+                        value >>= 8;
+                    }
+                    else
+                    {
+                        abs_v >>= 7;
+                        value >>= 7;
+                    }
+                    b[i] = (byte)((value & 0x7f) + 0x80);
+                }
+                else
                 {
                     break;
                 }
             }
-            for (j = 0; j <= i; j++)
-            {
-                if (j == 0)
-                {
-                    bytes[j] = (byte)(((usval >> ((i - j) * 7)) & 127UL) | 128UL);
 
+            if (special && length == 8)
+            {
+                // See comment at EncodeUInt64Vlq.
+                // Because of the sign bit, the special handling starts here at > 0x007fffffffffffff
+                // And we need a different value for negative numbers.
+                length++;
+                if (value >= 0)
+                {
+                    b[8] = 0x80;
                 }
                 else
                 {
-                    bytes[j] = (byte)(((usval >> ((i - j) * 7)) & 127UL) | 128UL);
+                    b[8] = 0xff;
                 }
             }
-            bytes[i] ^= 128;
-            buffer.Write(bytes, 0, i + 1);
-            return i + 1;
+
+            // Reverse order of bytes
+            for (int i = length - 1; i >= 0; i--)
+            {
+                buffer.Write(b, i, 1);
+            }
+            return length;
         }
 
         public static int EncodeFloat(System.IO.Stream buffer, float value)
@@ -449,7 +558,7 @@ namespace S7CommPlusDriver
             v[2] = (byte)buffer.ReadByte();
             v[1] = (byte)buffer.ReadByte();
             v[0] = (byte)buffer.ReadByte();
-            value = BitConverter.ToSingle(v, 0); ;
+            value = BitConverter.ToSingle(v, 0);
             return 4;
         }
 
@@ -518,9 +627,28 @@ namespace S7CommPlusDriver
 
         ///////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////
-        // High Level Decode/Encode Funktionen
+        // High Level Decode/Encode methods
 
-        public static int DecodeObject(System.IO.Stream buffer, ref PObject obj)
+        public static int DecodeObjectList(System.IO.Stream buffer, ref List<PObject> objList)
+        {
+            int ret = 0;
+            byte tagId;
+            objList = new List<PObject>();
+            // Peek one byte and set buffer back
+            S7p.DecodeByte(buffer, out tagId);
+            buffer.Position -= 1;
+            while (tagId == ElementID.StartOfObject)
+            {
+                PObject obj = null;
+                ret += S7p.DecodeObject(buffer, ref obj, AsList: true);
+                objList.Add(obj);
+                S7p.DecodeByte(buffer, out tagId);
+                buffer.Position -= 1;
+            }
+            return ret;
+        }
+
+        public static int DecodeObject(System.IO.Stream buffer, ref PObject obj, bool AsList = false)
         {
             byte tagId;
             UInt32 id;
@@ -539,7 +667,12 @@ namespace S7CommPlusDriver
                             ret += DecodeUInt32Vlq(buffer, out obj.ClassId);
                             ret += DecodeUInt32Vlq(buffer, out obj.ClassFlags);
                             ret += DecodeUInt32Vlq(buffer, out obj.AttributeId);
-                            ret += DecodeObject(buffer, ref obj);
+                            // If a List is expected, don't add the objects coming next to the parent object
+                            // TODO: May be it's better to always expect a list? Adding the following objects to the first as children must always be wrong.
+                            if (AsList == false)
+                            {
+                                ret += DecodeObject(buffer, ref obj);
+                            }
                         }
                         else
                         {
@@ -560,8 +693,7 @@ namespace S7CommPlusDriver
                         obj.AddAttribute(id, PValue.Deserialize(buffer));
                         break;
                     case ElementID.StartOfTagDescription:
-                        // Nur 1200 FW2 und evtl. älter. Unterstützt definitiv kein TLS
-
+                        // Skip, only 1200 FW2 and maybe older, which definitively don't support TLS
                         break;
                     case ElementID.VartypeList:
                         PVartypeList typelist = new PVartypeList();
@@ -603,9 +735,9 @@ namespace S7CommPlusDriver
 
             ret += EncodeUInt32(buffer, Ids.ObjectQualifier);
 
-            ValueRID parentRID = new ValueRID(0);
-            ValueAID compositionAID = new ValueAID(0);
-            ValueUDInt keyQualifier = new ValueUDInt(0);
+            var parentRID = new ValueRID(0);
+            var compositionAID = new ValueAID(0);
+            var keyQualifier = new ValueUDInt(0);
 
             ret += EncodeUInt32Vlq(buffer, Ids.ParentRID);
             ret += parentRID.Serialize(buffer);

@@ -46,6 +46,7 @@ Mit folgenden Geräten wurde bisher erfolgreich getestet:
 Aufgrund der Verschlüsselung können die übertragenen Daten ohne weitere Informationen mit Wireshark nicht mehr eingesehen werden.
 Zur Treiberentwicklung ist im Projekt eine Funktion integriert, welche die ausgehandelten Secrets in eine Textdatei
 (key_YYYYMMDD_hhmmss.log) ausgibt. Mit diesen Informationen ist es Wireshark möglich die Kommunikation zu entschlüsseln und darzustellen.
+Wichtig ist dabei, dass die Aufzeichnung den TLS-Verbindungsaufbau enthalten muss!
 
 Um Wireshark diese Information verfügbar zu machen, existieren zwei Möglichkeiten:
 1. Die Log-Datei in ein Verzeichnis abzulegen und Wireshark dieses bekannt zu machen. Dazu in Wireshark *Menü* → *Einstellungen* aufrufen.
@@ -70,7 +71,7 @@ gezogen werden können, und das auf Tastendruck editcap aufruft. Das Programm is
 https://github.com/thomas-v2/PcapKeyInjector
 
 Damit Wireshark das S7comm-Plus Protokoll dekodieren kann, ist die entsprechende dll in das Wireshark Installationsverzeichnis abzulegen.
-Näheres dazu und Download der dll bei Sourceforge unter:
+Näheres dazu, und Download der dll bei Sourceforge unter:
 
 https://sourceforge.net/projects/s7commwireshark/
 
@@ -80,7 +81,7 @@ Bei einigen Datentypen ist es notwendig, zur Verarbeitung der Antwort der SPS de
 sinnvollen Datentyp in .Net zu konvertieren. Dazu wird die PlcTag Klasse bereitgestellt.
 
 In der Tabelle sind alle in der SPS zur Zeit (TIA V18) möglichen Datentypen aufgeführt, mit dem Datentyp in dem sie
-auf dem Netzwerk im S7comm-Plus-Protokoll übertragen werden, sowie welcher .Net Datentyp in den PlcTag Klassen daraus
+auf dem Netzwerk im S7comm-Plus-Protokoll übertragen werden, sowie welchen .Net Datentyp in den PlcTag-Klassen daraus
 resultiert.
 
 | Supported | PLC Datentyp              | PLC Kategorie     | PLC Info          | Netzwerk Datentyp             | .Net Datentyp PlcTag          | Sonstiges                                         |
@@ -105,7 +106,7 @@ resultiert.
 | &check;   | DB_DYN                    | Hardwaredatentypen|                   | ValueUInt                     | PlcTagUInt -> ushort          |                                                   |
 | &check;   | DB_WWW                    | Hardwaredatentypen|                   | ValueUInt                     | PlcTagUInt -> ushort          |                                                   |
 | &check;   | DInt                      | Ganzzahlen        |                   | ValueDInt                     | int                           |                                                   |
-| &check;   | DTL                       | Datum und Uhrzeit |                   | ValueStruct / packed          | byte[12]                      | 33554499, Zugriff auf Einzelelemente direkt möglich. TODO: Hier löschen, oder als DateTime? |
+| &check;   | DTL                       | Datum und Uhrzeit |                   | ValueStruct / packed          | DateTime + uint (for ns)      | Nanosekunden extern, da kein .Net Typ mit ns. Experimental!                                     |
 | &check;   | DWord                     | Bitfolgen         |                   | ValueDWord                    | uint                          |                                                   |
 | &check;   | EVENT_ANY                 | Hardwaredatentypen|                   | ValueDWord                    | PlcTagDWord -> uint           |                                                   |
 | &check;   | EVENT_ATT                 | Hardwaredatentypen|                   | ValueDWord                    | PlcTagDWord -> uint           |                                                   |

@@ -18,17 +18,23 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    class InitSslRequest : IS7pSendableObject
+    class InitSslRequest : IS7pRequest
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         byte TransportFlags = 0x30;
+
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.InitSsl; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
+
         public InitSslRequest(byte protocolVersion, UInt16 seqNum, UInt32 sessionId)
         {
             ProtocolVersion = protocolVersion;
             SequenceNumber = seqNum;
             SessionId = sessionId;
+            WithIntegrityId = false;
         }
 
         public byte GetProtocolVersion()
@@ -41,13 +47,13 @@ namespace S7CommPlusDriver
             int ret = 0;
             ret += S7p.EncodeByte(buffer, Opcode.Request);
             ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
-            ret += S7p.EncodeUInt16(buffer, Functioncode.InitSsl);
+            ret += S7p.EncodeUInt16(buffer, FunctionCode);
             ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
             ret += S7p.EncodeUInt16(buffer, SequenceNumber);
             ret += S7p.EncodeUInt32(buffer, SessionId);
             ret += S7p.EncodeByte(buffer, TransportFlags);
 
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
 
             return ret;

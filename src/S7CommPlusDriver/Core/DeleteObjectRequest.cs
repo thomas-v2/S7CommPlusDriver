@@ -18,20 +18,22 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class DeleteObjectRequest : IS7pSendableObject
+    public class DeleteObjectRequest : IS7pRequest
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         byte TransportFlags = 0x34;
         public UInt32 DeleteObjectId;
 
-        public bool WithIntegrityId;
-        public UInt32 IntegrityId;
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.DeleteObject; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public DeleteObjectRequest(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = true;
         }
 
         public byte GetProtocolVersion()
@@ -44,7 +46,7 @@ namespace S7CommPlusDriver
             int ret = 0;
             ret += S7p.EncodeByte(buffer, Opcode.Request);
             ret += S7p.EncodeUInt16(buffer, 0);
-            ret += S7p.EncodeUInt16(buffer, Functioncode.DeleteObject);
+            ret += S7p.EncodeUInt16(buffer, FunctionCode);
             ret += S7p.EncodeUInt16(buffer, 0);
             ret += S7p.EncodeUInt16(buffer, SequenceNumber);
             ret += S7p.EncodeUInt32(buffer, SessionId);
@@ -60,7 +62,7 @@ namespace S7CommPlusDriver
                 ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
             }
 
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
             return ret;
         }

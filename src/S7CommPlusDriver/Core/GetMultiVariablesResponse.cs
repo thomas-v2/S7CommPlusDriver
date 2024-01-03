@@ -19,21 +19,25 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class GetMultiVariablesResponse
+    public class GetMultiVariablesResponse : IS7pResponse
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
         public byte TransportFlags;
         public UInt64 ReturnValue;
         public Dictionary<UInt32, PValue> Values;           // ItemNumber, Value
         public Dictionary<UInt32, UInt64> ErrorValues;      // ItemNumber, ReturnValue
-        public UInt32 IntegrityId;
+
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.GetMultiVariables; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public GetMultiVariablesResponse(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
             ErrorValues = new Dictionary<UInt32, UInt64>();
             Values = new Dictionary<UInt32, PValue>();
+            WithIntegrityId = true;
         }
 
         public int Deserialize(Stream buffer)
@@ -42,7 +46,8 @@ namespace S7CommPlusDriver
             UInt32 itemnr = 0;
             UInt64 retval = 0;
 
-            ret += S7p.DecodeUInt16(buffer, out SequenceNumber);
+            ret += S7p.DecodeUInt16(buffer, out ushort seqnr);
+            SequenceNumber = seqnr;
             ret += S7p.DecodeByte(buffer, out TransportFlags);
 
             // Response Set
@@ -66,7 +71,8 @@ namespace S7CommPlusDriver
                 ErrorValues.Add(itemnr, retval);
                 ret += S7p.DecodeUInt32Vlq(buffer, out itemnr);
             }
-            ret += S7p.DecodeUInt32Vlq(buffer, out IntegrityId);
+            ret += S7p.DecodeUInt32Vlq(buffer, out uint iid);
+            IntegrityId = iid;
             return ret;
         }
 
@@ -111,7 +117,7 @@ namespace S7CommPlusDriver
             byte opcode;
             UInt16 function;
             UInt16 reserved;
-            // ProtocolVersion wird vorab als ein Byte in den Stream geschrieben, Sonderbehandlung
+            // Special handling of ProtocolVersion, which is written to the stream before
             S7p.DecodeByte(pdu, out protocolVersion);
             S7p.DecodeByte(pdu, out opcode);
             if (opcode != Opcode.Response)

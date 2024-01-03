@@ -19,40 +19,43 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class SetMultiVariablesRequest : IS7pSendableObject
+    public class SetMultiVariablesRequest : IS7pRequest
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         byte TransportFlags = 0x34;
 
         public UInt32 InObjectId;
-        /* Hier ist eine Besonderheit:
-         * "Normale" Variablenwerte werden geschrieben, in dem InObjectId = 0 ist. Dann werden
-         * über die Adressliste die Adressen vorgegeben, und in der Valuelist die Werte.
-         * Das Feld nach Itemcount enthält dann nicht die Anzahl der Adressen, sondern die Anzahl der
-         * Felder die sich darin befinden. Das ist normalerweise:
-         * 1. SymbolCRC
+        /* Special
+         * Plain variables are accessed with InObjectId = 0. Then the user needs to add
+         * the addresses via the addresslist and the valuelist the values which should be written.
+         * The field after Itemcount then doesn't contains the number of addresses, but the number
+         * of field inside it.
+         * Which is in the normal use case:
+         * 1. SymbolCRC (maybe zero of not CRC check is needed)
          * 2. Access base-area
-         * 3. Hier steht schon die Anzahl der Felder die jetzt noch folgen
-         * Es ist also je Adresse die Anzahl von 3 plus 3.
-         * 
-         * Wenn Werte in Objekten geschrieben werden, enthält die Adressliste nur jeweils einen einzigen Wert.
-         * Die Zählung ist im Prinzip identisch.
-         * 
-         * Da jetzt zwei AddressList vorhanden sind, ist das evtl. verwirrend.
+         * 3. Number of fields which are now following
+         * Depending on the address this if 
+         *
+         * If values inside objects are to be written, then the addresslist contains only a single value.
+         * But counting them is identically.
+         *
+         * The only misleading thing is, we have two addresslists as members for both use-cases.
          * TODO
          */
         public List<UInt32> AddressList = new List<UInt32>();
         public List<ItemAddress> AddressListVar = new List<ItemAddress>();
         public List<PValue> ValueList = new List<PValue>();
 
-        public bool WithIntegrityId = true;
-        public UInt32 IntegrityId;
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.SetMultiVariables; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public SetMultiVariablesRequest(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = true;
         }
 
         public byte GetProtocolVersion()
@@ -66,7 +69,7 @@ namespace S7CommPlusDriver
             int ret = 0;
             ret += S7p.EncodeByte(buffer, Opcode.Request);
             ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
-            ret += S7p.EncodeUInt16(buffer, Functioncode.SetMultiVariables);
+            ret += S7p.EncodeUInt16(buffer, FunctionCode);
             ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
             ret += S7p.EncodeUInt16(buffer, SequenceNumber);
             ret += S7p.EncodeUInt32(buffer, SessionId);
@@ -101,12 +104,12 @@ namespace S7CommPlusDriver
             i = 1;
             foreach (PValue value in ValueList)
             {
-                // Item Number + Wert
+                // Item Number + Value
                 ret += S7p.EncodeUInt32Vlq(buffer, i);
                 ret += value.Serialize(buffer);
                 i++;
             }
-            // 1 Füllbyte
+            // 1 Fill byte
             ret += S7p.EncodeByte(buffer, 0x00);
             ret += S7p.EncodeObjectQualifier(buffer);
 
@@ -115,7 +118,7 @@ namespace S7CommPlusDriver
                 ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
             }
 
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
 
             return ret;
@@ -123,15 +126,14 @@ namespace S7CommPlusDriver
 
         public void SetSessionSetupData(UInt32 sessionId, ValueStruct SessionVersion)
         {
-            // Initialisiert die Daten für ein erstes SetMultiVariablesRequest nach Verbindungsaufbau
-            // Ggf. müssen einige Werte anhand der ersten Antwort je nach CPU eingetragen werden.
+            // Initializes some values for session setup. Depending on the CPU, some more values needs to be set.
             SessionId = sessionId;
             InObjectId = sessionId;
             AddressList.Clear();
             AddressList.Add(Ids.ServerSessionVersion);
             ValueList.Clear();
             ValueList.Add(SessionVersion);
-            // Da noch Protocol Version 2, ohne
+            // As we use her ProtocolVersion 2, without
             WithIntegrityId = false;
         }
 

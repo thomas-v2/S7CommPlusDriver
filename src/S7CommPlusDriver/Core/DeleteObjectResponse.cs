@@ -18,39 +18,45 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class DeleteObjectResponse
+    public class DeleteObjectResponse : IS7pResponse
     {
-        public byte ProtocolVersion;
-
-        public UInt16 SequenceNumber;
         public byte TransportFlags;
-
         public UInt64 ReturnValue;
         public UInt32 DeleteObjectId;
 
-        public DeleteObjectResponse(byte protocolVersion)
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.DeleteObject; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
+
+        public DeleteObjectResponse(byte protocolVersion, bool withIntegrityId)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = withIntegrityId; // When deleting the Sesssion Object-Id, there's no Integrity-Id!
         }
 
         public int Deserialize(Stream buffer)
         {
             int ret = 0;
-
-            ret += S7p.DecodeUInt16(buffer, out SequenceNumber);
+            ret += S7p.DecodeUInt16(buffer, out ushort seqnr);
+            SequenceNumber = seqnr;
             ret += S7p.DecodeByte(buffer, out TransportFlags);
 
             // Response Set
             ret += S7p.DecodeUInt64Vlq(buffer, out ReturnValue);
-            ret += S7p.DecodeUInt32Vlq(buffer, out DeleteObjectId);
+            ret += S7p.DecodeUInt32(buffer, out DeleteObjectId);
             if ((ReturnValue & 0x4000000000000000) > 0) // Error Extension
             {
-                // Objekt nur dekodieren, aber z.Zt. nicht weiter nutzen weil Funktion unbekannt
-                // evtl. gehört das Objekt zur Fehlermeldung an sich um mehr Details zum Fehler zu übermitteln.
+                // Decode the error object, but don't use any informations from it. Must be processed on a higher level.
                 PObject errorObject = new PObject();
                 ret += S7p.DecodeObject(buffer, ref errorObject);
             }
-
+            if (WithIntegrityId)
+            {
+                ret += S7p.DecodeUInt32Vlq(buffer, out uint iid);
+                IntegrityId = iid;
+            }
             return ret;
         }
 
@@ -65,17 +71,19 @@ namespace S7CommPlusDriver
             s += "<ReturnValue>" + ReturnValue.ToString() + "</ReturnValue>" + Environment.NewLine;
             s += "<DeleteObjectId>" + DeleteObjectId.ToString() + "</DeleteObjectId>" + Environment.NewLine;
             s += "</ResponseSet>" + Environment.NewLine;
+            s += "<WithIntegrityId>" + WithIntegrityId.ToString() + "</WithIntegrityId>" + Environment.NewLine;
+            s += "<IntegrityId>" + IntegrityId.ToString() + "</IntegrityId>" + Environment.NewLine;
             s += "</DeleteObjectResponse>" + Environment.NewLine;
             return s;
         }
 
-        public static DeleteObjectResponse DeserializeFromPdu(Stream pdu)
+        public static DeleteObjectResponse DeserializeFromPdu(Stream pdu, bool withIntegrityId)
         {
             byte protocolVersion;
             byte opcode;
             UInt16 function;
             UInt16 reserved;
-            // ProtocolVersion wird vorab als ein Byte in den Stream geschrieben, Sonderbehandlung
+            // Special handling of ProtocolVersion, which is written to the stream before
             S7p.DecodeByte(pdu, out protocolVersion);
             S7p.DecodeByte(pdu, out opcode);
             if (opcode != Opcode.Response)
@@ -89,7 +97,7 @@ namespace S7CommPlusDriver
             {
                 return null;
             }
-            DeleteObjectResponse resp = new DeleteObjectResponse(protocolVersion);
+            DeleteObjectResponse resp = new DeleteObjectResponse(protocolVersion, withIntegrityId);
             resp.Deserialize(pdu);
 
             return resp;

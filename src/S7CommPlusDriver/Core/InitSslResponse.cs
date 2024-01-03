@@ -18,30 +18,36 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    class InitSslResponse
+    class InitSslResponse : IS7pResponse
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
         public byte TransportFlags;
         public UInt64 ReturnValue;
+
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.InitSsl; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
+
         public InitSslResponse(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = false;
         }
 
         public int Deserialize(Stream buffer)
         {
             int ret = 0;
 
-            ret += S7p.DecodeUInt16(buffer, out SequenceNumber);
+            ret += S7p.DecodeUInt16(buffer, out ushort seqnr);
+            SequenceNumber = seqnr;
             ret += S7p.DecodeByte(buffer, out TransportFlags);
 
             // Response Set
             ret += S7p.DecodeUInt64Vlq(buffer, out ReturnValue);
             if ((ReturnValue & 0x4000000000000000) > 0) // Error Extension
             {
-                // Objekt nur dekodieren, aber z.Zt. nicht weiter nutzen weil Funktion unbekannt
-                // evtl. gehört das Objekt zur Fehlermeldung an sich um mehr Details zum Fehler zu übermitteln.
+                // Decode the error object, but don't use any informations from it. Must be processed on a higher level.
                 PObject errorObject = new PObject();
                 ret += S7p.DecodeObject(buffer, ref errorObject);
             }
@@ -69,7 +75,7 @@ namespace S7CommPlusDriver
             byte opcode;
             UInt16 function;
             UInt16 reserved;
-            // ProtocolVersion wird vorab als ein Byte in den Stream geschrieben, Sonderbehandlung
+            // Special handling of ProtocolVersion, which is written to the stream before
             S7p.DecodeByte(pdu, out protocolVersion);
             S7p.DecodeByte(pdu, out opcode);
             if (opcode != Opcode.Response)

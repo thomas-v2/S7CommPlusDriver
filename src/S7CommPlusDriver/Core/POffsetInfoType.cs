@@ -105,10 +105,8 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-
         public UInt32 OptimizedAddress;
         public UInt32 NonoptimizedAddress;
-
         public UInt32 RelationId;
         public UInt32 Info4;
         public UInt32 Info5;
@@ -178,19 +176,14 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-
         public UInt32 OptimizedAddress;
         public UInt32 NonoptimizedAddress;
-
         public Int32 ArrayLowerBounds;
         public UInt32 ArrayElementCount;
-
         public Int32[] MdimArrayLowerBounds = new Int32[6];
         public UInt32[] MdimArrayElementCount = new UInt32[6];
-
         public UInt32 NonoptimizedStructSize;
         public UInt32 OptimizedStructSize;
-
         public UInt32 RelationId;
         public UInt32 StructInfo4;
         public UInt32 StructInfo5;
@@ -245,18 +238,18 @@ namespace S7CommPlusDriver
             s += "<UnspecifiedOffsetinfo2>" + UnspecifiedOffsetinfo2.ToString() + "</UnspecifiedOffsetinfo2>" + Environment.NewLine;
 
             s += "<OptimizedAddress>" + OptimizedAddress.ToString() + "</OptimizedAddress>" + Environment.NewLine;
-            s += "<NonoptimizedAddress>" + OptimizedAddress.ToString() + "</NonoptimizedAddress>" + Environment.NewLine;
+            s += "<NonoptimizedAddress>" + NonoptimizedAddress.ToString() + "</NonoptimizedAddress>" + Environment.NewLine;
 
             s += "<ArrayLowerBounds>" + ArrayLowerBounds.ToString() + "</ArrayLowerBounds>" + Environment.NewLine;
             s += "<ArrayElementCount>" + ArrayElementCount.ToString() + "</ArrayElementCount>" + Environment.NewLine;
 
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "<MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "</MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
             }
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "<MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "</MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
             }
 
             s += "<OptimizedStructSize>" + OptimizedStructSize.ToString() + "</OptimizedStructSize>" + Environment.NewLine;
@@ -303,16 +296,12 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-
         public UInt32 OptimizedAddress;
         public UInt32 NonoptimizedAddress;
-
         public Int32 ArrayLowerBounds;
         public UInt32 ArrayElementCount;
-
         public UInt32 NonoptimizedStructSize;
         public UInt32 OptimizedStructSize;
-
         public UInt32 RelationId;
         public UInt32 StructInfo4;
         public UInt32 StructInfo5;
@@ -359,7 +348,7 @@ namespace S7CommPlusDriver
             s += "<UnspecifiedOffsetinfo2>" + UnspecifiedOffsetinfo2.ToString() + "</UnspecifiedOffsetinfo2>" + Environment.NewLine;
 
             s += "<OptimizedAddress>" + OptimizedAddress.ToString() + "</OptimizedAddress>" + Environment.NewLine;
-            s += "<NonoptimizedAddress>" + OptimizedAddress.ToString() + "</NonoptimizedAddress>" + Environment.NewLine;
+            s += "<NonoptimizedAddress>" + NonoptimizedAddress.ToString() + "</NonoptimizedAddress>" + Environment.NewLine;
 
             s += "<ArrayLowerBounds>" + ArrayLowerBounds.ToString() + "</ArrayLowerBounds>" + Environment.NewLine;
             s += "<ArrayElementCount>" + ArrayElementCount.ToString() + "</ArrayElementCount>" + Environment.NewLine;
@@ -398,10 +387,8 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-
         public UInt32 OptimizedAddress;
         public UInt32 NonoptimizedAddress;
-
         public UInt32 RelationId;
         public UInt32 StructInfo4;
         public UInt32 StructInfo5;
@@ -465,13 +452,10 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-
         public UInt32 OptimizedAddress;
         public UInt32 NonoptimizedAddress;
-
         public Int32 ArrayLowerBounds;
         public UInt32 ArrayElementCount;
-
         public Int32[] MdimArrayLowerBounds = new Int32[6];
         public UInt32[] MdimArrayElementCount = new UInt32[6];
 
@@ -522,11 +506,11 @@ namespace S7CommPlusDriver
 
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "<MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "</MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
             }
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "<MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "</MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
             }
 
             s += "</POffsetInfoType_ArrayMDim>" + Environment.NewLine;
@@ -559,10 +543,8 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-
         public UInt32 OptimizedAddress;
         public UInt32 NonoptimizedAddress;
-
         public Int32 ArrayLowerBounds;
         public UInt32 ArrayElementCount;
 
@@ -622,7 +604,6 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;   // This is the max. length of the string
         public UInt16 UnspecifiedOffsetinfo2;   // max. lengh plus 2 bytes stringheader
-
         public UInt32 OptimizedAddress;
         public UInt32 NonoptimizedAddress;
 
@@ -704,10 +685,8 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-
         public UInt32 OptimizedAddress;
         public UInt32 NonoptimizedAddress;
-
         public UInt32 RelationId;
         public UInt32 Info4;
         public UInt32 Info5;
@@ -787,11 +766,11 @@ namespace S7CommPlusDriver
 
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "<MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayLowerBounds[" + d + "]>" + MdimArrayLowerBounds[d].ToString() + "</MdimArrayLowerBounds[" + d + "]>"+ Environment.NewLine;
             }
             for (int d = 0; d < 6; d++)
             {
-                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "<MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
+                s += "<MdimArrayElementCount[" + d + "]>" + MdimArrayElementCount[d].ToString() + "</MdimArrayElementCount[" + d + "]>"+ Environment.NewLine;
             }
 
             s += "</POffsetInfoType_FbArray>" + Environment.NewLine;

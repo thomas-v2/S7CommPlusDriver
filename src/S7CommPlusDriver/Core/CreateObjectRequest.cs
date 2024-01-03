@@ -18,21 +18,25 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class CreateObjectRequest : IS7pSendableObject
+    public class CreateObjectRequest : IS7pRequest
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         public byte TransportFlags = 0x36;
         public UInt32 RequestId;
         public PValue RequestValue;
         public PObject RequestObject;
 
-        public CreateObjectRequest(byte protocolVersion, UInt16 seqNum, UInt32 sessionId)
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.CreateObject; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
+
+        public CreateObjectRequest(byte protocolVersion, UInt16 seqNum, bool withIntegrityId)
         {
             ProtocolVersion = protocolVersion;
             SequenceNumber = seqNum;
-            SessionId = sessionId;
+            WithIntegrityId = withIntegrityId;
         }
 
         public void SetRequestIdValue(UInt32 requestId, PValue requestValue)
@@ -48,8 +52,8 @@ namespace S7CommPlusDriver
 
         public void SetNullServerSessionData()
         {
-            // Initialisiert die Daten für eine Nullserver Session zum Verbindungsaufbau
-            SessionId = Ids.ObjectNullServerSession;
+            // Initializes the data for a Nullserver Session on connection setup.
+            // SessionId is set automatically to Ids.ObjectNullServerSession when this this object is sent, if there's no session Id.
             TransportFlags = 0x36;
             RequestId = Ids.ObjectServerSessionContainer;
             RequestValue = new ValueUDInt(0);
@@ -69,24 +73,26 @@ namespace S7CommPlusDriver
             int ret = 0;
             ret += S7p.EncodeByte(buffer, Opcode.Request);
             ret += S7p.EncodeUInt16(buffer, 0);
-            ret += S7p.EncodeUInt16(buffer, Functioncode.CreateObject);
+            ret += S7p.EncodeUInt16(buffer, FunctionCode);
             ret += S7p.EncodeUInt16(buffer, 0);
             ret += S7p.EncodeUInt16(buffer, SequenceNumber);
             ret += S7p.EncodeUInt32(buffer, SessionId);
             ret += S7p.EncodeByte(buffer, TransportFlags);
 
             // Request set
-            ret += S7p.EncodeUInt32(buffer, Ids.ObjectServerSessionContainer);
-            ret += S7p.EncodeByte(buffer, 0x00);
-            ret += S7p.EncodeByte(buffer, Datatype.UDInt);
-            ret += S7p.EncodeUInt32Vlq(buffer, 0);
-
+            ret += S7p.EncodeUInt32(buffer, RequestId);
+            ret += RequestValue.Serialize(buffer);
             ret += S7p.EncodeUInt32(buffer, 0); // Unknown value 1
+
+            if (WithIntegrityId)
+            {
+                ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
+            }
 
             // Object 
             ret += RequestObject.Serialize(buffer);
 
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
             return ret;
         }

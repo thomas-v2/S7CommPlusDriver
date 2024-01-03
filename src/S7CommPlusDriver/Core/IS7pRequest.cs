@@ -15,9 +15,43 @@
 
 namespace S7CommPlusDriver
 {
-    public interface IS7pSendableObject
+    public interface IS7pRequest
     {
         int Serialize(System.IO.Stream buffer);
-        byte GetProtocolVersion();
+
+        uint SessionId
+        {
+            get;
+            set;
+        }
+
+        byte ProtocolVersion
+        {
+            get;
+            set;
+        }
+
+        ushort FunctionCode
+        {
+            get;
+        }
+
+        ushort SequenceNumber
+        {
+            get;
+            set;
+        }
+
+        uint IntegrityId
+        {
+            get;
+            set;
+        }
+
+        bool WithIntegrityId
+        {
+            get;
+            set;
+        }
     }
 }

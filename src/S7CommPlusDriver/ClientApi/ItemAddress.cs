@@ -40,21 +40,20 @@ namespace S7CommPlusDriver
 
         public ItemAddress(string variableAccessString)
         {
-            // Verwendet einen kompletten Zugriffsstring bestehend aus Hexadezimalstrings getrennt durch einen Punkt.
-            // Gibt eine Liste mit den daraus extrahierten IDs zurück.
-            // Beispiele: 8A0E0001.A oder 52.A
+            // Uses a complete access string consisting of hexadecimal strings separated by a dor (".").
+            // Returns a list of the extracted IDs, e.g. 8A0E0001.A or 52.A
             List<UInt32> ids = new List<UInt32>();
             foreach (string p in variableAccessString.Split('.'))
             {
                 ids.Add(UInt32.Parse(p, System.Globalization.NumberStyles.HexNumber));
             }
-            // TODO: Prüfen ob es einen Fehler gab, Feldlänge mindestens 2
+            // TODO: Check for an error, number of fields should be at least 2
             SymbolCrc = 0;
             AccessArea = ids[0];
-            // Zugriffsbereich mit passend setzen
-            if (AccessArea >= 0x8A0E0000)   // Datenbausteine
+            // Set access area
+            if (AccessArea >= 0x8A0E0000)   // 0x8A0A.... = datablocks
             {
-                   AccessSubArea = Ids.DB_ValueActual;
+                AccessSubArea = Ids.DB_ValueActual;
             } 
             else if ((AccessArea == Ids.NativeObjects_theS7Timers_Rid) || 
                        (AccessArea == Ids.NativeObjects_theS7Counters_Rid) || 
@@ -72,8 +71,8 @@ namespace S7CommPlusDriver
 
         public string GetAccessString()
         {
-            // Aus der angegebenen Adresse, einen Zugriffsstring zurückgenerieren.
-            // Falls der Benutzer ist Teile nicht über den String, sondern manuell über Einzelelemente gesetzt hat.
+            // Generate from the given address an Access-String.
+            // Useful if the user has set the address not via access string, but by the single elements.
             string s = String.Format("{0:X}", AccessArea);
             foreach(var i in LID)
             {

@@ -305,11 +305,9 @@ namespace OpenSsl
         {
             return Native.BIO_ctrl(b, BIO_C_SET_BUF_MEM_EOF_RETURN, v, IntPtr.Zero);
         }
-
         #endregion
 
         #region ERR
-
         public const int SSL_ERROR_NONE = 0;
         public const int SSL_ERROR_SSL = 1;
         public const int SSL_ERROR_WANT_READ = 2;
@@ -319,7 +317,6 @@ namespace OpenSsl
         public const int SSL_ERROR_ZERO_RETURN = 6;
         public const int SSL_ERROR_WANT_CONNECT = 7;
         public const int SSL_ERROR_WANT_ACCEPT = 8;
-
 
         // void ERR_error_string_n(unsigned long e, char *buf, size_t len);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

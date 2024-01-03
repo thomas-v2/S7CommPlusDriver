@@ -25,10 +25,8 @@ namespace S7CommPlusDriver
         public UInt32 ClassId;
         public UInt32 ClassFlags;
         public UInt32 AttributeId;
-
         private Dictionary<UInt32, PValue> Attributes = new Dictionary<UInt32, PValue>();
         private Dictionary<Tuple<UInt32, UInt32>, PObject> Objects = new Dictionary<Tuple<UInt32, UInt32>, PObject>();
-
         public PVartypeList VartypeList;
         public PVarnameList VarnameList;
 
@@ -66,12 +64,9 @@ namespace S7CommPlusDriver
 
         public void AddObject(PObject obj)
         {
-            // Als Key hier ClassId, ob das sinnvoll ist muss sich zeigen.
-
-            // TODO:
-            // Die ClassId ist nicht eindeutig und kann mehrfach vorkommen, 
-            // z.B. mit DB.Class_Rid und in RelId steht dann die DB Nummer als DB.1 usw.
-
+            // Whether using the ClassId as Key makes sense, remains to be seen
+            // TODO: The ClassId is not unique and may be occur more than once
+            // (e.g. DB.Class_Rid and in RelId is the DB number as DB.1)
             var tuple = new Tuple<UInt32, UInt32>(obj.ClassId, obj.RelationId);
             Objects.Add(tuple, obj);
         }
@@ -84,7 +79,7 @@ namespace S7CommPlusDriver
 
         public List<PObject> GetObjectsByClassId(UInt32 classId)
         {
-            List<PObject> objList = new List<PObject>();
+            var objList = new List<PObject>();
             foreach(var obj in Objects)
             {
                 if (obj.Key.Item1 == classId)
@@ -97,7 +92,7 @@ namespace S7CommPlusDriver
 
         public List<PObject> GetObjects()
         {
-            List<PObject> objList = new List<PObject>();
+            var objList = new List<PObject>();
             foreach (var obj in Objects)
             {
                 objList.Add(obj.Value);

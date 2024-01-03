@@ -19,21 +19,23 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    class GetMultiVariablesRequest : IS7pSendableObject
+    class GetMultiVariablesRequest : IS7pRequest
     {
-        public byte ProtocolVersion;
-        public UInt16 SequenceNumber;
-        public UInt32 SessionId;
         byte TransportFlags = 0x34;
-        public UInt32 LinkId = 0;       // für Variablen lesen = 0
+        public UInt32 LinkId = 0;       // for reading variables, this should be 0
         public List<ItemAddress> AddressList = new List<ItemAddress>();
 
-        public bool WithIntegrityId = true;
-        public UInt32 IntegrityId;
+        public uint SessionId { get; set; }
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.GetMultiVariables; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
 
         public GetMultiVariablesRequest(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = true;
         }
 
         public byte GetProtocolVersion()
@@ -47,7 +49,7 @@ namespace S7CommPlusDriver
             UInt32 fieldCount = 0;
             ret += S7p.EncodeByte(buffer, Opcode.Request);
             ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
-            ret += S7p.EncodeUInt16(buffer, Functioncode.GetMultiVariables);
+            ret += S7p.EncodeUInt16(buffer, FunctionCode);
             ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
             ret += S7p.EncodeUInt16(buffer, SequenceNumber);
             ret += S7p.EncodeUInt32(buffer, SessionId);
@@ -72,7 +74,7 @@ namespace S7CommPlusDriver
             {
                 ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
             }
-            // Füllbytes?
+            // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
 
             return ret;

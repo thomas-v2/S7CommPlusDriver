@@ -19,29 +19,32 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class CreateObjectResponse
+    public class CreateObjectResponse : IS7pResponse
     {
-        public byte ProtocolVersion;
-
-        public UInt16 SequenceNumber;
         public byte TransportFlags;
-
         public UInt64 ReturnValue;
         public byte ObjectIdCount;
         public List<UInt32> ObjectIds;
         public PObject ResponseObject;
 
+        public byte ProtocolVersion { get; set; }
+        public ushort FunctionCode { get => Functioncode.CreateObject; }
+        public ushort SequenceNumber { get; set; }
+        public uint IntegrityId { get; set; }
+        public bool WithIntegrityId { get; set; }
+
         public CreateObjectResponse(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
+            WithIntegrityId = false;
         }
 
         public int Deserialize(Stream buffer)
         {
             int ret = 0;
             UInt32 object_id = 0;
-
-            ret += S7p.DecodeUInt16(buffer, out SequenceNumber);
+            ret += S7p.DecodeUInt16(buffer, out ushort seqnr);
+            SequenceNumber = seqnr;
             ret += S7p.DecodeByte(buffer, out TransportFlags);
 
             // Response Set
@@ -54,10 +57,6 @@ namespace S7CommPlusDriver
                 ret += S7p.DecodeUInt32Vlq(buffer, out object_id);
                 ObjectIds.Add(object_id);
             }
-            /* Ein Daten-Objekt gibt es nur beim Connect.
-            */
-            //if (protocolversion == S7COMMP_PROTOCOLVERSION_1)
-            //{
             ret += S7p.DecodeObject(buffer, ref ResponseObject);
             return ret;
         }
@@ -88,7 +87,7 @@ namespace S7CommPlusDriver
             byte opcode;
             UInt16 function;
             UInt16 reserved;
-            // ProtocolVersion wird vorab als ein Byte in den Stream geschrieben, Sonderbehandlung
+            // Special handling of ProtocolVersion, which is written to the stream before
             S7p.DecodeByte(pdu, out protocolVersion);
 
             S7p.DecodeByte(pdu, out opcode);
