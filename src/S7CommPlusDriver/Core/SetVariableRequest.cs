@@ -20,7 +20,7 @@ namespace S7CommPlusDriver
 {
     public class SetVariableRequest : IS7pRequest
     {
-        byte TransportFlags = 0x34;
+        public byte TransportFlags = 0x34;
 
         public UInt32 InObjectId;
 
