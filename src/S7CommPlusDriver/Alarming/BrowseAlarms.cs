@@ -61,7 +61,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
@@ -128,7 +128,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             if ((exploreRes == null) ||
                 (exploreRes.SequenceNumber != exploreReq.SequenceNumber) ||
                 (exploreRes.ReturnValue != 0))
@@ -192,7 +192,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             if ((exploreRes == null) ||
                 (exploreRes.SequenceNumber != exploreReq.SequenceNumber) ||
                 (exploreRes.ReturnValue != 0))

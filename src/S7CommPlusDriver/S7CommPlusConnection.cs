@@ -27,8 +27,12 @@ namespace S7CommPlusDriver
     {
         #region Private Members
         private S7Client m_client;
-        private MemoryStream m_ReceivedStream;
-        private bool m_ReceivedNeedMorePdus;
+        private MemoryStream m_ReceivedPDU;
+        private MemoryStream m_ReceivedTempPDU;
+        private Queue<MemoryStream> m_ReceivedPDUs = new Queue<MemoryStream>();
+        private Mutex m_Mutex = new Mutex();
+
+        private bool m_ReceivedNeedMoreDataForCompletePDU;
         private bool m_NewS7CommPlusReceived;
         private UInt32 m_SessionId;
         private UInt32 m_SessionId2;
@@ -111,11 +115,27 @@ namespace S7CommPlusDriver
         {
             bool Expired = false;
             int Elapsed = Environment.TickCount;
+            bool done = false;
 
-            while (!m_NewS7CommPlusReceived && !Expired)
+            m_Mutex.WaitOne();
+            if (m_ReceivedPDUs.Count > 0)
+            {
+                m_ReceivedPDU = m_ReceivedPDUs.Dequeue();
+                done = true;
+            }
+            m_Mutex.ReleaseMutex();
+
+            while (!done && !Expired)
             {
                 Thread.Sleep(2);
                 Expired = Environment.TickCount - Elapsed > Timeout;
+                m_Mutex.WaitOne();
+                if (m_ReceivedPDUs.Count > 0)
+                {
+                    m_ReceivedPDU = m_ReceivedPDUs.Dequeue();
+                    done = true;
+                }
+                m_Mutex.ReleaseMutex();
             }
 
             if (Expired)
@@ -123,7 +143,6 @@ namespace S7CommPlusDriver
                 Console.WriteLine("S7CommPlusConnection - WaitForNewS7plusReceived: ERROR: Timeout!");
                 m_LastError = S7Consts.errTCPDataReceive;
             }
-            m_NewS7CommPlusReceived = false;
         }
 
         private int SendS7plusFunctionObject(IS7pRequest funcObj)
@@ -221,9 +240,14 @@ namespace S7CommPlusDriver
             // The datalength must not be written into the stream, because it's not valid on fragmented PDUs
             // for the complete length, only for the single fragment.
 
-            if (!m_ReceivedNeedMorePdus)
+            // This method is called from a different thread.
+            // If we use subscriptions or alarming, we may get new data before the last PDU was processed completely.
+            // First step we push the complete PDU to a queue.
+            // TODO: m_LastError handling would also not work as expected. This needs some more redesign.
+
+            if (!m_ReceivedNeedMoreDataForCompletePDU)
             {
-                m_ReceivedStream = new MemoryStream();
+                m_ReceivedTempPDU = new MemoryStream();
             }
             // S7comm-plus
             byte protoVersion;
@@ -232,19 +256,22 @@ namespace S7CommPlusDriver
             // Check header
             if (PDU[pos] != 0x72)
             {
+                m_ReceivedNeedMoreDataForCompletePDU = false;
                 m_LastError = S7Consts.errIsoInvalidPDU;
+                return;
             }
             pos++;
             protoVersion = PDU[pos];
             if (protoVersion != ProtocolVersion.V1 && protoVersion != ProtocolVersion.V2 && protoVersion != ProtocolVersion.V3 && protoVersion != ProtocolVersion.SystemEvent)
             {
-                // Need to disconnect
+                m_ReceivedNeedMoreDataForCompletePDU = false;
                 m_LastError = S7Consts.errIsoInvalidPDU;
+                return;
             }
             // For the first fragment, write the ProtocolVersion into the stream in advance
-            if (!m_ReceivedNeedMorePdus)
+            if (!m_ReceivedNeedMoreDataForCompletePDU)
             {
-                m_ReceivedStream.Write(PDU, pos, 1);
+                m_ReceivedTempPDU.Write(PDU, pos, 1);
             }
             pos++;
 
@@ -260,14 +287,14 @@ namespace S7CommPlusDriver
                 if (protoVersion == ProtocolVersion.SystemEvent)
                 {
                     Console.WriteLine("S7CommPlusConnection - OnDataReceived: ProtocolVersion 0xfe SystemEvent received");
-                    m_ReceivedStream.Write(PDU, pos, s7HeaderDataLen);
+                    m_ReceivedTempPDU.Write(PDU, pos, s7HeaderDataLen);
                     pos += s7HeaderDataLen;
                     // Create SystemEventObject
-                    m_ReceivedNeedMorePdus = false;
-                    m_ReceivedStream.Position = 0;
+                    m_ReceivedNeedMoreDataForCompletePDU = false;
+                    m_ReceivedTempPDU.Position = 0;
                     m_NewS7CommPlusReceived = false;
 
-                    var sysevt = SystemEvent.DeserializeFromPdu(m_ReceivedStream);
+                    var sysevt = SystemEvent.DeserializeFromPdu(m_ReceivedTempPDU);
                     if (sysevt.IsFatalError())
                     {
                         Console.WriteLine("S7CommPlusConnection - OnDataReceived: SystemEvent has fatal error");
@@ -282,20 +309,30 @@ namespace S7CommPlusDriver
                 else
                 {
                     // Copy data part to destination stream
-                    m_ReceivedStream.Write(PDU, pos, s7HeaderDataLen);
+                    m_ReceivedTempPDU.Write(PDU, pos, s7HeaderDataLen);
                     pos += s7HeaderDataLen;
                     // If this is a fragmented PDU, then at this point no trailer
                     if ((len - 4 - 4) == s7HeaderDataLen)
                     {
-                        m_ReceivedNeedMorePdus = false;
-                        m_ReceivedStream.Position = 0;    // Set position back to zero, ready for readout
+                        m_ReceivedNeedMoreDataForCompletePDU = false;
+                        m_ReceivedTempPDU.Position = 0;    // Set position back to zero, ready for readout
                         m_NewS7CommPlusReceived = true;
                     }
                     else
                     {
-                        m_ReceivedNeedMorePdus = true;
+                        m_ReceivedNeedMoreDataForCompletePDU = true;
                     }
                 }
+            }
+
+            // If a complete (usable) PDU is receives, add to the queue (threadsafe) for readout
+            if (m_NewS7CommPlusReceived)
+            {
+                // Push complete PDU to the queue
+                m_Mutex.WaitOne();
+                m_ReceivedPDUs.Enqueue(m_ReceivedTempPDU);
+                m_Mutex.ReleaseMutex();
+                m_NewS7CommPlusReceived = false;
             }
         }
 
@@ -413,7 +450,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
             InitSslResponse sslRes;
-            sslRes = InitSslResponse.DeserializeFromPdu(m_ReceivedStream);
+            sslRes = InitSslResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (sslRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: InitSslResponse with Error!");
@@ -452,7 +489,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var createObjRes = CreateObjectResponse.DeserializeFromPdu(m_ReceivedStream);
+            var createObjRes = CreateObjectResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (createObjRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: CreateObjectResponse with Error!");
@@ -489,7 +526,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+            var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (setMultiVarRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: SetMultiVariablesResponse with Error!");
@@ -542,14 +579,14 @@ namespace S7CommPlusDriver
             // the response gives no error.
             if (deleteObjectId == m_SessionId)
             {
-                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, false);
+                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedPDU, false);
                 Trace.WriteLine("S7CommPlusConnection - DeleteSession: Deleted our own Session Id object, not checking the response.");
                 m_SessionId = 0; // not valid anymore
                 m_SessionId2 = 0;
             }
             else
             {
-                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, true);
+                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedPDU, true);
                 res = checkResponseWithIntegrity(delObjReq, delObjRes);
                 if (res != 0)
                 {
@@ -601,7 +638,7 @@ namespace S7CommPlusDriver
                     return m_LastError;
                 }
 
-                var getMultiVarRes = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+                var getMultiVarRes = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedPDU);
                 res = checkResponseWithIntegrity(getMultiVarReq, getMultiVarRes);
                 if (res != 0)
                 {
@@ -671,7 +708,7 @@ namespace S7CommPlusDriver
                     return m_LastError;
                 }
 
-                var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+                var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedPDU);
                 res = checkResponseWithIntegrity(setMultiVarReq, setMultiVarRes);
                 if (res != 0)
                 {
@@ -716,7 +753,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var setVarRes = SetVariableResponse.DeserializeFromPdu(m_ReceivedStream);
+            var setVarRes = SetVariableResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (setVarRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: SetVariableResponse with Error!");
@@ -762,7 +799,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
@@ -886,7 +923,7 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Process the response, and build the complete variables list
-            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
@@ -967,7 +1004,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
@@ -1077,7 +1114,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
