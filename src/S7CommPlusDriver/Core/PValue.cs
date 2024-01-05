@@ -952,7 +952,7 @@ namespace S7CommPlusDriver
         {
             int ret = 0;
             ret += S7p.EncodeByte(buffer, DatatypeFlags);
-            ret += S7p.EncodeByte(buffer, Datatype.USInt);
+            ret += S7p.EncodeByte(buffer, Datatype.SInt);
             ret += S7p.EncodeUInt32Vlq(buffer, (uint)Value.Length);
             for (int i = 0; i < Value.Length; i++)
             {
