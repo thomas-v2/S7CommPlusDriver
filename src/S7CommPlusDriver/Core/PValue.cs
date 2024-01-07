@@ -2618,6 +2618,9 @@ namespace S7CommPlusDriver
         UInt32 BlobRootId;
         byte[] Value;
 
+        public bool HasBlobType; // Special
+        public byte BlobType;    // Special
+
         public ValueBlob(UInt32 blobRootId, byte[] value) : this(blobRootId, value, 0)
         {
         }
@@ -2652,7 +2655,15 @@ namespace S7CommPlusDriver
 
         public override string ToString()
         {
-            string s = "<Value type=\"Blob\" BlobRootId=\"" + BlobRootId.ToString() + "\">";
+            string s;
+            if (!HasBlobType)
+            {
+                s = "<Value type=\"Blob\" BlobRootId=\"" + BlobRootId.ToString() + "\">";
+            }
+            else
+            {
+                s = "<Value type=\"Blob\" BlobRootId=\"" + BlobRootId.ToString() + "\" BlobType=\"" + BlobType.ToString() + "\">";
+            }
             if (Value != null)
             {
                 s += BitConverter.ToString(Value);
@@ -2665,20 +2676,56 @@ namespace S7CommPlusDriver
         {
             UInt32 blobRootId;
             UInt32 blobSize;
+            bool hasBlobType = false;
+            byte blobType = 0;
             byte[] value;
             if (!disableVlq)
             {
                 S7p.DecodeUInt32Vlq(buffer, out blobRootId);
-                S7p.DecodeUInt32Vlq(buffer, out blobSize);
             }
             else
             {
                 S7p.DecodeUInt32(buffer, out blobRootId);
+            }
+            // Special handling:
+            // If first value > 1 then special format with 8 additional bytes + 1 type-id + value.
+            // On HMI project transfer this occurs with ID=1 (as SubStream) but without the extra bytes.
+            // Used for example in Alarm Notifications for the AssociatedValues.
+            if (blobRootId > 1)
+            {
+                hasBlobType = true;
+                S7p.DecodeUInt64(buffer, out _); // Don't use it for now. All bytes were zero so far.
+                S7p.DecodeByte(buffer, out blobType);
+                // - If BlobType value == 0x02 or 0x03, then follows a length specification and the number of bytes.
+                //   This is used in alarms and the associated values inside the blob-array.
+                // - If BlobType value == 0x00, then follows an ID/value list.
+                //   This is used in program transfer.
+                switch (blobType)
+                {
+                    case 0x02:
+                    case 0x03:
+                        // handling below is the same from here
+                        break;
+                    default:
+                        // can't handle this for now, this is completely different...
+                        throw new NotImplementedException();
+                }
+            }
+
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out blobSize);
+            }
+            else
+            {
                 S7p.DecodeUInt32(buffer, out blobSize);
             }
             value = new byte[blobSize];
             S7p.DecodeOctets(buffer, (int)blobSize, out value);
-            return new ValueBlob(blobRootId, value, flags);
+            var blob = new ValueBlob(blobRootId, value, flags);
+            blob.HasBlobType = hasBlobType;
+            blob.BlobType = blobType;
+            return blob;
         }
     }
 
