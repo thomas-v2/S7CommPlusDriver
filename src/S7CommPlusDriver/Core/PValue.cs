@@ -2845,7 +2845,7 @@ namespace S7CommPlusDriver
             string s = "<Value type=\"BlobSparseArray\">";
             foreach (var v in Value)
             {
-                s += String.Format("<Value key=\"{0}\" BlobRootId=\"{1}\"", v.Key, v.Value.blobRootId);
+                s += String.Format("<Value key=\"{0}\" BlobRootId=\"{1}\">", v.Key, v.Value.blobRootId);
                 if (Value != null)
                 {
                     s += BitConverter.ToString(v.Value.value);
