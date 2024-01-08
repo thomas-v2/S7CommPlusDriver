@@ -3107,6 +3107,7 @@ namespace S7CommPlusDriver
         /// Used on transmitting Systemdatatypes in a compact way (e.g. DTL).
         /// </summary>
         public UInt64 PackedStructInterfaceTimestamp;
+        public UInt32 PackedStructTransportFlags = 0x0002; // Use 2 as standard value (probably a bitfield)
 
         public ValueStruct(UInt32 value) : this (value, 0)
         {
@@ -3153,8 +3154,7 @@ namespace S7CommPlusDriver
                     // get an Error "InvalidTimestampInTypeSafeBlob"
                     ret += S7p.EncodeUInt64(buffer, PackedStructInterfaceTimestamp);
 
-                    UInt32 transp_flags = 0x0002;
-                    ret += S7p.EncodeUInt32Vlq(buffer, transp_flags);
+                    ret += S7p.EncodeUInt32Vlq(buffer, PackedStructTransportFlags);
 
                     if (elem.Value.GetType() == typeof(ValueByteArray))
                     {
@@ -3193,6 +3193,7 @@ namespace S7CommPlusDriver
             if ((Value > 0x90000000 && Value < 0x9fffffff) || (Value > 0x02000000 && Value < 0x02ffffff))
             {
                 s += "<PackedStructInterfaceTimestamp>" + PackedStructInterfaceTimestamp.ToString() + "</PackedStructInterfaceTimestamp>" + Environment.NewLine;
+                s += "<PackedStructTransportFlags>" + PackedStructTransportFlags.ToString() + "</PackedStructTransportFlags>" + Environment.NewLine;
             }
             foreach (var elem in Elements)
             {
@@ -3219,7 +3220,7 @@ namespace S7CommPlusDriver
                 // Packed Struct
                 // These are system datatypes. Either the informations about them must be read out of the CPU before,
                 // or must be known before. As the data are transmitted as Bytearrays, return them in this type. Interpretation must be done later.
-                stru = new ValueStruct(value);
+                stru = new ValueStruct(value, flags);
 
                 S7p.DecodeUInt64(buffer, out stru.PackedStructInterfaceTimestamp);
                 UInt32 transp_flags;
@@ -3244,7 +3245,7 @@ namespace S7CommPlusDriver
                         S7p.DecodeUInt32(buffer, out elementcount);
                     }
                 }
-
+                stru.PackedStructTransportFlags = transp_flags;
                 byte[] barr = new byte[elementcount];
                 for (int i = 0; i < elementcount; i++)
                 {
@@ -3256,7 +3257,7 @@ namespace S7CommPlusDriver
             else
             {
                 PValue elem;
-                stru = new ValueStruct(value);
+                stru = new ValueStruct(value, flags);
                 if (!disableVlq)
                 {
                     S7p.DecodeUInt32Vlq(buffer, out value);
