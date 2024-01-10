@@ -3107,7 +3107,16 @@ namespace S7CommPlusDriver
         /// Used on transmitting Systemdatatypes in a compact way (e.g. DTL).
         /// </summary>
         public UInt64 PackedStructInterfaceTimestamp;
-        public UInt32 PackedStructTransportFlags = 0x0002; // Use 2 as standard value (probably a bitfield)
+        public UInt32 PackedStructTransportFlags = (uint)PackedStructTransportFlagBits.AlwaysSet; // Use 2 as standard value (probably a bitfield)
+
+        [Flags]
+        public enum PackedStructTransportFlagBits
+        {
+            None = 0,
+            ClassicNonoptimizedOffsets = 1 << 0,    // Is set when a struct is read from non-optimized datablock
+            AlwaysSet = 1 << 1,                     // Is (so far) always set
+            Count2Present = 1 << 10                 // If this bit is set, then there's 2nd counter present. Which if for a rare case you can read an array of struct, if the complete size, the 1st for one element.
+        }
 
         public ValueStruct(UInt32 value) : this (value, 0)
         {
@@ -3229,7 +3238,7 @@ namespace S7CommPlusDriver
                 {
                     S7p.DecodeUInt32Vlq(buffer, out transp_flags);
                     S7p.DecodeUInt32Vlq(buffer, out elementcount);
-                    if ((transp_flags & 0x400) != 0)
+                    if ((transp_flags & (uint)PackedStructTransportFlagBits.Count2Present) != 0)
                     {
                         // Here's an additional counter value, for whatever reason...
                         S7p.DecodeUInt32Vlq(buffer, out elementcount);
@@ -3239,7 +3248,7 @@ namespace S7CommPlusDriver
                 {
                     S7p.DecodeUInt32(buffer, out transp_flags);
                     S7p.DecodeUInt32(buffer, out elementcount);
-                    if ((transp_flags & 0x400) != 0)
+                    if ((transp_flags & (uint)PackedStructTransportFlagBits.Count2Present) != 0)
                     {
                         // Here's an additional counter value, for whatever reason...
                         S7p.DecodeUInt32(buffer, out elementcount);
