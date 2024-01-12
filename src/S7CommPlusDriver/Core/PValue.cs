@@ -2846,7 +2846,7 @@ namespace S7CommPlusDriver
             foreach (var v in Value)
             {
                 s += String.Format("<Value key=\"{0}\" BlobRootId=\"{1}\">", v.Key, v.Value.blobRootId);
-                if (Value != null)
+                if (Value != null && v.Value.value != null)
                 {
                     s += BitConverter.ToString(v.Value.value);
                 }
