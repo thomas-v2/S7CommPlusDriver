@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using S7CommPlusDriver.Alarming;
 
 namespace S7CommPlusDriver
 {
@@ -95,13 +96,11 @@ namespace S7CommPlusDriver
                 else
                 {
                     Console.WriteLine("ExploreASAlarms(): stais = null");
-
                 }
             }
             else
             {
                 Console.WriteLine("ExploreASAlarms(): staiclass = null");
-
             }
             #endregion
 
@@ -238,25 +237,25 @@ namespace S7CommPlusDriver
             // Step 1: Get RelationId from table 1
             pos1 = 16; // What is in the bytes before 16 is not known.
 
-            t1_count = GetUInt32(tloa_1, pos1);
+            t1_count = Utils.GetUInt32LE(tloa_1, pos1);
             pos1 += 4;
 
             for (int i = 0; i < t1_count; i++)
             {
-                t1_relid = GetUInt32(tloa_1, pos1);
+                t1_relid = Utils.GetUInt32LE(tloa_1, pos1);
                 pos1 += 4;
-                t1_relid_off = GetUInt32(tloa_1, pos1);
+                t1_relid_off = Utils.GetUInt32LE(tloa_1, pos1);
                 pos1 += 4;
 
                 // Step 2: Start offset in table 3
                 pos2 = t1_relid_off;
-                t2_count = GetUInt32(tloa_2, pos2);
+                t2_count = Utils.GetUInt32LE(tloa_2, pos2);
                 pos2 += 4;
                 for (int j = 0; j < t2_count; j++)
                 {
-                    t2_alid = GetUInt16(tloa_2, pos2);
+                    t2_alid = Utils.GetUInt16LE(tloa_2, pos2);
                     pos2 += 2;
-                    t2_off = GetUInt32(tloa_2, pos2);
+                    t2_off = Utils.GetUInt32LE(tloa_2, pos2);
                     pos2 += 4;
                     // This ID is used as unique identifier (address), which is also transferred later on alarm notification
                     cpualarmid = (ulong)t1_relid << 32 | (ulong)t2_alid << 16;
@@ -270,27 +269,27 @@ namespace S7CommPlusDriver
 
                     // Step 3: Get offsets to text array from table 3
                     pos3 = t2_off;
-                    t3_count = GetUInt32(tloa_3, pos3);
+                    t3_count = Utils.GetUInt32LE(tloa_3, pos3);
                     pos3 += 4;
                     for (int k = 0; k < t3_count; k++)
                     {
                         // t3_typeindex:
                         // 0 = Infotext, 1 = AlarmText, 2..10 = AdditionalText1..AdditionalText9, 255 = Unknown 1 or 2 values
-                        t3_typeindex = GetUInt8(tloa_3, pos3);
+                        t3_typeindex = Utils.GetUInt8(tloa_3, pos3);
                         pos3 += 1;
-                        t3_off = GetUInt32(tloa_3, pos3);
+                        t3_off = Utils.GetUInt32LE(tloa_3, pos3);
                         pos3 += 4;
 
                         // Step 4: Finally get the text and store the data
                         if (t3_typeindex == 255)
                         {
-                            Alarms[cpualarmid].AlText.UnknownValue1 = GetUInt16(tlsa, t3_off);
-                            Alarms[cpualarmid].AlText.UnknownValue2 = GetUInt16(tlsa, t3_off + 2);
+                            Alarms[cpualarmid].AlText.UnknownValue1 = Utils.GetUInt16LE(tlsa, t3_off);
+                            Alarms[cpualarmid].AlText.UnknownValue2 = Utils.GetUInt16LE(tlsa, t3_off + 2);
                         }
                         else
                         {
-                            ts_len = GetUInt16(tlsa, t3_off);
-                            ts_s = GetString(tlsa, t3_off + 2, ts_len);
+                            ts_len = Utils.GetUInt16LE(tlsa, t3_off);
+                            ts_s = Utils.GetUtfString(tlsa, t3_off + 2, ts_len);
                             switch (t3_typeindex)
                             {
                                 case 0:
@@ -332,44 +331,6 @@ namespace S7CommPlusDriver
                 }
             }
         }
-
-        private byte GetUInt8(byte[] array, uint pos)
-        {
-            return array[pos];
-        }
-
-        private ushort GetUInt16(byte[] array, uint pos)
-        {
-            return (ushort)(array[pos + 1] * 256 + array[pos]);
-        }
-
-        private uint GetUInt32(byte[] array, uint pos)
-        {
-            return (uint)array[pos + 3] * 16777216 + (uint)array[pos + 2] * 65536 + (uint)array[pos + 1] * 256 + (uint)array[pos];
-        }
-
-        private String GetString(byte[] array, uint pos, uint len)
-        {
-            return System.Text.Encoding.UTF8.GetString(array, (int)pos, (int)len);
-        }
-    }
-
-    public class AlarmTexts
-    {
-        public string Infotext;
-        public string AlarmText;
-        public string AdditionalText1;
-        public string AdditionalText2;
-        public string AdditionalText3;
-        public string AdditionalText4;
-        public string AdditionalText5;
-        public string AdditionalText6;
-        public string AdditionalText7;
-        public string AdditionalText8;
-        public string AdditionalText9;
-
-        public ushort UnknownValue1;
-        public ushort UnknownValue2;
     }
 
     public class AlarmData
@@ -381,66 +342,19 @@ namespace S7CommPlusDriver
 
         public ulong GetCpuAlarmId()
         {
-            return ((ulong)RelationId << 32) | ((ulong)Alid << 16);
+            return ((ulong)(RelationId) << 32) | ((ulong)(MultipleStai.Alid) << 16);
         }
         
         public uint RelationId;
 
-        public ushort Alid;
-        public ushort AlarmDomain; // 1=Systemdiagnose, 2=Security, 256..272 = UserClass_0..UserClass_16
-        public ushort MessageType; // 1=Alarm AP, 2=Notify AP, 3=Info Report AP, 4=Event Ack AP
-        public byte AlarmEnabled; //0=No, 1=Yes
-        
-        public ushort HmiInfoLength;
-        public ushort HmiInfo_SyntaxId;
-        public ushort HmiInfo_Version;
-        public uint HmiInfo_ClientAlarmId;
-        public byte HmiInfo_Priority;
-        // HmiInfo_SyntaxId >= 258 with HmiInfoLength >= 17
-        public ushort HmiInfo_AlarmClass;
-        public byte HmiInfo_Producer;
-        public byte HmiInfo_GroupId;
-        public byte HmiInfo_Flags;
-
-        public ushort LidCount;
-        public uint[] Lids;
-  
-        public AlarmTexts AlText = new AlarmTexts();
+        public AlarmsMultipleStai MultipleStai;  
+        public AlarmsAlarmTexts AlText = new AlarmsAlarmTexts();
 
         public int Deserialize(Stream buffer)
         {
             int ret = 0;
-
-            ret += S7p.DecodeUInt16(buffer, out Alid);
-            ret += S7p.DecodeUInt16(buffer, out AlarmDomain);
-            ret += S7p.DecodeUInt16(buffer, out MessageType);
-            ret += S7p.DecodeByte(buffer, out AlarmEnabled);
-
-            ret += S7p.DecodeUInt16(buffer, out HmiInfoLength);
-
-            ret += S7p.DecodeUInt16(buffer, out HmiInfo_SyntaxId);
-            ret += S7p.DecodeUInt16(buffer, out HmiInfo_Version);
-            ret += S7p.DecodeUInt32(buffer, out HmiInfo_ClientAlarmId);
-            ret += S7p.DecodeByte(buffer, out HmiInfo_Priority);
-            if (HmiInfo_SyntaxId >= 257) {
-                // Skip 3 bytes with no useful data
-                ret += S7p.DecodeByte(buffer, out _);
-                ret += S7p.DecodeByte(buffer, out _);
-                ret += S7p.DecodeByte(buffer, out _);
-                if (HmiInfo_SyntaxId >= 258)
-                {
-                    ret += S7p.DecodeUInt16(buffer, out HmiInfo_AlarmClass);
-                    ret += S7p.DecodeByte(buffer, out HmiInfo_Producer);
-                    ret += S7p.DecodeByte(buffer, out HmiInfo_GroupId);
-                    ret += S7p.DecodeByte(buffer, out HmiInfo_Flags);
-                }
-            }
-            ret += S7p.DecodeUInt16(buffer, out LidCount);
-            Lids = new uint[LidCount];
-            for (int i = 0; i < LidCount; i++)
-            {
-                ret += S7p.DecodeUInt32(buffer, out Lids[i]);
-            }
+            MultipleStai = new AlarmsMultipleStai();
+            ret += MultipleStai.Deserialize(buffer);
             return ret;
         }
 
@@ -449,28 +363,8 @@ namespace S7CommPlusDriver
             string s = "";
             s += "<AlarmData>" + Environment.NewLine;
             s += "<CpuAlarmId>" + GetCpuAlarmId().ToString() + "</CpuAlarmId>" + Environment.NewLine;
-            s += "<RelationId>" + RelationId.ToString() + "</RelationId>" + Environment.NewLine;
-            s += "<Alid>" + Alid.ToString() + "</Alid>" + Environment.NewLine;
-            s += "<AlarmDomain>" + AlarmDomain.ToString() + "</AlarmDomain>" + Environment.NewLine;
-            s += "<MessageType>" + MessageType.ToString() + "</MessageType>" + Environment.NewLine;
-            s += "<AlarmEnabled>" + AlarmEnabled.ToString() + "</AlarmEnabled>" + Environment.NewLine;
-            s += "<HmiInfoLength>" + HmiInfoLength.ToString() + "</HmiInfoLength>" + Environment.NewLine;
-            s += "<HmiInfo_SyntaxId>" + HmiInfo_SyntaxId.ToString() + "</HmiInfo_SyntaxId>" + Environment.NewLine;
-            s += "<HmiInfo_Version>" + HmiInfo_Version.ToString() + "</HmiInfo_Version>" + Environment.NewLine;
-            s += "<HmiInfo_ClientAlarmId>" + HmiInfo_ClientAlarmId.ToString() + "</HmiInfo_ClientAlarmId>" + Environment.NewLine;
-            s += "<HmiInfo_Priority>" + HmiInfo_Priority.ToString() + "</HmiInfo_Priority>" + Environment.NewLine;
-            if (HmiInfo_SyntaxId >= 258)
-            {
-                s += "<HmiInfo_AlarmClass>" + HmiInfo_AlarmClass.ToString() + "</HmiInfo_AlarmClass>" + Environment.NewLine;
-                s += "<HmiInfo_Producer>" + HmiInfo_Producer.ToString() + "</HmiInfo_Producer>" + Environment.NewLine;
-                s += "<HmiInfo_GroupId>" + HmiInfo_GroupId.ToString() + "</HmiInfo_GroupId>" + Environment.NewLine;
-                s += "<HmiInfo_Flags>" + HmiInfo_Flags.ToString() + "</HmiInfo_Flags>" + Environment.NewLine;
-            }
-            s += "<LidCount>" + LidCount.ToString() + "</LidCount>" + Environment.NewLine;
-            foreach (var li in Lids)
-            {
-                s += "<Lid>" + li.ToString() + "</Lid>" + Environment.NewLine;
-            }
+            s += "<RelationId>" + RelationId.ToString() + Environment.NewLine +"</RelationId>" + Environment.NewLine;
+            s += "<MultipleStai>" + Environment.NewLine + MultipleStai.ToString() + "</MultipleStai>" + Environment.NewLine;
             s += "<AlText>" + Environment.NewLine;
             s += "<Infotext>" + AlText.Infotext + "</Infotext>" + Environment.NewLine;
             s += "<AlarmText>" + AlText.AlarmText + "</AlarmText>" + Environment.NewLine;

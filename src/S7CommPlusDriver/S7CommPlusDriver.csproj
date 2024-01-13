@@ -63,12 +63,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Alarming\AlarmsAlarmTexts.cs" />
+    <Compile Include="Alarming\AlarmsAsCgs.cs" />
+    <Compile Include="Alarming\AlarmsDai.cs" />
+    <Compile Include="Alarming\AlarmsHandler.cs" />
+    <Compile Include="Alarming\AlarmsHmiInfo.cs" />
+    <Compile Include="Alarming\AlarmsMultipleStai.cs" />
     <Compile Include="ClientApi\Browser.cs" />
     <Compile Include="ClientApi\PlcTagQC.cs" />
     <Compile Include="ClientApi\PlcTags.cs" />
     <Compile Include="Core\IS7pResponse.cs" />
     <Compile Include="Core\IS7pSerialize.cs" />
     <Compile Include="ClientApi\PlcTag.cs" />
+    <Compile Include="Core\Notification.cs" />
     <Compile Include="Core\ProtocolVersion.cs" />
     <Compile Include="Core\SetVariableResponse.cs" />
     <Compile Include="Core\SetVariableRequest.cs" />
@@ -108,6 +115,7 @@
     <Compile Include="Core\Softdatatype.cs" />
     <Compile Include="Core\Utils.cs" />
     <Compile Include="S7CommPlusConnection.cs" />
+    <Compile Include="Subscriptions\Subscription.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

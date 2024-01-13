@@ -2804,7 +2804,7 @@ namespace S7CommPlusDriver
             public byte[] value;
         }
 
-        Dictionary<UInt32, BlobEntry> Value;
+        public Dictionary<UInt32, BlobEntry> Value;
 
         public ValueBlobSparseArray(Dictionary<UInt32, BlobEntry> value) : this(value, FLAGS_SPARSEARRAY)
         {

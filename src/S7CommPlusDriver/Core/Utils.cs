@@ -81,5 +81,43 @@ namespace S7CommPlusDriver
             }
             return result.ToString();
         }
+
+        public static DateTime DtFromValueTimestamp(UInt64 value)
+        {
+            // Protocol ValueTimestamp is number of nanoseconds from 1. Jan 1970 (Unit Time). 
+            // .Net DateTime tick is 100 ns based
+            ulong epochTicks = 621355968000000000; // Unix Time (UTC) on 1st January 1970.
+            return new DateTime((long)((value / 100) + epochTicks), DateTimeKind.Utc);
+        }
+
+        public static byte GetUInt8(byte[] array, uint pos)
+        {
+            return array[pos];
+        }
+
+        public static ushort GetUInt16LE(byte[] array, uint pos)
+        {
+            return (ushort)(array[pos + 1] * 256 + array[pos]);
+        }
+
+        public static ushort GetUInt16(byte[] array, uint pos)
+        {
+            return (ushort)(array[pos] * 256 + array[pos + 1]);
+        }
+
+        public static uint GetUInt32LE(byte[] array, uint pos)
+        {
+            return (uint)array[pos + 3] * 16777216 + (uint)array[pos + 2] * 65536 + (uint)array[pos + 1] * 256 + (uint)array[pos];
+        }
+
+        public static uint GetUInt32(byte[] array, uint pos)
+        {
+            return (uint)array[pos] * 16777216 + (uint)array[pos + 1] * 65536 + (uint)array[pos + 2] * 256 + (uint)array[pos + 3];
+        }
+        
+        public static String GetUtfString(byte[] array, uint pos, uint len)
+        {
+            return System.Text.Encoding.UTF8.GetString(array, (int)pos, (int)len);
+        }
     }    
 }

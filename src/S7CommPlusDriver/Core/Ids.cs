@@ -82,6 +82,7 @@ namespace S7CommPlusDriver
         public const int DAI_Coming = 2673;
         public const int DAI_Going = 2677;
         public const int DAI_Class_Rid = 2681;
+        public const int DAI_AlarmTexts_Rid = 2715;
         public const int AS_CGS_AllStatesInfo = 3474;
         public const int AS_CGS_Timestamp = 3475;
         public const int AS_CGS_AssociatedValues = 3476;

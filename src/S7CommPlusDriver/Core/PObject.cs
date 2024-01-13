@@ -25,9 +25,9 @@ namespace S7CommPlusDriver
         public UInt32 ClassId;
         public UInt32 ClassFlags;
         public UInt32 AttributeId;
-        private Dictionary<UInt32, PValue> Attributes = new Dictionary<UInt32, PValue>();
-        private Dictionary<Tuple<UInt32, UInt32>, PObject> Objects = new Dictionary<Tuple<UInt32, UInt32>, PObject>();
-        private Dictionary<UInt32, UInt32> Relations = new Dictionary<UInt32, UInt32>();
+        public Dictionary<UInt32, PValue> Attributes = new Dictionary<UInt32, PValue>();
+        public Dictionary<Tuple<UInt32, UInt32>, PObject> Objects = new Dictionary<Tuple<UInt32, UInt32>, PObject>();
+        public Dictionary<UInt32, UInt32> Relations = new Dictionary<UInt32, UInt32>();
         public PVartypeList VartypeList;
         public PVarnameList VarnameList;
 
