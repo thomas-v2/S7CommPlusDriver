@@ -80,7 +80,7 @@ namespace S7CommPlusDriver
                 case eNodeType.StructArray:
                     names += node.Name;
                     // TODO: Special: Between an array-indes and the access-id is an additional 1. It's not known if it's a fixed or variable value.
-                    accessIds += "." + String.Format("{0:X}", node.AccessId + ".1");
+                    accessIds += "." + String.Format("{0:X}", node.AccessId) + ".1";
                     break;
                 default:
                     names += "." + node.Name;
