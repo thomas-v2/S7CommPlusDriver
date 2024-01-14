@@ -28,7 +28,7 @@ namespace S7CommPlusDriver.Alarming
 
         public byte AllStatesInfo;
         public DateTime Timestamp;
-        // TODO: struct TI_LIB.SimpleType.275 AssociatedValues;
+        public AlarmsAssociatedValues AssociatedValues;
         public DateTime AckTimestamp;
 
         public override string ToString()
@@ -37,7 +37,7 @@ namespace S7CommPlusDriver.Alarming
             s += "<SubtypeId>" + SubtypeId.ToString() + "</SubtypeId>" + Environment.NewLine;
             s += "<SubtypeIdName>" + ((SubtypeIds)SubtypeId).ToString() + "</SubtypeIdName>" + Environment.NewLine;
             s += "<AllStatesInfo>" + AllStatesInfo.ToString() + "</AllStatesInfo>" + Environment.NewLine;
-            // TODO: AssociatedValues
+            s += "<AssociatedValues>" + Environment.NewLine + AssociatedValues.ToString() + "</AssociatedValues>" + Environment.NewLine;
             s += "<Timestamp>" + Timestamp.ToString() + "</Timestamp>" + Environment.NewLine;
             s += "<AckTimestamp>" + AckTimestamp.ToString() + "</AckTimestamp>" + Environment.NewLine;
             s += "</AlarmsAsCgs>" + Environment.NewLine;
@@ -49,11 +49,7 @@ namespace S7CommPlusDriver.Alarming
             var asCgs = new AlarmsAsCgs();
             asCgs.AllStatesInfo = ((ValueUSInt)str.GetStructElement(Ids.AS_CGS_AllStatesInfo)).GetValue();
             asCgs.Timestamp = Utils.DtFromValueTimestamp(((ValueTimestamp)str.GetStructElement(Ids.AS_CGS_Timestamp)).GetValue());
-            // 3476 = AS_CGS.AssociatedValues
-            // TODO: Blob
-            // Browsing 0x2000113 result:
-            // UInt Syntax
-            // Byte Aap
+            asCgs.AssociatedValues = AlarmsAssociatedValues.FromValueBlob(((ValueBlobArray)str.GetStructElement(Ids.AS_CGS_AssociatedValues)));
             asCgs.AckTimestamp = Utils.DtFromValueTimestamp(((ValueTimestamp)str.GetStructElement(Ids.AS_CGS_AckTimestamp)).GetValue());
             return asCgs;
         }

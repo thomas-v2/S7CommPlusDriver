@@ -100,5 +100,26 @@ namespace S7CommPlusDriver
         public const int AlarmSubscriptionRef_AlarmTextLanguages_Rid = 8181;
         public const int AlarmSubscriptionRef_SendAlarmTexts_Rid = 8173;
         public const int ReturnValue = 40305;
+
+        public const int TI_BOOL = 0x02000000 + 1;
+        public const int TI_BYTE = 0x02000000 + 2;
+        public const int TI_CHAR = 0x02000000 + 3;
+        public const int TI_WORD = 0x02000000 + 4;
+        public const int TI_INT = 0x02000000 + 5;
+        public const int TI_DWORD = 0x02000000 + 6;
+        public const int TI_DINT = 0x02000000 + 7;
+        public const int TI_REAL = 0x02000000 + 8;
+        public const int TI_STRING = 0x02000000 + 19;
+        public const int TI_LREAL = 0x02000000 + 48;
+        public const int TI_USINT = 0x02000000 + 52;
+        public const int TI_UINT = 0x02000000 + 53;
+        public const int TI_UDINT = 0x02000000 + 54;
+        public const int TI_SINT = 0x02000000 + 55;
+        public const int TI_WCHAR = 0x02000000 + 61;
+        public const int TI_WSTRING = 0x02000000 + 62;
+        public const int TI_STRING_START = 0x020a0000;  // Start for String[0]
+        public const int TI_STRING_END = 0x020affff;    // End (String[65535])
+        public const int TI_WSTRING_START = 0x020b0000; // Start for WString[0]
+        public const int TI_WSTRING_END = 0x020bffff;   // End (WString[65535])
     }
 }

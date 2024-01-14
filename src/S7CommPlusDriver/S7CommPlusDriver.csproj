@@ -65,6 +65,7 @@
   <ItemGroup>
     <Compile Include="Alarming\AlarmsAlarmTexts.cs" />
     <Compile Include="Alarming\AlarmsAsCgs.cs" />
+    <Compile Include="Alarming\AlarmsAssociatedValues.cs" />
     <Compile Include="Alarming\AlarmsDai.cs" />
     <Compile Include="Alarming\AlarmsHandler.cs" />
     <Compile Include="Alarming\AlarmsHmiInfo.cs" />

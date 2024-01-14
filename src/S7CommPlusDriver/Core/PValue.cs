@@ -2615,7 +2615,7 @@ namespace S7CommPlusDriver
 
     public class ValueBlob : PValue
     {
-        UInt32 BlobRootId;
+        public UInt32 BlobRootId;
         byte[] Value;
 
         public bool HasBlobType; // Special
