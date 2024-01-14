@@ -93,14 +93,14 @@ namespace S7CommPlusDriver.Alarming
             s += "<Infotext>" + Infotext.ToString() + "</Infotext>" + Environment.NewLine;
             s += "<AlarmText>" + AlarmText.ToString() + "</AlarmText>" + Environment.NewLine;
             s += "<AdditionalText1>" + AdditionalText1.ToString() + "</AdditionalText1>" + Environment.NewLine;
-            s += "<AdditionalText2>" + AdditionalText1.ToString() + "</AdditionalText2>" + Environment.NewLine;
-            s += "<AdditionalText3>" + AdditionalText1.ToString() + "</AdditionalText3>" + Environment.NewLine;
-            s += "<AdditionalText4>" + AdditionalText1.ToString() + "</AdditionalText4>" + Environment.NewLine;
-            s += "<AdditionalText5>" + AdditionalText1.ToString() + "</AdditionalText5>" + Environment.NewLine;
-            s += "<AdditionalText6>" + AdditionalText1.ToString() + "</AdditionalText6>" + Environment.NewLine;
-            s += "<AdditionalText7>" + AdditionalText1.ToString() + "</AdditionalText7>" + Environment.NewLine;
-            s += "<AdditionalText8>" + AdditionalText1.ToString() + "</AdditionalText8>" + Environment.NewLine;
-            s += "<AdditionalText9>" + AdditionalText1.ToString() + "</AdditionalText9>" + Environment.NewLine;
+            s += "<AdditionalText2>" + AdditionalText2.ToString() + "</AdditionalText2>" + Environment.NewLine;
+            s += "<AdditionalText3>" + AdditionalText3.ToString() + "</AdditionalText3>" + Environment.NewLine;
+            s += "<AdditionalText4>" + AdditionalText4.ToString() + "</AdditionalText4>" + Environment.NewLine;
+            s += "<AdditionalText5>" + AdditionalText5.ToString() + "</AdditionalText5>" + Environment.NewLine;
+            s += "<AdditionalText6>" + AdditionalText6.ToString() + "</AdditionalText6>" + Environment.NewLine;
+            s += "<AdditionalText7>" + AdditionalText7.ToString() + "</AdditionalText7>" + Environment.NewLine;
+            s += "<AdditionalText8>" + AdditionalText8.ToString() + "</AdditionalText8>" + Environment.NewLine;
+            s += "<AdditionalText9>" + AdditionalText9.ToString() + "</AdditionalText9>" + Environment.NewLine;
             s += "</AlarmsAlarmTexts>" + Environment.NewLine;
             return s;
         }

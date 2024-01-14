@@ -120,7 +120,6 @@ namespace S7CommPlusDriver
         {
             int res = 0;
             short creditLimitStep = 5;
-            string s;
 
             for (int i = 1; i <= untilNumberOfAlarms; i++)
             {
