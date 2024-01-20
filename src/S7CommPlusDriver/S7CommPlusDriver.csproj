@@ -73,6 +73,7 @@
     <Compile Include="ClientApi\Browser.cs" />
     <Compile Include="ClientApi\PlcTagQC.cs" />
     <Compile Include="ClientApi\PlcTags.cs" />
+    <Compile Include="Core\CommRessources.cs" />
     <Compile Include="Core\IS7pResponse.cs" />
     <Compile Include="Core\IS7pSerialize.cs" />
     <Compile Include="ClientApi\PlcTag.cs" />

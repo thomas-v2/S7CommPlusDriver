@@ -46,11 +46,7 @@ namespace S7CommPlusDriver
         private UInt16 m_SequenceNumber = 0;
         private UInt32 m_IntegrityId = 0;
         private UInt32 m_IntegrityId_Set = 0;
-        // Initialize the max values to 20, 50 is possibly the lowest value.
-        // The actual supported value is read after connection setup via a ReadRequest, which returns a DInt.
-        private Int32 m_MaxTagsPerReadRequestLimit = 20;
-        private Int32 m_MaxTagsPerWriteRequestLimit = 20;
-
+        private CommRessources m_CommRessources = new CommRessources();
         #endregion
 
         #region Public Members
@@ -356,46 +352,6 @@ namespace S7CommPlusDriver
             Console.Write(Environment.NewLine);
         }
 
-        private int ReadSystemLimits()
-        {
-            // Read SystemLimits
-            // Assumption (so far, because for all CPUs which have be seen both values were the same):
-            // 1000 = Number for Reading
-            // 1001 = Number for Writing
-            int res;
-            var readlist = new List<ItemAddress>();
-            var values = new List<object>();
-            var errors = new List<UInt64>();
-
-            var adrMaxReadTags = new ItemAddress
-            {
-                AccessArea = Ids.ObjectRoot,
-                AccessSubArea = Ids.SystemLimits
-            };
-            adrMaxReadTags.LID.Add(1000);
-            var adrMaxWriteTags = new ItemAddress
-            {
-                AccessArea = Ids.ObjectRoot,
-                AccessSubArea = Ids.SystemLimits
-            };
-            adrMaxWriteTags.LID.Add(1001);
-            readlist.Add(adrMaxReadTags);
-            readlist.Add(adrMaxWriteTags);
-
-            res = ReadValues(readlist, out values, out errors);
-            if (values[0] != null && errors[0] == 0)
-            {
-                var v = (ValueDInt)values[0];
-                m_MaxTagsPerReadRequestLimit = v.GetValue();
-            }
-            if (values[1] != null && errors[1] == 0)
-            {
-                var v = (ValueDInt)values[1];
-                m_MaxTagsPerWriteRequestLimit = v.GetValue();
-            }
-            return res;
-        }
-
         private int checkResponseWithIntegrity(IS7pRequest request, IS7pResponse response)
         {
             if (response == null)
@@ -537,7 +493,7 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Step 5: Read SystemLimits
-            res = ReadSystemLimits();
+            res = m_CommRessources.ReadMax(this);
             if (res != 0)
             {
                 m_client.Disconnect();
@@ -624,7 +580,7 @@ namespace S7CommPlusDriver
 
                 getMultiVarReq.AddressList.Clear();
                 count_perChunk = 0;
-                while (count_perChunk < m_MaxTagsPerReadRequestLimit && (chunk_startIndex + count_perChunk) < addresslist.Count)
+                while (count_perChunk < m_CommRessources.TagsPerReadRequestMax  && (chunk_startIndex + count_perChunk) < addresslist.Count)
                 {
                     getMultiVarReq.AddressList.Add(addresslist[chunk_startIndex + count_perChunk]);
                     count_perChunk++;
@@ -689,7 +645,7 @@ namespace S7CommPlusDriver
                 setMultiVarReq.AddressListVar.Clear();
                 setMultiVarReq.ValueList.Clear();
                 count_perChunk = 0;
-                while (count_perChunk < m_MaxTagsPerWriteRequestLimit && (chunk_startIndex + count_perChunk) < addresslist.Count)
+                while (count_perChunk < m_CommRessources.TagsPerWriteRequestMax && (chunk_startIndex + count_perChunk) < addresslist.Count)
                 {
                     setMultiVarReq.AddressListVar.Add(addresslist[chunk_startIndex + count_perChunk]);
                     setMultiVarReq.ValueList.Add(values[chunk_startIndex + count_perChunk]);

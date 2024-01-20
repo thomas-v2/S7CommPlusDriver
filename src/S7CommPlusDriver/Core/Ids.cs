@@ -56,6 +56,7 @@ namespace S7CommPlusDriver
         public const int SubscriptionCount = 1052;
         public const int SubscriptionCreditLimit = 1053;
         public const int SubscriptionTicks = 1054;
+        public const int FreeItems = 1081;
         public const int SubscriptionFunctionClassId = 1082;
         public const int Filter = 1246;
         public const int FilterOperation = 1247;
