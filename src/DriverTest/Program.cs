@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using S7CommPlusDriver;
+
 using S7CommPlusDriver.ClientApi;
 
 
@@ -13,23 +14,23 @@ namespace DriverTest
     {
         static void Main(string[] args)
         {
-            string HostIp;
+            string HostIp = "192.168.1.30";
+            string Password = "";
             int res;
             List<ItemAddress> readlist = new List<ItemAddress>();
             Console.WriteLine("Main - START");
-            // Als Parameter lässt sich die IP-Adresse übergeben, sonst Default-Wert von unten
-            if (args.Length == 1)
-            {
+            // Als Parameter lässt sich die IP-Adresse übergeben, sonst Default-Wert von oben
+            if (args.Length >= 1) {
                 HostIp = args[0];
             }
-            else
-            {
-                HostIp = "192.168.1.30";
+            // Als Parameter lässt sich das Passwort übergeben, sonst Default-Wert von oben (kein Passwort)
+            if (args.Length >= 2) {
+                Password = args[1];
             }
             Console.WriteLine("Main - Versuche Verbindungsaufbau zu: " + HostIp);
 
             S7CommPlusConnection conn = new S7CommPlusConnection();
-            res = conn.Connect(HostIp);
+            res = conn.Connect(HostIp, Password);
             if (res == 0)
             {
                 Console.WriteLine("Main - Connect fertig");

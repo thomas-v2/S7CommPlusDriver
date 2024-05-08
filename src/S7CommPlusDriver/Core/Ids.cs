@@ -35,6 +35,8 @@ namespace S7CommPlusDriver
         public const int ClassServerSession = 287;
         public const int ObjectNullServerSession = 288;
         public const int ServerSessionClientRID = 300;
+        public const int ServerSessionRequest = 303;
+        public const int ServerSessionResponse = 304;
         public const int ServerSessionVersion = 306;
         public const int ClassTypeInfo = 511;
         public const int ClassOMSTypeInfoContainer = 534;
