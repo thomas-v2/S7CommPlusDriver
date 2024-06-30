@@ -51,7 +51,7 @@ namespace DriverTest
 
                 foreach (var v in vars)
                 {
-                    taglist.Add(tags.TagFactory(v.Name, new ItemAddress(v.AccessSequence), v.Softdatatype));
+                    taglist.Add(PlcTags.TagFactory(v.Name, new ItemAddress(v.AccessSequence), v.Softdatatype));
                 }
                 foreach (var t in taglist)
                 {

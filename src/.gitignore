@@ -4,6 +4,7 @@
 *.suo
 *.user
 .vs/
+.editorconfig
 
 # Build results
 [Dd]ebug/

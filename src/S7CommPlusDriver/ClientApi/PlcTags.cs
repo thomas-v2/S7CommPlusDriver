@@ -72,7 +72,7 @@ namespace S7CommPlusDriver.ClientApi
             return res;
         }
 
-        public PlcTag TagFactory(string name, ItemAddress address, uint softdatatype)
+        public static PlcTag TagFactory(string name, ItemAddress address, uint softdatatype)
         {
             switch (softdatatype)
             {
