@@ -510,19 +510,22 @@ namespace S7CommPlusDriver
             getVarSubstreamedReq.SessionId = m_SessionId;
             getVarSubstreamedReq.Address = 1842;
             res = SendS7plusFunctionObject(getVarSubstreamedReq);
-            if (res != 0) {
+            if (res != 0)
+            {
                 m_client.Disconnect();
                 return res;
             }
             m_LastError = 0;
             WaitForNewS7plusReceived(m_ReadTimeout);
-            if (m_LastError != 0) {
+            if (m_LastError != 0)
+            {
                 m_client.Disconnect();
                 return m_LastError;
             }
 
             var getVarSubstreamedRes = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
-            if (getVarSubstreamedRes == null) {
+            if (getVarSubstreamedRes == null)
+            {
                 Console.WriteLine("S7CommPlusConnection - Connect.Password: GetVarSubstreamedResponse with Error!");
                 m_client.Disconnect();
                 return S7Consts.errIsoInvalidPDU;
@@ -530,26 +533,30 @@ namespace S7CommPlusDriver
 
             //check access level
             UInt32 accessLevel = (getVarSubstreamedRes.Value as ValueUDInt).GetValue();
-            if (accessLevel > AccessLevel.FullAccess && password != "") {
+            if (accessLevel > AccessLevel.FullAccess && password != "")
+            {
                 //get challenge
                 var getVarSubstreamedReq_challange = new GetVarSubstreamedRequest(ProtocolVersion.V2);
                 getVarSubstreamedReq_challange.InObjectId = m_SessionId;
                 getVarSubstreamedReq_challange.SessionId = m_SessionId;
                 getVarSubstreamedReq_challange.Address = Ids.ServerSessionRequest;
                 res = SendS7plusFunctionObject(getVarSubstreamedReq_challange);
-                if (res != 0) {
+                if (res != 0)
+                {
                     m_client.Disconnect();
                     return res;
                 }
                 m_LastError = 0;
                 WaitForNewS7plusReceived(m_ReadTimeout);
-                if (m_LastError != 0) {
+                if (m_LastError != 0)
+                {
                     m_client.Disconnect();
                     return m_LastError;
                 }
 
                 var getVarSubstreamedRes_challenge = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
-                if (getVarSubstreamedRes_challenge == null) {
+                if (getVarSubstreamedRes_challenge == null)
+                {
                     Console.WriteLine("S7CommPlusConnection - Connect.Password: getVarSubstreamedRes_challenge with Error!");
                     m_client.Disconnect();
                     return S7Consts.errIsoInvalidPDU;
@@ -559,15 +566,18 @@ namespace S7CommPlusDriver
 
                 //calculate challegeResponse [sha1(password) xor challenge]
                 byte[] challengeResponse;
-                using (SHA1Managed sha1 = new SHA1Managed()) {
+                using (SHA1Managed sha1 = new SHA1Managed())
+                {
                     challengeResponse = sha1.ComputeHash(Encoding.UTF8.GetBytes(password));
                 }
-                if (challengeResponse.Length != challenge.Length) {
+                if (challengeResponse.Length != challenge.Length)
+                {
                     Console.WriteLine("S7CommPlusConnection - Connect.Password: challengeResponse.Length != challenge.Length");
                     m_client.Disconnect();
                     return S7Consts.errIsoInvalidPDU;
                 }
-                for (int i = 0; i < challengeResponse.Length; ++i) {
+                for (int i = 0; i < challengeResponse.Length; ++i)
+                {
                     challengeResponse[i] = (byte)(challengeResponse[i] ^ challenge[i]);
                 }
 
@@ -578,25 +588,30 @@ namespace S7CommPlusDriver
                 setVariableReq.Address = Ids.ServerSessionResponse;
                 setVariableReq.Value = new ValueUSIntArray(challengeResponse);
                 res = SendS7plusFunctionObject(setVariableReq);
-                if (res != 0) {
+                if (res != 0)
+                {
                     m_client.Disconnect();
                     return res;
                 }
                 m_LastError = 0;
                 WaitForNewS7plusReceived(m_ReadTimeout);
-                if (m_LastError != 0) {
+                if (m_LastError != 0)
+                {
                     m_client.Disconnect();
                     return m_LastError;
                 }
 
                 var setVariableResponse = SetVariableResponse.DeserializeFromPdu(m_ReceivedPDU);
-                if (setVariableResponse == null) {
+                if (setVariableResponse == null)
+                {
                     Console.WriteLine("S7CommPlusConnection - Connect.Password: setVariableResponse with Error!");
                     m_client.Disconnect();
                     return S7Consts.errIsoInvalidPDU;
                 }
 
-            } else if (accessLevel > AccessLevel.FullAccess) {
+            }
+            else if (accessLevel > AccessLevel.FullAccess)
+            {
                 Console.WriteLine("S7CommPlusConnection - Connect.Password: Warning: Access level is not fullaccess but no password set!");
             }
 
