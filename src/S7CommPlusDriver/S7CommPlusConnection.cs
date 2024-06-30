@@ -175,7 +175,6 @@ namespace S7CommPlusDriver
             int sourcePos = 0;
             int sendLen;
             int NegotiatedIsoPduSize = 1024;// TODO: Respect the negotiated TPDU size
-            byte[] packet = new byte[NegotiatedIsoPduSize];
 
             // 4 Byte TPKT Header
             // 3 Byte ISO-Header
@@ -183,6 +182,7 @@ namespace S7CommPlusDriver
             // 4 Byte S7CommPlus Header
             // 4 Byte S7CommPlus Trailer (must fit into last PDU)
             int MaxSize = NegotiatedIsoPduSize - 4 - 3 - 5 - 17 - 4 - 4;
+            byte[] packet = new byte[MaxSize + 4]; //max packet size is always MaxSize + PDU Header
 
             while (bytesToSend > 0)
             {
@@ -209,6 +209,7 @@ namespace S7CommPlusDriver
                 // Trailer only in last packet
                 if (bytesToSend == 0)
                 {
+                    Array.Resize(ref packet, sendLen + 4); //resize only the last package to sendLen + TrailerLen
                     packet[sendLen] = 0x72;
                     sendLen++;
                     packet[sendLen] = protoVersion;
@@ -218,7 +219,6 @@ namespace S7CommPlusDriver
                     packet[sendLen] = 0;
                     sendLen++;
                 }
-                Array.Resize(ref packet, sendLen);
                 m_client.Send(packet);
             }
             return m_LastError;
