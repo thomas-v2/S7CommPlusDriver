@@ -73,12 +73,15 @@
     <Compile Include="ClientApi\Browser.cs" />
     <Compile Include="ClientApi\PlcTagQC.cs" />
     <Compile Include="ClientApi\PlcTags.cs" />
+    <Compile Include="Core\AccessLevel.cs" />
     <Compile Include="Core\CommRessources.cs" />
     <Compile Include="Core\IS7pResponse.cs" />
     <Compile Include="Core\IS7pSerialize.cs" />
     <Compile Include="ClientApi\PlcTag.cs" />
     <Compile Include="Core\Notification.cs" />
     <Compile Include="Core\ProtocolVersion.cs" />
+    <Compile Include="Core\GetVarSubstreamedRequest.cs" />
+    <Compile Include="Core\GetVarSubstreamedResponse.cs" />
     <Compile Include="Core\SetVariableResponse.cs" />
     <Compile Include="Core\SetVariableRequest.cs" />
     <Compile Include="Core\SystemEvent.cs" />
