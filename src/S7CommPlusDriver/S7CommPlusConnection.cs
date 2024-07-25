@@ -1233,10 +1233,12 @@ namespace S7CommPlusDriver
                 varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theMArea_Rid);
                 PlcTag tag = browsePlcTagBySymbol(0x90030000, ref symbol, varInfo);
                 if (tag != null) return tag;
+                symbol = varInfo.Name;
                 //Outputs
                 varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theQArea_Rid);
                 tag = browsePlcTagBySymbol(0x90020000, ref symbol, varInfo);
                 if (tag != null) return tag;
+                symbol = varInfo.Name;
                 //Inputs
                 varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theIArea_Rid);
                 tag = browsePlcTagBySymbol(0x90010000, ref symbol, varInfo);
