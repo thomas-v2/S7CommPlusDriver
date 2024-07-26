@@ -24,12 +24,12 @@ namespace S7CommPlusGUIBrowser
 
             string[] args = Environment.GetCommandLineArgs();
             // Als Parameter lässt sich die IP-Adresse übergeben, sonst Default-Wert von oben
-            if (args.Length >= 1)
+            if (args.Length >= 2)
             {
                 tbIpAddress.Text = args[1];
             }
             // Als Parameter lässt sich das Passwort übergeben, sonst Default-Wert von oben (kein Passwort)
-            if (args.Length >= 2)
+            if (args.Length >= 3)
             {
                 tbPassword.Text = args[2];
             }
