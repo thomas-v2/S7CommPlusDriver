@@ -20,6 +20,10 @@ using System.Threading;
 using System.IO;
 using System.Linq;
 using System.Diagnostics;
+using S7CommPlusDriver.ClientApi;
+using System.Text.RegularExpressions;
+using S7CommPlusDriver.Core;
+using System.Security.Cryptography;
 
 namespace S7CommPlusDriver
 {
@@ -47,6 +51,9 @@ namespace S7CommPlusDriver
         private UInt32 m_IntegrityId = 0;
         private UInt32 m_IntegrityId_Set = 0;
         private CommRessources m_CommRessources = new CommRessources();
+
+        private List<DatablockInfo> dbInfoList;
+        private List<PObject> typeInfoList = new List<PObject>();
         #endregion
 
         #region Public Members
@@ -376,7 +383,7 @@ namespace S7CommPlusDriver
         #endregion
 
         #region Public Methods
-        public int Connect(string address)
+        public int Connect(string address, string password = "")
         {
             m_LastError = 0;
             int res;
@@ -499,6 +506,120 @@ namespace S7CommPlusDriver
                 m_client.Disconnect();
                 return res;
             }
+            #endregion
+
+            #region Step 6: Password
+            //get Accesslevel
+            var getVarSubstreamedReq = new GetVarSubstreamedRequest(ProtocolVersion.V2);
+            getVarSubstreamedReq.InObjectId = m_SessionId;
+            getVarSubstreamedReq.SessionId = m_SessionId;
+            getVarSubstreamedReq.Address = 1842;
+            res = SendS7plusFunctionObject(getVarSubstreamedReq);
+            if (res != 0)
+            {
+                m_client.Disconnect();
+                return res;
+            }
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                m_client.Disconnect();
+                return m_LastError;
+            }
+
+            var getVarSubstreamedRes = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
+            if (getVarSubstreamedRes == null)
+            {
+                Console.WriteLine("S7CommPlusConnection - Connect.Password: GetVarSubstreamedResponse with Error!");
+                m_client.Disconnect();
+                return S7Consts.errIsoInvalidPDU;
+            }
+
+            //check access level
+            UInt32 accessLevel = (getVarSubstreamedRes.Value as ValueUDInt).GetValue();
+            if (accessLevel > AccessLevel.FullAccess && password != "")
+            {
+                //get challenge
+                var getVarSubstreamedReq_challange = new GetVarSubstreamedRequest(ProtocolVersion.V2);
+                getVarSubstreamedReq_challange.InObjectId = m_SessionId;
+                getVarSubstreamedReq_challange.SessionId = m_SessionId;
+                getVarSubstreamedReq_challange.Address = Ids.ServerSessionRequest;
+                res = SendS7plusFunctionObject(getVarSubstreamedReq_challange);
+                if (res != 0)
+                {
+                    m_client.Disconnect();
+                    return res;
+                }
+                m_LastError = 0;
+                WaitForNewS7plusReceived(m_ReadTimeout);
+                if (m_LastError != 0)
+                {
+                    m_client.Disconnect();
+                    return m_LastError;
+                }
+
+                var getVarSubstreamedRes_challenge = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
+                if (getVarSubstreamedRes_challenge == null)
+                {
+                    Console.WriteLine("S7CommPlusConnection - Connect.Password: getVarSubstreamedRes_challenge with Error!");
+                    m_client.Disconnect();
+                    return S7Consts.errIsoInvalidPDU;
+                }
+
+                byte[] challenge = (getVarSubstreamedRes_challenge.Value as ValueUSIntArray).GetValue();
+
+                //calculate challegeResponse [sha1(password) xor challenge]
+                byte[] challengeResponse;
+                using (SHA1Managed sha1 = new SHA1Managed())
+                {
+                    challengeResponse = sha1.ComputeHash(Encoding.UTF8.GetBytes(password));
+                }
+                if (challengeResponse.Length != challenge.Length)
+                {
+                    Console.WriteLine("S7CommPlusConnection - Connect.Password: challengeResponse.Length != challenge.Length");
+                    m_client.Disconnect();
+                    return S7Consts.errIsoInvalidPDU;
+                }
+                for (int i = 0; i < challengeResponse.Length; ++i)
+                {
+                    challengeResponse[i] = (byte)(challengeResponse[i] ^ challenge[i]);
+                }
+
+                //send challengeResponse
+                var setVariableReq = new SetVariableRequest(ProtocolVersion.V2);
+                setVariableReq.InObjectId = m_SessionId;
+                setVariableReq.SessionId = m_SessionId;
+                setVariableReq.Address = Ids.ServerSessionResponse;
+                setVariableReq.Value = new ValueUSIntArray(challengeResponse);
+                res = SendS7plusFunctionObject(setVariableReq);
+                if (res != 0)
+                {
+                    m_client.Disconnect();
+                    return res;
+                }
+                m_LastError = 0;
+                WaitForNewS7plusReceived(m_ReadTimeout);
+                if (m_LastError != 0)
+                {
+                    m_client.Disconnect();
+                    return m_LastError;
+                }
+
+                var setVariableResponse = SetVariableResponse.DeserializeFromPdu(m_ReceivedPDU);
+                if (setVariableResponse == null)
+                {
+                    Console.WriteLine("S7CommPlusConnection - Connect.Password: setVariableResponse with Error!");
+                    m_client.Disconnect();
+                    return S7Consts.errIsoInvalidPDU;
+                }
+
+            }
+            else if (accessLevel > AccessLevel.FullAccess)
+            {
+                Console.WriteLine("S7CommPlusConnection - Connect.Password: Warning: Access level is not fullaccess but no password set!");
+            }
+
             #endregion
 
             // If everything has been error-free up to this point, then the connection has been established successfully.
@@ -894,6 +1015,237 @@ namespace S7CommPlusDriver
             #endregion
 
             return 0;
+        }
+
+        /// <summary>
+        /// Gets the first level of a tag symbol string. Removes the " used to escape special chars.
+        /// </summary>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <returns>The first level of the symbol string</returns>
+        /// <exception cref="Exception">Symbol syntax error</exception>
+        private string parseSymbolLevel(ref string symbol)
+        {
+            if (symbol.StartsWith("\""))
+            {
+                int idx = symbol.IndexOf('"', 1);
+                if (idx < 0) throw new Exception("Symbol syntax error");
+                string lvl = symbol.Substring(1, idx - 1);
+                symbol = symbol.Remove(0, idx + 1);
+                if (symbol.StartsWith(".")) symbol = symbol.Remove(0, 1);
+                return lvl;
+            }
+            else
+            {
+                int idx = symbol.IndexOf('.');
+                int idx2 = symbol.IndexOf('[', 1);
+                if (idx2 >= 0 && (idx2 < idx || idx < 0)) idx = idx2;
+                if (idx >= 0)
+                {
+                    string lvl = symbol.Substring(0, idx);
+                    symbol = symbol.Remove(0, idx);
+                    if (symbol.StartsWith(".")) symbol = symbol.Remove(0, 1);
+                    return lvl;
+                }
+                else
+                {
+                    string lvl = symbol;
+                    symbol = "";
+                    return lvl;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the typeinfo by given ti relid from the internal buffer. If its not found in the buffer
+        /// its fetched from the PLC and stored in the buffer.
+        /// </summary>
+        /// <param name="ti_relid">type info relid</param>
+        /// <returns>type info</returns>
+        /// <exception cref="Exception">Could not get type info</exception>
+        public PObject getTypeInfoByRelId(uint ti_relid)
+        {
+            PObject pObj = typeInfoList.Find(ti => ti.RelationId == ti_relid);
+            if (pObj == null)
+            {
+                //type info not found in list, request it from plc
+                List<PObject> newPObj = new List<PObject>();
+                if (GetTypeInformation(ti_relid, out newPObj) != 0) throw new Exception("Could not get type info");
+                typeInfoList.AddRange(newPObj);
+                //try again
+                pObj = typeInfoList.Find(ti => ti.RelationId == ti_relid);
+            }
+            return pObj;
+        }
+
+        /// <summary>
+        /// Calculates the access sequence for 1 dimmensional arrays.
+        /// </summary>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <param name="varType">Var type that holds the dim info</param>
+        /// <param name="varInfo">used to build access sequence</param>
+        /// <exception cref="Exception">Symbol syntax error</exception>
+        private void calcAccessSeqFor1DimArray(ref string symbol, PVartypeListElement varType, VarInfo varInfo)
+        {
+            Regex re = new Regex(@"^\[(\d+)\]");
+            Match m = re.Match(symbol);
+            if (!m.Success) throw new Exception("Symbol syntax error");
+            parseSymbolLevel(ref symbol); //remove index from symbol string
+            int arrayIndex = int.Parse(m.Groups[1].Value);
+
+            var ioit = (IOffsetInfoType_1Dim)varType.OffsetInfoType;
+            uint arrayElementCount = ioit.GetArrayElementCount();
+            int arrayLowerBounds = ioit.GetArrayLowerBounds();
+
+            if (arrayIndex - arrayLowerBounds > arrayElementCount) throw new Exception("Out of bounds");
+            if (arrayIndex < arrayLowerBounds) throw new Exception("Out of bounds");
+            varInfo.AccessSequence += "." + String.Format("{0:X}", arrayIndex - arrayLowerBounds);
+            if (varType.OffsetInfoType.HasRelation()) varInfo.AccessSequence += ".1"; //additional ".1" for array of struct
+        }
+
+        /// <summary>
+        /// Calculates the access sequence for multi dimmensional arrays.
+        /// </summary>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <param name="varType">Var type that holds the dim info</param>
+        /// <param name="varInfo">used to build access sequence</param>
+        /// <exception cref="Exception">Symbol syntax error</exception>
+        private void calcAccessSeqForMDimArray(ref string symbol, PVartypeListElement varType, VarInfo varInfo)
+        {
+            Regex re = new Regex(@"^\[([0-9, ]+)\]");
+            Match m = re.Match(symbol);
+            if (!m.Success) throw new Exception("Symbol syntax error");
+            parseSymbolLevel(ref symbol); //remove index from symbol string
+            string idxs = m.Groups[1].Value.Replace(" ", "");
+
+            uint[] indexes = Array.ConvertAll(idxs.Split(','), e => uint.Parse(e));
+            var ioit = (IOffsetInfoType_MDim)varType.OffsetInfoType;
+            uint ArrayElementCount = ioit.GetArrayElementCount();
+            int ArrayLowerBounds = ioit.GetArrayLowerBounds();
+            uint[] MdimArrayElementCount = (uint[])ioit.GetMdimArrayElementCount().Clone();
+            int[] MdimArrayLowerBounds = ioit.GetMdimArrayLowerBounds();
+
+            //check dim count
+            int dimCount = MdimArrayElementCount.Aggregate(0, (acc, act) => acc += (act > 0) ? 1 : 0);
+            if (dimCount != indexes.Count()) throw new Exception("Out of bounds");
+            //check bounds
+            for (int i = 0; i < dimCount; ++i)
+            {
+                indexes[i] = (uint)(indexes[i] - MdimArrayLowerBounds[dimCount - i - 1]);
+                if (indexes[i] > MdimArrayElementCount[dimCount - i - 1]) throw new Exception("Out of bounds");
+                if (indexes[i] < 0) throw new Exception("Out of bounds");
+            }
+
+            //calc dim size
+            if (varType.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL)
+            {
+                MdimArrayElementCount[0] += 8 - MdimArrayElementCount[0] % 8; //for bool must be a mutiple of 8!
+            }
+            uint[] dimSize = new uint[dimCount];
+            uint g = 1;
+            for (int i = 0; i < dimCount - 1; ++i)
+            {
+                dimSize[i] = g;
+                g *= MdimArrayElementCount[i];
+            }
+            dimSize[dimCount - 1] = g;
+
+            //calc id
+            uint arrayIndex = 0;
+            for (int i = 0; i < dimCount; ++i)
+            {
+                arrayIndex += indexes[i] * dimSize[dimCount - i - 1];
+            }
+
+            varInfo.AccessSequence += "." + String.Format("{0:X}", arrayIndex);
+            if (varType.OffsetInfoType.HasRelation()) varInfo.AccessSequence += ".1"; //additional ".1" for array of struct
+        }
+
+        /// <summary>
+        /// Browses the symbol level by level recursively. Fetches missing type info automatically from the plc.
+        /// </summary>
+        /// <param name="ti_relid">type info relid</param>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <param name="varInfo">used to build access sequence</param>
+        /// <returns>plc tag or null if not found</returns>
+        /// <exception cref="Exception">Symbol syntax error, Out of bounds</exception>
+        private PlcTag browsePlcTagBySymbol(uint ti_relid, ref string symbol, VarInfo varInfo)
+        {
+            PObject pObj = getTypeInfoByRelId(ti_relid);
+            if (pObj == null) throw new Exception("Could not get type info");
+            string levelName = parseSymbolLevel(ref symbol);
+            //find level name of symbol in var list
+            int idx = pObj.VarnameList?.Names?.IndexOf(levelName) ?? -1;
+            if (idx < 0) return null;
+            PVartypeListElement varType = pObj.VartypeList.Elements[idx];
+            varInfo.AccessSequence += "." + String.Format("{0:X}", varType.LID);
+            if (varType.OffsetInfoType.Is1Dim())
+            {
+                calcAccessSeqFor1DimArray(ref symbol, varType, varInfo);
+            }
+            if (varType.OffsetInfoType.IsMDim())
+            {
+                calcAccessSeqForMDimArray(ref symbol, varType, varInfo);
+            }
+            if (varType.OffsetInfoType.HasRelation())
+            {
+                if (symbol.Length <= 0)
+                {
+                    return null;
+                }
+                else
+                {
+                    var ioit = (IOffsetInfoType_Relation)varType.OffsetInfoType;
+                    return browsePlcTagBySymbol(ioit.GetRelationId(), ref symbol, varInfo);
+                }
+            }
+            else
+            {
+                return PlcTags.TagFactory(varInfo.Name, new ItemAddress(varInfo.AccessSequence), varType.Softdatatype);
+            }
+        }
+
+        /// <summary>
+        /// Get the plc tag for the given plc tag symbol. 
+        /// </summary>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <returns>plc tag, returns null if plc tag could not be found</returns>
+        public PlcTag getPlcTagBySymbol(string symbol)
+        {
+            VarInfo varInfo = new VarInfo();
+            varInfo.Name = symbol;
+            //make sure we have the db list
+            if (dbInfoList == null)
+            {
+                if (GetListOfDatablocks(out dbInfoList) != 0) { return null; }
+            }
+            string levelName = parseSymbolLevel(ref symbol);
+            //find db by first level name of symbol
+            DatablockInfo dbInfo = dbInfoList.Find(dbi => dbi.db_name == levelName);
+            if (dbInfo != null)
+            {
+                varInfo.AccessSequence = String.Format("{0:X}", dbInfo.db_block_relid);
+                return browsePlcTagBySymbol(dbInfo.db_block_ti_relid, ref symbol, varInfo);
+            }
+            else
+            {
+                symbol = varInfo.Name;
+                //Merker
+                varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theMArea_Rid);
+                PlcTag tag = browsePlcTagBySymbol(0x90030000, ref symbol, varInfo);
+                if (tag != null) return tag;
+                symbol = varInfo.Name;
+                //Outputs
+                varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theQArea_Rid);
+                tag = browsePlcTagBySymbol(0x90020000, ref symbol, varInfo);
+                if (tag != null) return tag;
+                symbol = varInfo.Name;
+                //Inputs
+                varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theIArea_Rid);
+                tag = browsePlcTagBySymbol(0x90010000, ref symbol, varInfo);
+                if (tag != null) return tag;
+                //TODO: implement s5timers and counters... no one uses them anymore anyway
+            }
+            return null;
         }
 
         public class BrowseEntry
