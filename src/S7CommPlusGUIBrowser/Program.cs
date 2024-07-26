@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace S7CommPlusGUIBrowser {
+namespace S7CommPlusGUIBrowser
+{
     internal static class Program {
         /// <summary>
         /// Der Haupteinstiegspunkt für die Anwendung.

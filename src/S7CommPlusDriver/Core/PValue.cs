@@ -48,7 +48,7 @@ namespace S7CommPlusDriver
         /// Deserializes the buffer to the protocol values
         /// </summary>
         /// <param name="buffer">Stream of bytes from the network</param>
-        /// <param name="disableVlq">If true, the variable length encoding is disables for all underlying values (so far only neccessary on SystemEvent)</param>
+        /// <param name="disableVlq">If true, the variable length encoding is disabled for all underlying values (so far only neccessary on SystemEvent)</param>
         /// <returns>The protocol value</returns>
         public static PValue Deserialize(Stream buffer, bool disableVlq = false)
         {
@@ -69,7 +69,7 @@ namespace S7CommPlusDriver
                 S7p.DecodeByte(buffer, out datatype);
             }
 
-            // Sparsearray and Adressarray of Struct are different
+            // Sparsearray and Addressarray of Struct are different
             if (flags == FLAGS_ARRAY || flags == FLAGS_ADDRESSARRAY)
             {
                 switch (datatype)
@@ -269,8 +269,8 @@ namespace S7CommPlusDriver
 
     /// <summary>
     /// ValueBoolArray: Important: The length of the array is always a multiple of 8.
-    /// E.g. reading an Array [0..2] of Bool will be transmitted with 8 elements with actual values at index 0, 1, 2.
-    /// An Array[0..9] will be transmitted with 16 elements and so on.
+    /// E.g. reading an Array [0..2] of Bool will be transmitted as 8 elements with actual values at index 0, 1, 2.
+    /// An Array[0..9] will be transmitted as 16 elements and so on.
     /// At this time, serialize doesn't respect the padding elements, must be done on a higher level.
     /// </summary>
     public class ValueBoolArray : PValue
@@ -684,7 +684,7 @@ namespace S7CommPlusDriver
     }
 
     // The construction of Sparsearray is almost similar to reading a struct.
-    // All elementy are kind of key,value. And Value is of the selected type.
+    // All elements are kind of key,value. And Value is of the selected type.
     // The list is terminated by Null.
     // E.g.: Reading 1037 (SystemLimits) via GetVarSubStreamed
     public class ValueUDIntSparseArray : PValue
@@ -3115,7 +3115,7 @@ namespace S7CommPlusDriver
             None = 0,
             ClassicNonoptimizedOffsets = 1 << 0,    // Is set when a struct is read from non-optimized datablock
             AlwaysSet = 1 << 1,                     // Is (so far) always set
-            Count2Present = 1 << 10                 // If this bit is set, then there's 2nd counter present. Which if for a rare case you can read an array of struct, if the complete size, the 1st for one element.
+            Count2Present = 1 << 10                 // If this bit is set, then there's a 2nd counter present. Which if for a rare case you can read an array of struct, if the complete size, the 1st for one element.
         }
 
         public ValueStruct(UInt32 value) : this (value, 0)
@@ -3227,7 +3227,7 @@ namespace S7CommPlusDriver
             if ((value > 0x90000000 && value < 0x9fffffff) || (value > 0x02000000 && value < 0x02ffffff))
             {
                 // Packed Struct
-                // These are system datatypes. Either the informations about them must be read out of the CPU before,
+                // These are system datatypes. Either the information about them must be read out of the CPU before,
                 // or must be known before. As the data are transmitted as Bytearrays, return them in this type. Interpretation must be done later.
                 stru = new ValueStruct(value, flags);
 

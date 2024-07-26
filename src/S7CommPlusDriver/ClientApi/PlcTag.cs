@@ -1439,7 +1439,7 @@ namespace S7CommPlusDriver.ClientApi
 
     public class PlcTagLTOD : PlcTag
     {
-        // TODO: Like the 32 Bit Types Date/TOD, in .Net there's not type for date / time only. Only in .Net 6.
+        // TODO: Like the 32 Bit Types Date/TOD, in .Net there's no type for date / time only. Only in .Net 6.
         // Specification: Number of nanoseconds since 00:00:00.
         private ulong m_Value;
 

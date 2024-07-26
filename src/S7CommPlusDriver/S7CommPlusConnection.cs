@@ -284,7 +284,7 @@ namespace S7CommPlusDriver
             if (s7HeaderDataLen > 0)
             {
                 // Special handling for SystemEvent 0xfe PDUs:
-                // This only confirms a few data, but also reports major protocol errors (e.g.incorrect sequence numbers).
+                // This only confirms a few data, but also reports major protocol errors (e.g. incorrect sequence numbers).
                 // The confirms can be discarded (for now), but the errors are relevant, because a connection termination is neccessary.
                 // As we don't have a trailer on this types, it's not possible that they are transmitted as fragments.
                 if (protoVersion == ProtocolVersion.SystemEvent)
@@ -328,7 +328,7 @@ namespace S7CommPlusDriver
                 }
             }
 
-            // If a complete (usable) PDU is receives, add to the queue (threadsafe) for readout
+            // If a complete (usable) PDU is received, add to the queue (threadsafe) for readout
             if (m_NewS7CommPlusReceived)
             {
                 // Push complete PDU to the queue
@@ -520,11 +520,11 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Step 6: Password
-            //get Accesslevel
+            // Get current protection level
             var getVarSubstreamedReq = new GetVarSubstreamedRequest(ProtocolVersion.V2);
             getVarSubstreamedReq.InObjectId = m_SessionId;
             getVarSubstreamedReq.SessionId = m_SessionId;
-            getVarSubstreamedReq.Address = 1842;
+            getVarSubstreamedReq.Address = Ids.EffectiveProtectionLevel;
             res = SendS7plusFunctionObject(getVarSubstreamedReq);
             if (res != 0)
             {
@@ -547,11 +547,11 @@ namespace S7CommPlusDriver
                 return S7Consts.errIsoInvalidPDU;
             }
 
-            //check access level
+            // Check access level
             UInt32 accessLevel = (getVarSubstreamedRes.Value as ValueUDInt).GetValue();
             if (accessLevel > AccessLevel.FullAccess && password != "")
             {
-                //get challenge
+                // Get challenge
                 var getVarSubstreamedReq_challange = new GetVarSubstreamedRequest(ProtocolVersion.V2);
                 getVarSubstreamedReq_challange.InObjectId = m_SessionId;
                 getVarSubstreamedReq_challange.SessionId = m_SessionId;
@@ -580,7 +580,7 @@ namespace S7CommPlusDriver
 
                 byte[] challenge = (getVarSubstreamedRes_challenge.Value as ValueUSIntArray).GetValue();
 
-                //calculate challegeResponse [sha1(password) xor challenge]
+                // Calculate challengeResponse [sha1(password) xor challenge]
                 byte[] challengeResponse;
                 using (SHA1Managed sha1 = new SHA1Managed())
                 {
@@ -597,7 +597,7 @@ namespace S7CommPlusDriver
                     challengeResponse[i] = (byte)(challengeResponse[i] ^ challenge[i]);
                 }
 
-                //send challengeResponse
+                // Send challengeResponse
                 var setVariableReq = new SetVariableRequest(ProtocolVersion.V2);
                 setVariableReq.InObjectId = m_SessionId;
                 setVariableReq.SessionId = m_SessionId;
@@ -925,8 +925,8 @@ namespace S7CommPlusDriver
 
             #region Determine the TypeInfo RID to the RelId from the first response
             // By querying LID = 1 from all DBs you get the RID back with which the type information can be queried.
-            // This is necessary because, for example, with instance DBs (e.g. TON), the type information must
-            // not be accessed via the RID of the DB but of the TON.
+            // This is neccessary because, for example, with instance DBs (e.g. TON), the type information must
+            // not be accessed via the RID of the DB, but of the RID of the TON.
             var readlist = new List<ItemAddress>();
             var values = new List<object>();
             var errors = new List<UInt64>();
@@ -971,7 +971,7 @@ namespace S7CommPlusDriver
                     exploreData[i] = data;
                 }
             }
-            // Remove elements with db_block_ti_relid == 0. This occurs e.g. on datablocks only present in load memors.
+            // Remove elements with db_block_ti_relid == 0. This occurs e.g. on datablocks only present in load memory.
             // The informations can't be used any further (at least not for variable access).
             exploreData.RemoveAll(item => item.db_block_ti_relid == 0);
 
@@ -1067,8 +1067,8 @@ namespace S7CommPlusDriver
         }
 
         /// <summary>
-        /// Gets the typeinfo by given ti relid from the internal buffer. If its not found in the buffer
-        /// its fetched from the PLC and stored in the buffer.
+        /// Gets the typeinfo by given ti relid from the internal buffer. If it's not found in the buffer
+        /// it's fetched from the PLC and stored in the buffer.
         /// </summary>
         /// <param name="ti_relid">type info relid</param>
         /// <returns>type info</returns>
@@ -1078,18 +1078,18 @@ namespace S7CommPlusDriver
             PObject pObj = typeInfoList.Find(ti => ti.RelationId == ti_relid);
             if (pObj == null)
             {
-                //type info not found in list, request it from plc
+                // Type info not found in list, request it from plc
                 List<PObject> newPObj = new List<PObject>();
                 if (GetTypeInformation(ti_relid, out newPObj) != 0) throw new Exception("Could not get type info");
                 typeInfoList.AddRange(newPObj);
-                //try again
+                // Try again
                 pObj = typeInfoList.Find(ti => ti.RelationId == ti_relid);
             }
             return pObj;
         }
 
         /// <summary>
-        /// Calculates the access sequence for 1 dimmensional arrays.
+        /// Calculates the access sequence for 1 dimensional arrays.
         /// </summary>
         /// <param name="symbol">plc tag symbol</param>
         /// <param name="varType">Var type that holds the dim info</param>
@@ -1100,7 +1100,7 @@ namespace S7CommPlusDriver
             Regex re = new Regex(@"^\[(\d+)\]");
             Match m = re.Match(symbol);
             if (!m.Success) throw new Exception("Symbol syntax error");
-            parseSymbolLevel(ref symbol); //remove index from symbol string
+            parseSymbolLevel(ref symbol); // remove index from symbol string
             int arrayIndex = int.Parse(m.Groups[1].Value);
 
             var ioit = (IOffsetInfoType_1Dim)varType.OffsetInfoType;
@@ -1110,11 +1110,11 @@ namespace S7CommPlusDriver
             if (arrayIndex - arrayLowerBounds > arrayElementCount) throw new Exception("Out of bounds");
             if (arrayIndex < arrayLowerBounds) throw new Exception("Out of bounds");
             varInfo.AccessSequence += "." + String.Format("{0:X}", arrayIndex - arrayLowerBounds);
-            if (varType.OffsetInfoType.HasRelation()) varInfo.AccessSequence += ".1"; //additional ".1" for array of struct
+            if (varType.OffsetInfoType.HasRelation()) varInfo.AccessSequence += ".1"; // additional ".1" for array of struct
         }
 
         /// <summary>
-        /// Calculates the access sequence for multi dimmensional arrays.
+        /// Calculates the access sequence for multi-dimensional arrays.
         /// </summary>
         /// <param name="symbol">plc tag symbol</param>
         /// <param name="varType">Var type that holds the dim info</param>
@@ -1125,7 +1125,7 @@ namespace S7CommPlusDriver
             Regex re = new Regex(@"^\[([0-9, ]+)\]");
             Match m = re.Match(symbol);
             if (!m.Success) throw new Exception("Symbol syntax error");
-            parseSymbolLevel(ref symbol); //remove index from symbol string
+            parseSymbolLevel(ref symbol); // remove index from symbol string
             string idxs = m.Groups[1].Value.Replace(" ", "");
 
             uint[] indexes = Array.ConvertAll(idxs.Split(','), e => uint.Parse(e));
@@ -1135,10 +1135,10 @@ namespace S7CommPlusDriver
             uint[] MdimArrayElementCount = (uint[])ioit.GetMdimArrayElementCount().Clone();
             int[] MdimArrayLowerBounds = ioit.GetMdimArrayLowerBounds();
 
-            //check dim count
+            // check dim count
             int dimCount = MdimArrayElementCount.Aggregate(0, (acc, act) => acc += (act > 0) ? 1 : 0);
             if (dimCount != indexes.Count()) throw new Exception("Out of bounds");
-            //check bounds
+            // check bounds
             for (int i = 0; i < dimCount; ++i)
             {
                 indexes[i] = (uint)(indexes[i] - MdimArrayLowerBounds[dimCount - i - 1]);
@@ -1146,10 +1146,10 @@ namespace S7CommPlusDriver
                 if (indexes[i] < 0) throw new Exception("Out of bounds");
             }
 
-            //calc dim size
+            // calc dim size
             if (varType.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL)
             {
-                MdimArrayElementCount[0] += 8 - MdimArrayElementCount[0] % 8; //for bool must be a mutiple of 8!
+                MdimArrayElementCount[0] += 8 - MdimArrayElementCount[0] % 8; // for bool must be a mutiple of 8!
             }
             uint[] dimSize = new uint[dimCount];
             uint g = 1;
@@ -1160,7 +1160,7 @@ namespace S7CommPlusDriver
             }
             dimSize[dimCount - 1] = g;
 
-            //calc id
+            // calc id
             uint arrayIndex = 0;
             for (int i = 0; i < dimCount; ++i)
             {
@@ -1168,7 +1168,7 @@ namespace S7CommPlusDriver
             }
 
             varInfo.AccessSequence += "." + String.Format("{0:X}", arrayIndex);
-            if (varType.OffsetInfoType.HasRelation()) varInfo.AccessSequence += ".1"; //additional ".1" for array of struct
+            if (varType.OffsetInfoType.HasRelation()) varInfo.AccessSequence += ".1"; // additional ".1" for array of struct
         }
 
         /// <summary>
@@ -1184,7 +1184,7 @@ namespace S7CommPlusDriver
             PObject pObj = getTypeInfoByRelId(ti_relid);
             if (pObj == null) throw new Exception("Could not get type info");
             string levelName = parseSymbolLevel(ref symbol);
-            //find level name of symbol in var list
+            // find level name of symbol in var list
             int idx = pObj.VarnameList?.Names?.IndexOf(levelName) ?? -1;
             if (idx < 0) return null;
             PVartypeListElement varType = pObj.VartypeList.Elements[idx];
@@ -1224,13 +1224,13 @@ namespace S7CommPlusDriver
         {
             VarInfo varInfo = new VarInfo();
             varInfo.Name = symbol;
-            //make sure we have the db list
+            // make sure we have the db list
             if (dbInfoList == null)
             {
                 if (GetListOfDatablocks(out dbInfoList) != 0) { return null; }
             }
             string levelName = parseSymbolLevel(ref symbol);
-            //find db by first level name of symbol
+            // find db by first level name of symbol
             DatablockInfo dbInfo = dbInfoList.Find(dbi => dbi.db_name == levelName);
             if (dbInfo != null)
             {
@@ -1240,21 +1240,21 @@ namespace S7CommPlusDriver
             else
             {
                 symbol = varInfo.Name;
-                //Merker
+                // Merker
                 varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theMArea_Rid);
                 PlcTag tag = browsePlcTagBySymbol(0x90030000, ref symbol, varInfo);
                 if (tag != null) return tag;
                 symbol = varInfo.Name;
-                //Outputs
+                // Outputs
                 varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theQArea_Rid);
                 tag = browsePlcTagBySymbol(0x90020000, ref symbol, varInfo);
                 if (tag != null) return tag;
                 symbol = varInfo.Name;
-                //Inputs
+                // Inputs
                 varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theIArea_Rid);
                 tag = browsePlcTagBySymbol(0x90010000, ref symbol, varInfo);
                 if (tag != null) return tag;
-                //TODO: implement s5timers and counters... no one uses them anymore anyway
+                // TODO: implement s5timers and counters... no one uses them anymore anyway
             }
             return null;
         }
@@ -1395,7 +1395,7 @@ namespace S7CommPlusDriver
                 }
                 else
                 {
-                    // On error, set relid=0, which is then removed in the next step
+                    // On error, set relid=0, which is then removed in the next step.
                     // Should we report this for the user?
                     var data = dbInfoList[i];
                     data.db_block_ti_relid = 0;
@@ -1404,7 +1404,7 @@ namespace S7CommPlusDriver
             }
 
             // Remove elements with db_block_ti_relid == 0.
-            // This can occur on datablocks which are only in load memory, and can't be explored.
+            // This can occur on datablocks which are only in load memory and can't be explored.
             dbInfoList.RemoveAll(item => item.db_block_ti_relid == 0);
 
             return 0;

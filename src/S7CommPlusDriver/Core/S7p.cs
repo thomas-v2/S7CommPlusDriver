@@ -282,7 +282,7 @@ namespace S7CommPlusDriver
 
         public static int EncodeInt32Vlq(System.IO.Stream buffer, Int32 value)
         {
-            // You can write negavtive Values like
+            // You can write negative values like
             // -1234567
             // with full one complement bytes as:
             // 8f ff b4 d2 79
@@ -339,7 +339,7 @@ namespace S7CommPlusDriver
             // Special handling in the 64 bit VLQ variants:
             // The special handling on the 64 bit variants is neccessary, because without this we would need
             // max. 10 bytes than the max. 9 now.
-            // Every byte looses 1 bit for the "continue" flag. For 8 Bytes loosing 1 bit, we need 1 more byte.
+            // Every byte looses 1 bit for the "continue" flag. For 8 bytes loosing 1 bit, we need 1 more byte.
             // Which in the normal variant would have only 7 bit of space, because 1 bit is for the "continue" flag.
             // The special handling allows to use all 8 bits in the additional 9th byte.
             byte[] b = new byte[9];
@@ -386,7 +386,7 @@ namespace S7CommPlusDriver
                 // - 0x00FFFFFFFFFFFFFF      -> standard
                 // - 0x00FFFFFFFFFFFFFF + 1  -> additional 0x80 needed
                 // The decode algorithm can handle both variants, but the plc accepts it only with the additional bytes (seems Siemens
-                // uses a different algorithm that we are using)
+                // uses a different algorithm than we are using)
                 length++;
                 b[8] = 0x80;
             }

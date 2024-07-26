@@ -57,9 +57,9 @@ namespace S7CommPlusDriver
 
             // Request set
             ret += S7p.EncodeUInt32(buffer, InObjectId);
-            ret += S7p.EncodeByte(buffer, 0x20); //Addressarray
+            ret += S7p.EncodeByte(buffer, 0x20); // Addressarray
             ret += S7p.EncodeByte(buffer, Datatype.UDInt);
-            ret += S7p.EncodeByte(buffer, 1); //array size
+            ret += S7p.EncodeByte(buffer, 1); // Array size
             ret += S7p.EncodeUInt32Vlq(buffer, Address);
 
             ret += S7p.EncodeObjectQualifier(buffer);

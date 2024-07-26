@@ -53,7 +53,7 @@ namespace S7CommPlusDriver
         public void SetNullServerSessionData()
         {
             // Initializes the data for a Nullserver Session on connection setup.
-            // SessionId is set automatically to Ids.ObjectNullServerSession when this this object is sent, if there's no session Id.
+            // SessionId is set automatically to Ids.ObjectNullServerSession when this object is sent, if there's no session Id.
             TransportFlags = 0x36;
             RequestId = Ids.ObjectServerSessionContainer;
             RequestValue = new ValueUDInt(0);

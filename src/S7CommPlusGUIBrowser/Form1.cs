@@ -2,13 +2,8 @@
 using S7CommPlusDriver.ClientApi;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace S7CommPlusGUIBrowser
@@ -23,12 +18,12 @@ namespace S7CommPlusGUIBrowser
             InitializeComponent();
 
             string[] args = Environment.GetCommandLineArgs();
-            // Als Parameter lässt sich die IP-Adresse übergeben, sonst Default-Wert von oben
+            // 1st argument can be the plc ip-address, otherwise use default
             if (args.Length >= 2)
             {
                 tbIpAddress.Text = args[1];
             }
-            // Als Parameter lässt sich das Passwort übergeben, sonst Default-Wert von oben (kein Passwort)
+            // 2nd argument can be the plc password, otherwise use default (no password)
             if (args.Length >= 3)
             {
                 tbPassword.Text = args[2];
@@ -71,15 +66,15 @@ namespace S7CommPlusGUIBrowser
                 tn.Nodes.Add("Loading...");
                 tn.Tag = dbInfo.db_block_ti_relid;
             }
-            //Inputs
+            // Inputs
             tn = treeView1.Nodes.Add("Inputs");
             tn.Nodes.Add("Loading...");
             tn.Tag = 0x90010000;
-            //Outputs
+            // Outputs
             tn = treeView1.Nodes.Add("Outputs");
             tn.Nodes.Add("Loading...");
             tn.Tag = 0x90020000;
-            //Merker
+            // Merker
             tn = treeView1.Nodes.Add("Merker");
             tn.Nodes.Add("Loading...");
             tn.Tag = 0x90030000;
@@ -134,7 +129,7 @@ namespace S7CommPlusGUIBrowser
                             tnarr.Tag = ioit.GetRelationId();
                         }
                     }
-                    tn.Tag = (uint)0; //is array
+                    tn.Tag = (uint)0; // is array
                 }
                 else if (pObj.VartypeList.Elements[i].OffsetInfoType.IsMDim())
                 {
@@ -179,7 +174,7 @@ namespace S7CommPlusGUIBrowser
                             }
                         }
                     }
-                    tn.Tag = (uint)0; //is array
+                    tn.Tag = (uint)0; // is array
                 }
                 else
                 {
@@ -231,7 +226,7 @@ namespace S7CommPlusGUIBrowser
 
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            if (e.Node.Tag != null) return; //has relId
+            if (e.Node.Tag != null) return; // has relId
 
             string name = "";
             TreeNode tn = e.Node;
@@ -241,15 +236,15 @@ namespace S7CommPlusGUIBrowser
                 string nodeText = tn.Text;
                 tn = tn.Parent;
                 if (tn != null && tn.Tag != null)
-                { //is array
+                { // is array
                     if ((uint)tn.Tag == 0)
                     {
                         isArray = true;
-                        tn = tn.Parent; //skip array parent
+                        tn = tn.Parent; // skip array parent
                     }
                 }
                 if (tn != null && tn.Tag != null)
-                { //dont add in/out/merker area as tag
+                { // don't add in/out/merker area as tag
                     uint relId = (uint)tn.Tag;
                     if (relId == 0x90010000 || relId == 0x90020000 || relId == 0x90030000) tn = null;
                 }

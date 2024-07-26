@@ -69,6 +69,8 @@ namespace S7CommPlusDriver
         public const int ParentRID = 1257;
         public const int CompositionAID = 1258;
         public const int KeyQualifier = 1259;
+        public const int EffectiveProtectionLevel = 1842;
+        public const int ActiveProtectionLevel = 1843;
         public const int CPUexecUnit_operatingStateReq = 2167;
         public const int PLCProgram_Class_Rid = 2520;
         public const int Block_BlockNumber = 2521;
