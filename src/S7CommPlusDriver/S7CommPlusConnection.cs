@@ -383,8 +383,22 @@ namespace S7CommPlusDriver
         #endregion
 
         #region Public Methods
+<<<<<<< HEAD
         public int Connect(string address, string password = "")
+=======
+
+        /// <summary>
+        /// Establishes a connection to the PLC.
+        /// </summary>
+        /// <param name="address">PLC IP address</param>
+        /// <param name="timeoutMs">read timeout in milliseconds (default: 5000 ms)</param>
+        /// <returns></returns>
+        public int Connect(string address, int timeoutMs = 5000)
+>>>>>>> e043348d2fb3c500e605af66a813e7d7817b7eb9
         {
+            if(timeoutMs > 0)
+                m_ReadTimeout = timeoutMs;
+
             m_LastError = 0;
             int res;
             int Elapsed = Environment.TickCount;
