@@ -23,6 +23,8 @@
         /// Der Inhalt der Methode darf nicht mit dem Code-Editor geändert werden.
         /// </summary>
         private void InitializeComponent() {
+            this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.lbStatus = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
@@ -41,6 +43,7 @@
             this.label4 = new System.Windows.Forms.Label();
             this.tbSymbol = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
+            this.imageListTreeIcons = new System.Windows.Forms.ImageList(this.components);
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -136,8 +139,11 @@
             this.treeView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.treeView1.ImageIndex = 0;
+            this.treeView1.ImageList = this.imageListTreeIcons;
             this.treeView1.Location = new System.Drawing.Point(12, 160);
             this.treeView1.Name = "treeView1";
+            this.treeView1.SelectedImageIndex = 0;
             this.treeView1.Size = new System.Drawing.Size(776, 278);
             this.treeView1.TabIndex = 1;
             this.treeView1.AfterExpand += new System.Windows.Forms.TreeViewEventHandler(this.treeView1_AfterExpand);
@@ -228,6 +234,47 @@
             this.label3.TabIndex = 0;
             this.label3.Text = "Symbol:";
             // 
+            // imageListTreeIcons
+            // 
+            this.imageListTreeIcons.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageListTreeIcons.ImageStream")));
+            this.imageListTreeIcons.TransparentColor = System.Drawing.Color.Transparent;
+            this.imageListTreeIcons.Images.SetKeyName(0, "Default");
+            this.imageListTreeIcons.Images.SetKeyName(1, "Datablock");
+            this.imageListTreeIcons.Images.SetKeyName(2, "Tag");
+            this.imageListTreeIcons.Images.SetKeyName(3, "Boolean");
+            this.imageListTreeIcons.Images.SetKeyName(4, "Boolean1");
+            this.imageListTreeIcons.Images.SetKeyName(5, "Boolean2");
+            this.imageListTreeIcons.Images.SetKeyName(6, "Any");
+            this.imageListTreeIcons.Images.SetKeyName(7, "Binary");
+            this.imageListTreeIcons.Images.SetKeyName(8, "Binary2");
+            this.imageListTreeIcons.Images.SetKeyName(9, "Date");
+            this.imageListTreeIcons.Images.SetKeyName(10, "Integer");
+            this.imageListTreeIcons.Images.SetKeyName(11, "Integer2");
+            this.imageListTreeIcons.Images.SetKeyName(12, "Number");
+            this.imageListTreeIcons.Images.SetKeyName(13, "Number2");
+            this.imageListTreeIcons.Images.SetKeyName(14, "Time");
+            this.imageListTreeIcons.Images.SetKeyName(15, "Datetime");
+            this.imageListTreeIcons.Images.SetKeyName(16, "Datetimezone");
+            this.imageListTreeIcons.Images.SetKeyName(17, "Duration");
+            this.imageListTreeIcons.Images.SetKeyName(18, "Timer");
+            this.imageListTreeIcons.Images.SetKeyName(19, "Char");
+            this.imageListTreeIcons.Images.SetKeyName(20, "Text");
+            this.imageListTreeIcons.Images.SetKeyName(21, "Text2");
+            this.imageListTreeIcons.Images.SetKeyName(22, "Text3");
+            this.imageListTreeIcons.Images.SetKeyName(23, "Structure");
+            this.imageListTreeIcons.Images.SetKeyName(24, "Currency");
+            this.imageListTreeIcons.Images.SetKeyName(25, "Percentage");
+            this.imageListTreeIcons.Images.SetKeyName(26, "UserDataType");
+            this.imageListTreeIcons.Images.SetKeyName(27, "UserDefinedDataType");
+            this.imageListTreeIcons.Images.SetKeyName(28, "CountCollection");
+            this.imageListTreeIcons.Images.SetKeyName(29, "FolderOpened");
+            this.imageListTreeIcons.Images.SetKeyName(30, "FolderClosed");
+            this.imageListTreeIcons.Images.SetKeyName(31, "FolderTopPanel");
+            this.imageListTreeIcons.Images.SetKeyName(32, "Indexer");
+            this.imageListTreeIcons.Images.SetKeyName(33, "Library");
+            this.imageListTreeIcons.Images.SetKeyName(34, "NamedSet");
+            this.imageListTreeIcons.Images.SetKeyName(35, "TypeDefinition");
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -267,6 +314,7 @@
         private System.Windows.Forms.Label lbStatus;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Button btnRead;
+        private System.Windows.Forms.ImageList imageListTreeIcons;
     }
 }
 

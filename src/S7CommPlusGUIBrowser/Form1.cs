@@ -65,19 +65,39 @@ namespace S7CommPlusGUIBrowser
                 tn = treeView1.Nodes.Add(dbInfo.db_name);
                 tn.Nodes.Add("Loading...");
                 tn.Tag = dbInfo.db_block_ti_relid;
+                tn.ImageKey = "Datablock";
+                tn.SelectedImageKey = tn.ImageKey;
             }
             // Inputs
             tn = treeView1.Nodes.Add("Inputs");
             tn.Nodes.Add("Loading...");
             tn.Tag = 0x90010000;
+            tn.ImageKey = "Default";
+            tn.SelectedImageKey = tn.ImageKey;
             // Outputs
             tn = treeView1.Nodes.Add("Outputs");
             tn.Nodes.Add("Loading...");
             tn.Tag = 0x90020000;
+            tn.ImageKey = "Default";
+            tn.SelectedImageKey = tn.ImageKey;
             // Merker
             tn = treeView1.Nodes.Add("Merker");
             tn.Nodes.Add("Loading...");
             tn.Tag = 0x90030000;
+            tn.ImageKey = "Default";
+            tn.SelectedImageKey = tn.ImageKey;
+            // S7Timers
+            tn = treeView1.Nodes.Add("S7Timers");
+            tn.Nodes.Add("Loading...");
+            tn.Tag = 0x90050000;
+            tn.ImageKey = "Default";
+            tn.SelectedImageKey = tn.ImageKey;
+            // S7Counters
+            tn = treeView1.Nodes.Add("S7Counters");
+            tn.Nodes.Add("Loading...");
+            tn.Tag = 0x90060000;
+            tn.ImageKey = "Default";
+            tn.SelectedImageKey = tn.ImageKey;
 
             setStatus("connected");
         }
@@ -114,6 +134,7 @@ namespace S7CommPlusGUIBrowser
             for (int i = 0; i < pObj.VarnameList.Names.Count; ++i)
             {
                 tn = e.Node.Nodes.Add(pObj.VarnameList.Names[i]);
+                SetImageKey(ref tn, pObj.VartypeList.Elements[i]);
                 if (pObj.VartypeList.Elements[i].OffsetInfoType.Is1Dim())
                 {
                     var ioitarr = (IOffsetInfoType_1Dim)pObj.VartypeList.Elements[i].OffsetInfoType;
@@ -122,11 +143,13 @@ namespace S7CommPlusGUIBrowser
                     for (int j = 0; j < arrayElementCount; ++j)
                     {
                         tnarr = tn.Nodes.Add(pObj.VarnameList.Names[i] + "[" + (j + arrayLowerBounds) + "]");
+                        SetImageKey(ref tnarr, pObj.VartypeList.Elements[i]);
                         if (pObj.VartypeList.Elements[i].OffsetInfoType.HasRelation())
                         {
                             var ioit = (IOffsetInfoType_Relation)pObj.VartypeList.Elements[i].OffsetInfoType;
                             tnarr.Nodes.Add("Loading...");
                             tnarr.Tag = ioit.GetRelationId();
+                            SetImageKey(ref tnarr, pObj.VartypeList.Elements[i]);
                         }
                     }
                     tn.Tag = (uint)0; // is array
@@ -147,11 +170,13 @@ namespace S7CommPlusGUIBrowser
                             arrIdxStr += (arrIdxStr != "" ? "," : "") + (indexes[j] + MdimArrayLowerBounds[j]);
                         }
                         tnarr = tn.Nodes.Add(pObj.VarnameList.Names[i] + "[" + arrIdxStr + "]");
+                        SetImageKey(ref tnarr, pObj.VartypeList.Elements[i]);
                         if (pObj.VartypeList.Elements[i].OffsetInfoType.HasRelation())
                         {
                             var ioit = (IOffsetInfoType_Relation)pObj.VartypeList.Elements[i].OffsetInfoType;
                             tnarr.Nodes.Add("Loading...");
                             tnarr.Tag = ioit.GetRelationId();
+                            SetImageKey(ref tnarr, pObj.VartypeList.Elements[i]);
                         }
                         ++indexes[0];
                         for (int j = 0; j < dimCount; ++j)
@@ -183,11 +208,120 @@ namespace S7CommPlusGUIBrowser
                         var ioit = (IOffsetInfoType_Relation)pObj.VartypeList.Elements[i].OffsetInfoType;
                         tn.Nodes.Add("Loading...");
                         tn.Tag = ioit.GetRelationId();
+                        SetImageKey(ref tn, pObj.VartypeList.Elements[i]);
                     }
                 }
-
             }
+        }
 
+        private void SetImageKey(ref TreeNode tn, PVartypeListElement vte)
+        {
+            string sk = "Tag";
+            switch (vte.Softdatatype)
+            {
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BOOL:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL:
+                    sk = "Boolean";
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_INT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_ULINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_USINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_UINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_UDINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_SINT:
+                // Derived types
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BLOCKFB:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BLOCKFC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBDELAY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBTOD:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBCYCLIC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBATT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_PORT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_RTM:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_PIP:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBPCYCLE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBHWINT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBDIAG:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBTIMEERROR:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBSTARTUP:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DBANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DBWWW:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DBDYN:
+                    sk = "Integer2";
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BYTE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_WORD:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DWORD:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LWORD:
+                // Derived types
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMIDENT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTATT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMLINK:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWIOSYSTEM:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWDPMASTER:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWDEVICE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWDPSLAVE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWIO:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWMODULE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWSUBMODULE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWHSC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWPWM:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWPTO:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWINTERFACE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWIEPORT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNPRG:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNOUC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNRID:
+                    sk = "Binary2";
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_REAL:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LREAL:
+                    sk = "Number2";
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CHAR:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_WCHAR:
+                    sk = "Char";
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_STRING:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_WSTRING:
+                    sk = "Text";
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DATE:
+                    sk = "Date";
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_TIMEOFDAY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LTOD:
+                    sk = "Time";
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_TIME:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LTIME:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_S5TIME:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_TIMER:
+                    sk = "Timer"; // Duration
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DATEANDTIME:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LDT:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DTL:
+                    sk = "DateTime";
+                    break;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_ANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_POINTER:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_REMOTE:
+                    sk = "Any";
+                    break;
+            }
+            if (vte.OffsetInfoType.HasRelation())
+            {
+                sk = "Structure";
+            }
+            tn.ImageKey = sk;
+            tn.SelectedImageKey = tn.ImageKey;
         }
 
         private string escapeTiaString(string str, bool isRootNode, bool isArray)
@@ -251,7 +385,6 @@ namespace S7CommPlusGUIBrowser
                 name = escapeTiaString(nodeText, tn == null, isArray) + (name != "" ? "." : "") + name;
             }
             tbSymbol.Text = name;
-
 
             readTagBySymbol();
         }
