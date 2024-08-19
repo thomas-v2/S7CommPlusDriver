@@ -74,6 +74,8 @@ namespace S7CommPlusDriver
         public const int CPUexecUnit_operatingStateReq = 2167;
         public const int PLCProgram_Class_Rid = 2520;
         public const int Block_BlockNumber = 2521;
+        public const int DataInterface_InterfaceDescription = 2544;
+        public const int DataInterface_LineComments = 2546;
         public const int DB_ValueInitial = 2548;
         public const int DB_ValueActual = 2550;
         public const int DB_InitialChanged = 2551;

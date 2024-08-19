@@ -1443,6 +1443,89 @@ namespace S7CommPlusDriver
 
             return 0;
         }
+
+        /// <summary>
+        /// Requests the tag and block comments from the Plc, returned as XML strings.
+        /// xml_linecomment:
+        /// The returned XML format differs between between request of I/Q/M/C/T areas and datablocks:
+        /// I/Q/M/C/T: <CommentDictionary>     <TagLineComments>      <Comment RefID="ID"> <DictEntry Lanuage="de-DE"> ....
+        /// Datablock: <InterfaceLineComments> <Part Kind="Comments"> <Comment Path="ID">  <DictEntry Lanuage="de-DE"> ....
+        /// As "ID" the number for the variable identification is used.
+        /// 
+        /// xml_dbcomment:
+        /// The xml-value description generated from our own value xml-serialization for WStringSparseArray. The value key is the language id.
+        /// Example:
+        /// <Value type ="WStringSparseArray"><Value key="1032">DB Kommentar in german de-DE</Value><Value key="1034">DB comment in english en-US</Value></Value>
+        /// </summary>
+        /// <param name="relid">The relation ID for the area you want the comments for, e.g. 0x8a0e0000+db_number, or 0x52 for M-area</param>
+        /// <param name="xml_linecomment"></param>
+        /// <param name="xml_dbcomment"></param>
+        /// <returns>0 if no error</returns>
+        public int GetCommentsXml(uint relid, out string xml_linecomment, out string xml_dbcomment)
+        {
+            int res;
+            // With requesting DataInterface_InterfaceDescription, whe would be able to get all informations like the access ids and
+            // datatype informations, that we get from the other browsing method. Needs to be tested which one is more efficient on network traffic or plc load.
+            // If we keep use browsing for the comments, at least we would be able to read all information in one request.
+            xml_linecomment = String.Empty;
+            xml_dbcomment = String.Empty;
+
+            var exploreReq = new ExploreRequest(ProtocolVersion.V2);
+            exploreReq.ExploreId = relid;
+            exploreReq.ExploreRequestId = Ids.None;
+            exploreReq.ExploreChildsRecursive = 1;
+            exploreReq.ExploreParents = 0;
+
+            // We want to know the following attributes
+            exploreReq.AddressList.Add(Ids.ASObjectES_Comment);
+            exploreReq.AddressList.Add(Ids.DataInterface_LineComments);
+
+            res = SendS7plusFunctionObject(exploreReq);
+            if (res != 0)
+            {
+                return res;
+            }
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                return m_LastError;
+            }
+
+            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
+            res = checkResponseWithIntegrity(exploreReq, exploreRes);
+            if (res != 0)
+            {
+                return res;
+            }
+
+            foreach(var obj in exploreRes.Objects)
+            {
+                foreach(var att in obj.Attributes)
+                {
+                    switch (att.Key)
+                    {
+                        case Ids.ASObjectES_Comment:
+                            var att_comment = (ValueWStringSparseArray)att.Value;
+                            xml_dbcomment = att_comment.ToString();
+                            break;
+                        case Ids.DataInterface_LineComments:
+                            var att_linecomment = (ValueBlobSparseArray)att.Value;
+                            BlobDecompressor bd = new BlobDecompressor();
+                            var blob_sp = att_linecomment.GetValue();
+                            // In DBs we get the data with Sparsearray key = 1, in M-Area with key = 2.
+                            // For now, just take the first, don't know where the key ids are for.
+                            foreach (var key in blob_sp.Keys)
+                            {
+                                xml_linecomment = bd.decompress(blob_sp[key].value, 4); // Offset of 4, as we have a header for the zlib dictionary version
+                                break;
+                            }
+                            break;
+                    }
+                }
+            }
+            return 0;
+        }
     }
     #endregion
 }
