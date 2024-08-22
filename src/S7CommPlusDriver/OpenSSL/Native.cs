@@ -25,6 +25,22 @@ namespace OpenSsl
 
     public class Native
     {
+#if NET472
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr LoadLibrary(string dllToLoad);
+
+        static Native()
+        {
+            var path = new Uri(typeof(Native).Assembly.CodeBase).LocalPath;
+            var folder = Path.GetDirectoryName(path);
+
+            var is64 = IntPtr.Size == 8;
+            var subfolder = is64 ? "x64" : "x86";
+
+            LoadLibrary(Path.Combine(folder, subfolder, DLLNAME + ".dll"));
+            LoadLibrary(Path.Combine(folder, subfolder, SSLDLLNAME + ".dll"));
+        }
+#else
         static Native()
         {
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), DllImportResolver);
@@ -43,6 +59,7 @@ namespace OpenSsl
             // Otherwise, fallback to default import resolver.
             return IntPtr.Zero;
         }
+#endif
 
         const string DLLNAME = "libcrypto-3";
         const string SSLDLLNAME = "libssl-3";
