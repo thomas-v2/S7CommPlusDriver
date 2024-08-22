@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DriverTest\DriverTest.csproj" />
+  <Project Path="S7CommPlusDriver\S7CommPlusDriver.csproj" />
+  <Project Path="S7CommPlusGUIBrowser\S7CommPlusGUIBrowser.csproj" />
+  <Project Path="Zlib.net\Zlib.net.csproj" />
+</Solution>
