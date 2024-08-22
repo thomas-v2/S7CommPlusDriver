@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net472</TargetFrameworks>
+    <TargetFrameworks>net5.0;net472</TargetFrameworks>
     <ProjectType>Local</ProjectType>
     <AssemblyKeyContainerName />
     <AssemblyOriginatorKeyFile />
