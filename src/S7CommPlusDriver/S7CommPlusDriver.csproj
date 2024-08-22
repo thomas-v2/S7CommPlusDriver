@@ -7,25 +7,6 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;_WIN64</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE;_WIN64</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <OutputPath>bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;_WIN32</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>bin\x86\Release\</OutputPath>
-    <DefineConstants>TRACE;_WIN32</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Zlib.net\Zlib.net.csproj" />
-  </ItemGroup>
   <ItemGroup>
     <Content Include="x64\libcrypto-3.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -37,6 +18,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Zlib.net\Zlib.net.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="x86\libcrypto-3.dll">
