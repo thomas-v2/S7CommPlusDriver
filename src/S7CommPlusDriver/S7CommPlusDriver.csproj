@@ -9,14 +9,6 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="x64\libcrypto-3.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="x64\libssl-3.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
   </ItemGroup>
@@ -24,11 +16,17 @@
     <ProjectReference Include="..\Zlib.net\Zlib.net.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="x86\libcrypto-3.dll">
+    <Content Include="x64\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="x86\libssl-3.dll">
+      <Pack>true</Pack>
+      <PackagePath>runtimes/native/x64</PackagePath>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="x86\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>runtimes/native/x86</PackagePath>
     </None>
   </ItemGroup>
   <PropertyGroup>
