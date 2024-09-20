@@ -355,7 +355,9 @@ namespace S7CommPlusGUIBrowser
             PlcTags tags = new PlcTags();
             tags.AddTag(tag);
             if (tags.ReadTags(conn) != 0) return;
+            conn.GetCommentsXml(tag.Address.AccessArea, out var lineCOmment, out var dbComment);
             tbValue.Text = tag.ToString();
+            tbComment.Text = lineCOmment;
         }
 
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
