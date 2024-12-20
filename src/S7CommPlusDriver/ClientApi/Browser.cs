@@ -355,8 +355,9 @@ namespace S7CommPlusDriver
                 case Softdatatype.S7COMMP_SOFTDATATYPE_AOMIDENT:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTANY:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTATT:
-                case Softdatatype.S7COMMP_SOFTDATATYPE_FOLDER: // Should we support this internal datatype? Only used internally in SFBs
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMAID:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_AOMLINK:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTHWINT:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_HWANY:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_HWIOSYSTEM:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_HWDPMASTER:
