@@ -1097,7 +1097,7 @@ namespace S7CommPlusDriver
         /// <exception cref="Exception">Symbol syntax error</exception>
         private void calcAccessSeqFor1DimArray(ref string symbol, PVartypeListElement varType, VarInfo varInfo)
         {
-            Regex re = new Regex(@"^\[(\d+)\]");
+            Regex re = new Regex(@"^\[(-?\d+)\]");
             Match m = re.Match(symbol);
             if (!m.Success) throw new Exception("Symbol syntax error");
             parseSymbolLevel(ref symbol); // remove index from symbol string
@@ -1122,16 +1122,14 @@ namespace S7CommPlusDriver
         /// <exception cref="Exception">Symbol syntax error</exception>
         private void calcAccessSeqForMDimArray(ref string symbol, PVartypeListElement varType, VarInfo varInfo)
         {
-            Regex re = new Regex(@"^\[([0-9, ]+)\]");
+            Regex re = new Regex(@"^\[( ?-?\d+ ?(, ?-?\d+ ?)+)\]");
             Match m = re.Match(symbol);
             if (!m.Success) throw new Exception("Symbol syntax error");
             parseSymbolLevel(ref symbol); // remove index from symbol string
             string idxs = m.Groups[1].Value.Replace(" ", "");
 
-            uint[] indexes = Array.ConvertAll(idxs.Split(','), e => uint.Parse(e));
+            int[] indexes = Array.ConvertAll(idxs.Split(','), e => int.Parse(e));
             var ioit = (IOffsetInfoType_MDim)varType.OffsetInfoType;
-            uint ArrayElementCount = ioit.GetArrayElementCount();
-            int ArrayLowerBounds = ioit.GetArrayLowerBounds();
             uint[] MdimArrayElementCount = (uint[])ioit.GetMdimArrayElementCount().Clone();
             int[] MdimArrayLowerBounds = ioit.GetMdimArrayLowerBounds();
 
@@ -1141,7 +1139,7 @@ namespace S7CommPlusDriver
             // check bounds
             for (int i = 0; i < dimCount; ++i)
             {
-                indexes[i] = (uint)(indexes[i] - MdimArrayLowerBounds[dimCount - i - 1]);
+                indexes[i] = (indexes[i] - MdimArrayLowerBounds[dimCount - i - 1]);
                 if (indexes[i] > MdimArrayElementCount[dimCount - i - 1]) throw new Exception("Out of bounds");
                 if (indexes[i] < 0) throw new Exception("Out of bounds");
             }
@@ -1161,10 +1159,10 @@ namespace S7CommPlusDriver
             dimSize[dimCount - 1] = g;
 
             // calc id
-            uint arrayIndex = 0;
+            int arrayIndex = 0;
             for (int i = 0; i < dimCount; ++i)
             {
-                arrayIndex += indexes[i] * dimSize[dimCount - i - 1];
+                arrayIndex += indexes[i] * (int)dimSize[dimCount - i - 1];
             }
 
             varInfo.AccessSequence += "." + String.Format("{0:X}", arrayIndex);
