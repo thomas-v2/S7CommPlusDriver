@@ -79,10 +79,6 @@ namespace OpenSsl
         [DllImport(SSLDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int OPENSSL_init_ssl(UInt64 opts, IntPtr settings);
 
-        //void OPENSSL_free(void* addr);
-        [DllImport(SSLDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void OPENSSL_free(IntPtr addr);
-
         #endregion
 
         #region SSL
@@ -252,10 +248,6 @@ namespace OpenSsl
         [DllImport(SSLDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int SSL_want(IntPtr ssl);
 
-        // int SSL_want_write(const SSL* ssl);
-        [DllImport(SSLDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int SSL_want_write(IntPtr ssl);
-
         // int SSL_write(SSL *ssl, const void *buf, int num);
         [DllImport(SSLDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int SSL_write(IntPtr ssl, byte[] buf, int len);
@@ -320,9 +312,16 @@ namespace OpenSsl
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr BIO_s_mem();
 
-        // int BIO_should_retry(BIO *b);
+        // int BIO_test_flags(const BIO *b, int flags);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int BIO_should_retry(IntPtr b);
+        public static extern int BIO_test_flags(IntPtr b, int flags);
+
+        // int BIO_should_retry(BIO *b) -> define in bio.h: BIO_test_flags(a, BIO_FLAGS_SHOULD_RETRY)
+        const int BIO_FLAGS_SHOULD_RETRY = 0x08;
+        public static int BIO_should_retry(IntPtr b)
+        {
+            return Native.BIO_test_flags(b, BIO_FLAGS_SHOULD_RETRY);
+        }
 
         // int BIO_write(BIO *b, const void *data, int dlen);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -359,33 +358,8 @@ namespace OpenSsl
         #endregion
 
         #region Utilities
-        public static string StaticString(IntPtr ptr)
-        {
-            return Marshal.PtrToStringAnsi(ptr);
-        }
 
-        public static string PtrToStringAnsi(IntPtr ptr, bool hasOwnership)
-        {
-            var len = 0;
-            for (var i = 0; i < 1024; i++, len++)
-            {
-                var octet = Marshal.ReadByte(ptr, i);
-                if (octet == 0)
-                    break;
-            }
-
-            if (len == 1024)
-                return "Invalid string";
-
-            var buf = new byte[len];
-            Marshal.Copy(ptr, buf, 0, len);
-            if (hasOwnership)
-                Native.OPENSSL_free(ptr);
-
-            return Encoding.ASCII.GetString(buf, 0, len);
-        }
-
-        public static IntPtr ExpectNonNull(IntPtr ptr)
+         public static IntPtr ExpectNonNull(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
                 throw new Exception();
@@ -393,13 +367,6 @@ namespace OpenSsl
             return ptr;
         }
 
-        public static int ExpectSuccess(int ret)
-        {
-            if (ret <= 0)
-                throw new Exception();
-
-            return ret;
-        }
         #endregion
     }
 }

@@ -99,10 +99,10 @@ namespace S7CommPlusDriver
         public const uint S7COMMP_SOFTDATATYPE_AOMIDENT = 128;
         public const uint S7COMMP_SOFTDATATYPE_EVENTANY = 129;
         public const uint S7COMMP_SOFTDATATYPE_EVENTATT = 130;
-        public const uint S7COMMP_SOFTDATATYPE_EVENTHWINT = 131;
-        public const uint S7COMMP_SOFTDATATYPE_FOLDER = 132;
-        public const uint S7COMMP_SOFTDATATYPE_AOMAID = 133;
-        public const uint S7COMMP_SOFTDATATYPE_AOMLINK = 134;
+        public const uint S7COMMP_SOFTDATATYPE_FOLDER = 131;
+        public const uint S7COMMP_SOFTDATATYPE_AOMAID = 132;
+        public const uint S7COMMP_SOFTDATATYPE_AOMLINK = 133;
+        public const uint S7COMMP_SOFTDATATYPE_EVENTHWINT = 134;
         public const uint S7COMMP_SOFTDATATYPE_HWANY = 144;
         public const uint S7COMMP_SOFTDATATYPE_HWIOSYSTEM = 145;
         public const uint S7COMMP_SOFTDATATYPE_HWDPMASTER = 146;
@@ -235,10 +235,10 @@ namespace S7CommPlusDriver
             { S7COMMP_SOFTDATATYPE_AOMIDENT,            "AOM_IDENT" },
             { S7COMMP_SOFTDATATYPE_EVENTANY,            "EVENT_ANY" },
             { S7COMMP_SOFTDATATYPE_EVENTATT,            "EVENT_ATT" },
-            { S7COMMP_SOFTDATATYPE_EVENTHWINT,          "EVENT_HWINT" },
             { S7COMMP_SOFTDATATYPE_FOLDER,              "FOLDER" },
             { S7COMMP_SOFTDATATYPE_AOMAID,              "AOM_AID" },
             { S7COMMP_SOFTDATATYPE_AOMLINK,             "AOM_LINK" },
+            { S7COMMP_SOFTDATATYPE_EVENTHWINT,          "EVENT_HWINT" },
             { S7COMMP_SOFTDATATYPE_HWANY,               "HW_ANY" },
             { S7COMMP_SOFTDATATYPE_HWIOSYSTEM,          "HW_IOSYSTEM" },
             { S7COMMP_SOFTDATATYPE_HWDPMASTER,          "HW_DPMASTER" },
