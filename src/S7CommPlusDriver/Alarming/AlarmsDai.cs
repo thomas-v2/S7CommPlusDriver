@@ -53,7 +53,7 @@ namespace S7CommPlusDriver.Alarming
             return s;
         }
 
-        public static AlarmsDai FromNotificationObject(PObject pobj)
+        public static AlarmsDai FromNotificationObject(PObject pobj, int alarmtextsLanguageId)
         {
             var dai = new AlarmsDai();
             dai.ObjectVariableTypeName = ((ValueWString)pobj.GetAttribute(Ids.ObjectVariableTypeName)).GetValue();
@@ -82,7 +82,7 @@ namespace S7CommPlusDriver.Alarming
             }
             dai.AsCgs = AlarmsAsCgs.FromValueStruct(str);
             dai.AsCgs.SubtypeId = dai_id;
-            dai.AlarmTexts = AlarmsAlarmTexts.FromNotificationBlob(((ValueBlobSparseArray)pobj.GetAttribute(Ids.DAI_AlarmTexts_Rid)));
+            dai.AlarmTexts = AlarmsAlarmTexts.FromNotificationBlob(((ValueBlobSparseArray)pobj.GetAttribute(Ids.DAI_AlarmTexts_Rid)), alarmtextsLanguageId);
             return dai;
         }
     }
