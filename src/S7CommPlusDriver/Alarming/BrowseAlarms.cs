@@ -213,14 +213,14 @@ namespace S7CommPlusDriver
             var tloa_2 = tloa[1].GetValue();
             var tloa_3 = tloa[2].GetValue();
 
-            GetTexts(tloa_1, tloa_2, tloa_3, tlsa, ref Alarms);
+            GetTexts(tloa_1, tloa_2, tloa_3, tlsa, ref Alarms, languageId);
 
             #endregion
 
             return 0;
         }
 
-        private void GetTexts(byte[] tloa_1, byte[] tloa_2, byte[] tloa_3, byte[] tlsa, ref Dictionary<ulong, AlarmData> Alarms)
+        private void GetTexts(byte[] tloa_1, byte[] tloa_2, byte[] tloa_3, byte[] tlsa, ref Dictionary<ulong, AlarmData> Alarms, int languageId)
         {
             uint pos1, pos2, pos3;
             uint t1_count, t1_relid, t1_relid_off;
@@ -266,6 +266,7 @@ namespace S7CommPlusDriver
                         Trace.WriteLine(String.Format("BrowseAlarms GetTexts(): CPU Alarm Id {0:X} is not in dictionary!", cpualarmid));
                         continue;
                     }
+                    Alarms[cpualarmid].AlText.LanguageId = languageId;
 
                     // Step 3: Get offsets to text array from table 3
                     pos3 = t2_off;

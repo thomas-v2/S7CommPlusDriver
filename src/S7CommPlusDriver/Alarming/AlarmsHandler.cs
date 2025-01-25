@@ -26,6 +26,12 @@ namespace S7CommPlusDriver
         // * how to use it, and how to later integrate     *
         // * this into the complete library!               *
         // *************************************************
+        //
+        // Example code for testing:
+        // CultureInfo ci = new CultureInfo("en-US");
+        // conn.AlarmSubscriptionCreate();
+        // conn.TestWaitForAlarmNotifications(20000, 3, ci.LCID);
+        // conn.AlarmSubscriptionDelete();
 
         uint m_AlarmSubscriptionRelationId = 0x7fffc001; // TODO! Unknown value! See also Subscription.cs
         uint m_AlarmSubscriptionRefRelationId = 0x51010001; // TODO! Unknown value!
@@ -116,7 +122,7 @@ namespace S7CommPlusDriver
             return res;
         }
 
-        public int TestWaitForAlarmNotifications(int waitTimeout, int untilNumberOfAlarms)
+        public int TestWaitForAlarmNotifications(int waitTimeout, int untilNumberOfAlarms, int alarmTextsLanguageId)
         {
             int res = 0;
             short creditLimitStep = 5;
@@ -142,7 +148,7 @@ namespace S7CommPlusDriver
                     Console.Write("Notification: CreditTick=" + noti.NotificationCreditTick + " SequenceNumber=" + noti.NotificationSequenceNumber);
                     Console.WriteLine(String.Format(" PLC-Timestamp={0}.{1:D03}", noti.Add1Timestamp.ToString(), noti.Add1Timestamp.Millisecond));
 
-                    var dai = AlarmsDai.FromNotificationObject(noti.P2Objects[0]);
+                    var dai = AlarmsDai.FromNotificationObject(noti.P2Objects[0], alarmTextsLanguageId);
                     Console.WriteLine(dai.ToString());
                     if (noti.NotificationCreditTick >= m_AlarmNextCreditLimit - 1) // Set new limit one tick before it expires, to get a constant flow of data
                     {
