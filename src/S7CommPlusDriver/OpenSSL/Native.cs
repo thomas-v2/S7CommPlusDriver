@@ -25,22 +25,8 @@ namespace OpenSsl
 
     public class Native
     {
-#if NET472
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr LoadLibrary(string dllToLoad);
-
-        static Native()
-        {
-            var path = new Uri(typeof(Native).Assembly.CodeBase).LocalPath;
-            var folder = Path.GetDirectoryName(path);
-
-            var is64 = IntPtr.Size == 8;
-            var subfolder = is64 ? "x64" : "x86";
-
-            LoadLibrary(Path.Combine(folder, subfolder, DLLNAME + ".dll"));
-            LoadLibrary(Path.Combine(folder, subfolder, SSLDLLNAME + ".dll"));
-        }
-#else
+        const string DLLNAME = "libcrypto-3";
+        const string SSLDLLNAME = "libssl-3";
         static Native()
         {
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), DllImportResolver);
@@ -48,21 +34,35 @@ namespace OpenSsl
 
         private static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
-            if (libraryName == DLLNAME || libraryName == SSLDLLNAME)
+            if (libraryName == DLLNAME)
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return NativeLibrary.Load(Path.Combine(RuntimeInformation.ProcessArchitecture.ToString().ToLower(), libraryName + ".dll"), assembly, searchPath);
-                }
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X86)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x86", "libcrypto-3.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x64", "libcrypto-3-x64.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-arm64", "libcrypto-3-arm64.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "osx-arm64", "libcrypto.3.dylib"), assembly, searchPath);
+                return IntPtr.Zero;
+            }
+
+            if(libraryName == SSLDLLNAME)
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X86)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x86", "libssl-3.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x64", "libssl-3-x64.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-arm64", "libssl-3-arm64.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "osx-arm64", "libssl.3.dylib"), assembly, searchPath);
+                return IntPtr.Zero;
             }
 
             // Otherwise, fallback to default import resolver.
             return IntPtr.Zero;
         }
-#endif
-
-        const string DLLNAME = "libcrypto-3";
-        const string SSLDLLNAME = "libssl-3";
 
         #region Delegates
 

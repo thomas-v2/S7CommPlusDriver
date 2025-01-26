@@ -1,0 +1,17 @@
+﻿Runtime Libs:
+
+MacOS:
+
+	Arm64: 3.4.0
+		./Configure darwin64-arm64-cc --prefix="/tmp/openssl-arm" no-asm
+		make
+		make install
+
+	X64: 3.4.0
+		./Configure darwin64-x64-cc --prefix="/tmp/openssl-x64"
+		make
+		make install
+
+Windows
+
+	all versions from: https://slproweb.com/products/Win32OpenSSL.html

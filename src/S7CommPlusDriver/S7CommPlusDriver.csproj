@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net5.0;net472</TargetFrameworks>
+    <TargetFrameworks>net5.0</TargetFrameworks>
     <OutputType>Library</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <LangVersion>9.0</LangVersion>
@@ -16,18 +16,19 @@
     <ProjectReference Include="..\Zlib.net\Zlib.net.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="x64\*">
+    <Content Include="runtimes\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Pack>true</Pack>
-      <PackagePath>runtimes/native/x64</PackagePath>
+      <PackagePath>runtimes/</PackagePath>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="x86\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Pack>true</Pack>
-      <PackagePath>runtimes/native/x86</PackagePath>
-    </None>
+    <Content Remove="runtimes\info.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="runtimes\win-arm64\" />
+    <Folder Include="runtimes\osx-x64\" />
+    <Folder Include="runtimes\osx-arm64\" />
   </ItemGroup>
   <PropertyGroup>
     <AssemblyTitle>S7CommPlusDriver</AssemblyTitle>
