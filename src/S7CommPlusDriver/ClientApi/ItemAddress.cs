@@ -40,7 +40,7 @@ namespace S7CommPlusDriver
 
         public ItemAddress(string variableAccessString)
         {
-            // Uses a complete access string consisting of hexadecimal strings separated by a dor (".").
+            // Uses a complete access string consisting of hexadecimal strings separated by a dot (".").
             // Returns a list of the extracted IDs, e.g. 8A0E0001.A or 52.A
             List<UInt32> ids = new List<UInt32>();
             foreach (string p in variableAccessString.Split('.'))

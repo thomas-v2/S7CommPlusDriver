@@ -79,8 +79,8 @@ namespace S7CommPlusDriver
                     break;
                 case eNodeType.StructArray:
                     names += node.Name;
-                    // TODO: Special: Between an array-indes and the access-id is an additional 1. It's not known if it's a fixed or variable value.
-                    accessIds += "." + String.Format("{0:X}", node.AccessId + ".1");
+                    // TODO: Special: Between an array-index and the access-id is an additional 1. It's not known if it's a fixed or variable value.
+                    accessIds += "." + String.Format("{0:X}", node.AccessId) + ".1";
                     break;
                 default:
                     names += "." + node.Name;
@@ -155,7 +155,7 @@ namespace S7CommPlusDriver
                         ArrayElementCount = ioit.GetArrayElementCount();
                         ArrayLowerBounds = ioit.GetArrayLowerBounds();
 
-                        // The access-id always starts with 0, independant of lowerbounds
+                        // The access-id always starts with 0, independent of lowerbounds
                         for (uint i = 0; i < ArrayElementCount; i++)
                         {
                             // Handle Struct/FB Array separate: Has an additional ID between array index and access-LID.
@@ -170,7 +170,7 @@ namespace S7CommPlusDriver
                                 };
                                 subnode.Childs.Add(arraynode);
 
-                                // All OffsetInfoTypes which occure at this point should have a Relation Id
+                                // All OffsetInfoTypes which occur at this point should have a Relation Id
                                 var ioit2 = (IOffsetInfoType_Relation)vte.OffsetInfoType;
 
                                 foreach (var ob in m_objs)
@@ -246,7 +246,7 @@ namespace S7CommPlusDriver
                                 };
                                 subnode.Childs.Add(arraynode);
 
-                                // All OffsetInfoTypes which occure at this point should have a Relation Id
+                                // All OffsetInfoTypes which occur at this point should have a Relation Id
                                 var ioit2 = (IOffsetInfoType_Relation)vte.OffsetInfoType;
 
                                 foreach (var ob in m_objs)
@@ -355,8 +355,9 @@ namespace S7CommPlusDriver
                 case Softdatatype.S7COMMP_SOFTDATATYPE_AOMIDENT:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTANY:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTATT:
-                case Softdatatype.S7COMMP_SOFTDATATYPE_FOLDER: // Should we support this internal datatype? Only used internally in SFBs
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMAID:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_AOMLINK:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTHWINT:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_HWANY:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_HWIOSYSTEM:
                 case Softdatatype.S7COMMP_SOFTDATATYPE_HWDPMASTER:

@@ -87,7 +87,7 @@ namespace S7CommPlusDriver
 
         public static int DecodeByte(System.IO.Stream buffer, out byte value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 1)
             {
                 value = 0;
                 return 0;
@@ -98,7 +98,7 @@ namespace S7CommPlusDriver
 
         public static int DecodeUInt16(System.IO.Stream buffer, out UInt16 value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 2)
             {
                 value = 0;
                 return 0;
@@ -110,7 +110,7 @@ namespace S7CommPlusDriver
         // Little Endian
         public static int DecodeUInt16LE(System.IO.Stream buffer, out UInt16 value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 2)
             {
                 value = 0;
                 return 0;
@@ -121,7 +121,7 @@ namespace S7CommPlusDriver
 
         public static int DecodeInt16(System.IO.Stream buffer, out Int16 value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 2)
             {
                 value = 0;
                 return 0;
@@ -132,7 +132,7 @@ namespace S7CommPlusDriver
 
         public static int DecodeUInt32(System.IO.Stream buffer, out UInt32 value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 4)
             {
                 value = 0;
                 return 0;
@@ -144,7 +144,7 @@ namespace S7CommPlusDriver
         // Little Endian
         public static int DecodeUInt32LE(System.IO.Stream buffer, out UInt32 value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 4)
             {
                 value = 0;
                 return 0;
@@ -156,7 +156,7 @@ namespace S7CommPlusDriver
         // Little Endian
         public static int DecodeInt32LE(System.IO.Stream buffer, out Int32 value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 4)
             {
                 value = 0;
                 return 0;
@@ -167,7 +167,7 @@ namespace S7CommPlusDriver
 
         public static int DecodeInt32(System.IO.Stream buffer, out Int32 value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 4)
             {
                 value = 0;
                 return 0;
@@ -178,7 +178,7 @@ namespace S7CommPlusDriver
 
         public static int DecodeUInt64(System.IO.Stream buffer, out UInt64 value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 8)
             {
                 value = 0;
                 return 0;
@@ -192,7 +192,7 @@ namespace S7CommPlusDriver
 
         public static int DecodeInt64(System.IO.Stream buffer, out Int64 value)
         {
-            if (buffer.Position >= buffer.Length)
+            if (buffer.Length - buffer.Position < 8)
             {
                 value = 0;
                 return 0;
@@ -282,7 +282,7 @@ namespace S7CommPlusDriver
 
         public static int EncodeInt32Vlq(System.IO.Stream buffer, Int32 value)
         {
-            // You can write negavtive Values like
+            // You can write negative values like
             // -1234567
             // with full one complement bytes as:
             // 8f ff b4 d2 79
@@ -339,7 +339,7 @@ namespace S7CommPlusDriver
             // Special handling in the 64 bit VLQ variants:
             // The special handling on the 64 bit variants is neccessary, because without this we would need
             // max. 10 bytes than the max. 9 now.
-            // Every byte looses 1 bit for the "continue" flag. For 8 Bytes loosing 1 bit, we need 1 more byte.
+            // Every byte looses 1 bit for the "continue" flag. For 8 bytes loosing 1 bit, we need 1 more byte.
             // Which in the normal variant would have only 7 bit of space, because 1 bit is for the "continue" flag.
             // The special handling allows to use all 8 bits in the additional 9th byte.
             byte[] b = new byte[9];
@@ -386,7 +386,7 @@ namespace S7CommPlusDriver
                 // - 0x00FFFFFFFFFFFFFF      -> standard
                 // - 0x00FFFFFFFFFFFFFF + 1  -> additional 0x80 needed
                 // The decode algorithm can handle both variants, but the plc accepts it only with the additional bytes (seems Siemens
-                // uses a different algorithm that we are using)
+                // uses a different algorithm than we are using)
                 length++;
                 b[8] = 0x80;
             }
@@ -600,6 +600,11 @@ namespace S7CommPlusDriver
 
         public static int DecodeWString(System.IO.Stream buffer, int length, out string value)
         {
+            if (buffer.Length - buffer.Position < length)
+            {
+                value = string.Empty;
+                return 0;
+            }
             byte[] tmp = new byte[length];
             buffer.Read(tmp, 0, length);
             value = Encoding.UTF8.GetString(tmp);
@@ -615,7 +620,7 @@ namespace S7CommPlusDriver
 
         public static int DecodeOctets(System.IO.Stream buffer, int length, out byte[] value)
         {
-            if (length <= 0)
+            if (length <= 0 || buffer.Length - buffer.Position < length)
             {
                 value = null;
                 return 0;
@@ -715,7 +720,14 @@ namespace S7CommPlusDriver
 
         public static int DecodeHeader(System.IO.Stream buffer, out byte version, out UInt16 length)
         {
-            buffer.ReadByte();
+            if (buffer.Length - buffer.Position < 4)
+            {
+                version = 0;
+                length = 0;
+                return 0;
+            }
+
+            buffer.ReadByte(); // Skip one byte (purpose unclear)
             version = (byte)buffer.ReadByte();
             DecodeUInt16(buffer, out length);
             return 4;

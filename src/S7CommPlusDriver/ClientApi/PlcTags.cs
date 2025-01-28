@@ -72,7 +72,7 @@ namespace S7CommPlusDriver.ClientApi
             return res;
         }
 
-        public PlcTag TagFactory(string name, ItemAddress address, uint softdatatype)
+        public static PlcTag TagFactory(string name, ItemAddress address, uint softdatatype)
         {
             switch (softdatatype)
             {
@@ -145,7 +145,7 @@ namespace S7CommPlusDriver.ClientApi
                 case Softdatatype.S7COMMP_SOFTDATATYPE_WSTRING:
                     return new PlcTagWString(name, address, softdatatype);
                 //case Softdatatype.S7COMMP_SOFTDATATYPE_VARIANT:
-                //-> Variant isn't added int the instance-db as a variable!
+                //-> Variant isn't added inside of the instance-db as a variable!
                 case Softdatatype.S7COMMP_SOFTDATATYPE_LTIME:
                     return new PlcTagLTime(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_LTOD:
@@ -165,14 +165,12 @@ namespace S7CommPlusDriver.ClientApi
                 case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTATT:
                     return new PlcTagDWord(name, address, softdatatype);
 
-                case Softdatatype.S7COMMP_SOFTDATATYPE_FOLDER:
-                    // Softdatatype 132: This type is only used as parameter for internal SFBs (e.g. AID input parameter)
-                    // Length of value (4 byte) calculated from the offsetinfo byte addresses.
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMAID:
                     return new PlcTagDWord(name, address, softdatatype);
-
                 case Softdatatype.S7COMMP_SOFTDATATYPE_AOMLINK:
                     return new PlcTagDWord(name, address, softdatatype);
-
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTHWINT:
+                    return new PlcTagDWord(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_HWANY:
                     return new PlcTagWord(name, address, softdatatype);
 

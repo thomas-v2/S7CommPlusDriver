@@ -63,13 +63,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Alarming\AlarmsAlarmTexts.cs" />
+    <Compile Include="Alarming\AlarmsAsCgs.cs" />
+    <Compile Include="Alarming\AlarmsAssociatedValues.cs" />
+    <Compile Include="Alarming\AlarmsDai.cs" />
+    <Compile Include="Alarming\AlarmsHandler.cs" />
+    <Compile Include="Alarming\AlarmsHmiInfo.cs" />
+    <Compile Include="Alarming\AlarmsMultipleStai.cs" />
     <Compile Include="ClientApi\Browser.cs" />
     <Compile Include="ClientApi\PlcTagQC.cs" />
     <Compile Include="ClientApi\PlcTags.cs" />
+    <Compile Include="Core\AccessLevel.cs" />
+    <Compile Include="Core\BlobDecompressor.cs" />
+    <Compile Include="Core\CommRessources.cs" />
     <Compile Include="Core\IS7pResponse.cs" />
     <Compile Include="Core\IS7pSerialize.cs" />
     <Compile Include="ClientApi\PlcTag.cs" />
+    <Compile Include="Core\Notification.cs" />
     <Compile Include="Core\ProtocolVersion.cs" />
+    <Compile Include="Core\GetVarSubstreamedRequest.cs" />
+    <Compile Include="Core\GetVarSubstreamedResponse.cs" />
     <Compile Include="Core\SetVariableResponse.cs" />
     <Compile Include="Core\SetVariableRequest.cs" />
     <Compile Include="Core\SystemEvent.cs" />
@@ -108,13 +121,19 @@
     <Compile Include="Core\Softdatatype.cs" />
     <Compile Include="Core\Utils.cs" />
     <Compile Include="S7CommPlusConnection.cs" />
+    <Compile Include="Subscriptions\Subscription.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="OpenSSL-dll-x86\libcrypto-3.dll" />
     <None Include="OpenSSL-dll-x86\libssl-3.dll" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\Zlib.net\Zlib.net.csproj">
+      <Project>{0c89b7a2-a218-49e4-b545-5b044a45f977}</Project>
+      <Name>Zlib.net</Name>
+    </ProjectReference>
+  </ItemGroup>
   <ItemGroup>
     <Content Include="OpenSSL-dll-x64\libcrypto-3-x64.dll" />
     <Content Include="OpenSSL-dll-x64\libssl-3-x64.dll" />

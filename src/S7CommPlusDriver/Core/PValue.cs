@@ -48,7 +48,7 @@ namespace S7CommPlusDriver
         /// Deserializes the buffer to the protocol values
         /// </summary>
         /// <param name="buffer">Stream of bytes from the network</param>
-        /// <param name="disableVlq">If true, the variable length encoding is disables for all underlying values (so far only neccessary on SystemEvent)</param>
+        /// <param name="disableVlq">If true, the variable length encoding is disabled for all underlying values (so far only neccessary on SystemEvent)</param>
         /// <returns>The protocol value</returns>
         public static PValue Deserialize(Stream buffer, bool disableVlq = false)
         {
@@ -69,7 +69,7 @@ namespace S7CommPlusDriver
                 S7p.DecodeByte(buffer, out datatype);
             }
 
-            // Sparsearray and Adressarray of Struct are different
+            // Sparsearray and Addressarray of Struct are different
             if (flags == FLAGS_ARRAY || flags == FLAGS_ADDRESSARRAY)
             {
                 switch (datatype)
@@ -269,8 +269,8 @@ namespace S7CommPlusDriver
 
     /// <summary>
     /// ValueBoolArray: Important: The length of the array is always a multiple of 8.
-    /// E.g. reading an Array [0..2] of Bool will be transmitted with 8 elements with actual values at index 0, 1, 2.
-    /// An Array[0..9] will be transmitted with 16 elements and so on.
+    /// E.g. reading an Array [0..2] of Bool will be transmitted as 8 elements with actual values at index 0, 1, 2.
+    /// An Array[0..9] will be transmitted as 16 elements and so on.
     /// At this time, serialize doesn't respect the padding elements, must be done on a higher level.
     /// </summary>
     public class ValueBoolArray : PValue
@@ -684,7 +684,7 @@ namespace S7CommPlusDriver
     }
 
     // The construction of Sparsearray is almost similar to reading a struct.
-    // All elementy are kind of key,value. And Value is of the selected type.
+    // All elements are kind of key,value. And Value is of the selected type.
     // The list is terminated by Null.
     // E.g.: Reading 1037 (SystemLimits) via GetVarSubStreamed
     public class ValueUDIntSparseArray : PValue
@@ -952,7 +952,7 @@ namespace S7CommPlusDriver
         {
             int ret = 0;
             ret += S7p.EncodeByte(buffer, DatatypeFlags);
-            ret += S7p.EncodeByte(buffer, Datatype.USInt);
+            ret += S7p.EncodeByte(buffer, Datatype.SInt);
             ret += S7p.EncodeUInt32Vlq(buffer, (uint)Value.Length);
             for (int i = 0; i < Value.Length; i++)
             {
@@ -2615,8 +2615,11 @@ namespace S7CommPlusDriver
 
     public class ValueBlob : PValue
     {
-        UInt32 BlobRootId;
+        public UInt32 BlobRootId;
         byte[] Value;
+
+        public bool HasBlobType; // Special
+        public byte BlobType;    // Special
 
         public ValueBlob(UInt32 blobRootId, byte[] value) : this(blobRootId, value, 0)
         {
@@ -2652,7 +2655,15 @@ namespace S7CommPlusDriver
 
         public override string ToString()
         {
-            string s = "<Value type=\"Blob\" BlobRootId=\"" + BlobRootId.ToString() + "\">";
+            string s;
+            if (!HasBlobType)
+            {
+                s = "<Value type=\"Blob\" BlobRootId=\"" + BlobRootId.ToString() + "\">";
+            }
+            else
+            {
+                s = "<Value type=\"Blob\" BlobRootId=\"" + BlobRootId.ToString() + "\" BlobType=\"" + BlobType.ToString() + "\">";
+            }
             if (Value != null)
             {
                 s += BitConverter.ToString(Value);
@@ -2665,20 +2676,56 @@ namespace S7CommPlusDriver
         {
             UInt32 blobRootId;
             UInt32 blobSize;
+            bool hasBlobType = false;
+            byte blobType = 0;
             byte[] value;
             if (!disableVlq)
             {
                 S7p.DecodeUInt32Vlq(buffer, out blobRootId);
-                S7p.DecodeUInt32Vlq(buffer, out blobSize);
             }
             else
             {
                 S7p.DecodeUInt32(buffer, out blobRootId);
+            }
+            // Special handling:
+            // If first value > 1 then special format with 8 additional bytes + 1 type-id + value.
+            // On HMI project transfer this occurs with ID=1 (as SubStream) but without the extra bytes.
+            // Used for example in Alarm Notifications for the AssociatedValues.
+            if (blobRootId > 1)
+            {
+                hasBlobType = true;
+                S7p.DecodeUInt64(buffer, out _); // Don't use it for now. All bytes were zero so far.
+                S7p.DecodeByte(buffer, out blobType);
+                // - If BlobType value == 0x02 or 0x03, then follows a length specification and the number of bytes.
+                //   This is used in alarms and the associated values inside the blob-array.
+                // - If BlobType value == 0x00, then follows an ID/value list.
+                //   This is used in program transfer.
+                switch (blobType)
+                {
+                    case 0x02:
+                    case 0x03:
+                        // handling below is the same from here
+                        break;
+                    default:
+                        // can't handle this for now, this is completely different...
+                        throw new NotImplementedException();
+                }
+            }
+
+            if (!disableVlq)
+            {
+                S7p.DecodeUInt32Vlq(buffer, out blobSize);
+            }
+            else
+            {
                 S7p.DecodeUInt32(buffer, out blobSize);
             }
             value = new byte[blobSize];
             S7p.DecodeOctets(buffer, (int)blobSize, out value);
-            return new ValueBlob(blobRootId, value, flags);
+            var blob = new ValueBlob(blobRootId, value, flags);
+            blob.HasBlobType = hasBlobType;
+            blob.BlobType = blobType;
+            return blob;
         }
     }
 
@@ -2757,7 +2804,7 @@ namespace S7CommPlusDriver
             public byte[] value;
         }
 
-        Dictionary<UInt32, BlobEntry> Value;
+        public Dictionary<UInt32, BlobEntry> Value;
 
         public ValueBlobSparseArray(Dictionary<UInt32, BlobEntry> value) : this(value, FLAGS_SPARSEARRAY)
         {
@@ -2798,8 +2845,8 @@ namespace S7CommPlusDriver
             string s = "<Value type=\"BlobSparseArray\">";
             foreach (var v in Value)
             {
-                s += String.Format("<Value key=\"{0}\" BlobRootId=\"{1}\"", v.Key, v.Value.blobRootId);
-                if (Value != null)
+                s += String.Format("<Value key=\"{0}\" BlobRootId=\"{1}\">", v.Key, v.Value.blobRootId);
+                if (Value != null && v.Value.value != null)
                 {
                     s += BitConverter.ToString(v.Value.value);
                 }
@@ -3060,6 +3107,16 @@ namespace S7CommPlusDriver
         /// Used on transmitting Systemdatatypes in a compact way (e.g. DTL).
         /// </summary>
         public UInt64 PackedStructInterfaceTimestamp;
+        public UInt32 PackedStructTransportFlags = (uint)PackedStructTransportFlagBits.AlwaysSet; // Use 2 as standard value (probably a bitfield)
+
+        [Flags]
+        public enum PackedStructTransportFlagBits
+        {
+            None = 0,
+            ClassicNonoptimizedOffsets = 1 << 0,    // Is set when a struct is read from non-optimized datablock
+            AlwaysSet = 1 << 1,                     // Is (so far) always set
+            Count2Present = 1 << 10                 // If this bit is set, then there's a 2nd counter present. Which if for a rare case you can read an array of struct, if the complete size, the 1st for one element.
+        }
 
         public ValueStruct(UInt32 value) : this (value, 0)
         {
@@ -3106,8 +3163,7 @@ namespace S7CommPlusDriver
                     // get an Error "InvalidTimestampInTypeSafeBlob"
                     ret += S7p.EncodeUInt64(buffer, PackedStructInterfaceTimestamp);
 
-                    UInt32 transp_flags = 0x0002;
-                    ret += S7p.EncodeUInt32Vlq(buffer, transp_flags);
+                    ret += S7p.EncodeUInt32Vlq(buffer, PackedStructTransportFlags);
 
                     if (elem.Value.GetType() == typeof(ValueByteArray))
                     {
@@ -3146,6 +3202,7 @@ namespace S7CommPlusDriver
             if ((Value > 0x90000000 && Value < 0x9fffffff) || (Value > 0x02000000 && Value < 0x02ffffff))
             {
                 s += "<PackedStructInterfaceTimestamp>" + PackedStructInterfaceTimestamp.ToString() + "</PackedStructInterfaceTimestamp>" + Environment.NewLine;
+                s += "<PackedStructTransportFlags>" + PackedStructTransportFlags.ToString() + "</PackedStructTransportFlags>" + Environment.NewLine;
             }
             foreach (var elem in Elements)
             {
@@ -3170,9 +3227,9 @@ namespace S7CommPlusDriver
             if ((value > 0x90000000 && value < 0x9fffffff) || (value > 0x02000000 && value < 0x02ffffff))
             {
                 // Packed Struct
-                // These are system datatypes. Either the informations about them must be read out of the CPU before,
+                // These are system datatypes. Either the information about them must be read out of the CPU before,
                 // or must be known before. As the data are transmitted as Bytearrays, return them in this type. Interpretation must be done later.
-                stru = new ValueStruct(value);
+                stru = new ValueStruct(value, flags);
 
                 S7p.DecodeUInt64(buffer, out stru.PackedStructInterfaceTimestamp);
                 UInt32 transp_flags;
@@ -3181,7 +3238,7 @@ namespace S7CommPlusDriver
                 {
                     S7p.DecodeUInt32Vlq(buffer, out transp_flags);
                     S7p.DecodeUInt32Vlq(buffer, out elementcount);
-                    if ((transp_flags & 0x400) != 0)
+                    if ((transp_flags & (uint)PackedStructTransportFlagBits.Count2Present) != 0)
                     {
                         // Here's an additional counter value, for whatever reason...
                         S7p.DecodeUInt32Vlq(buffer, out elementcount);
@@ -3191,13 +3248,13 @@ namespace S7CommPlusDriver
                 {
                     S7p.DecodeUInt32(buffer, out transp_flags);
                     S7p.DecodeUInt32(buffer, out elementcount);
-                    if ((transp_flags & 0x400) != 0)
+                    if ((transp_flags & (uint)PackedStructTransportFlagBits.Count2Present) != 0)
                     {
                         // Here's an additional counter value, for whatever reason...
                         S7p.DecodeUInt32(buffer, out elementcount);
                     }
                 }
-
+                stru.PackedStructTransportFlags = transp_flags;
                 byte[] barr = new byte[elementcount];
                 for (int i = 0; i < elementcount; i++)
                 {
@@ -3209,7 +3266,7 @@ namespace S7CommPlusDriver
             else
             {
                 PValue elem;
-                stru = new ValueStruct(value);
+                stru = new ValueStruct(value, flags);
                 if (!disableVlq)
                 {
                     S7p.DecodeUInt32Vlq(buffer, out value);

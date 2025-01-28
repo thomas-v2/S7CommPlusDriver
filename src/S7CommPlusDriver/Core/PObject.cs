@@ -25,8 +25,9 @@ namespace S7CommPlusDriver
         public UInt32 ClassId;
         public UInt32 ClassFlags;
         public UInt32 AttributeId;
-        private Dictionary<UInt32, PValue> Attributes = new Dictionary<UInt32, PValue>();
-        private Dictionary<Tuple<UInt32, UInt32>, PObject> Objects = new Dictionary<Tuple<UInt32, UInt32>, PObject>();
+        public Dictionary<UInt32, PValue> Attributes = new Dictionary<UInt32, PValue>();
+        public Dictionary<Tuple<UInt32, UInt32>, PObject> Objects = new Dictionary<Tuple<UInt32, UInt32>, PObject>();
+        public Dictionary<UInt32, UInt32> Relations = new Dictionary<UInt32, UInt32>();
         public PVartypeList VartypeList;
         public PVarnameList VarnameList;
 
@@ -50,6 +51,11 @@ namespace S7CommPlusDriver
         public PValue GetAttribute(UInt32 attributeid)
         {
             return Attributes[attributeid];
+        }
+
+        public void AddRelation(UInt32 relationid, UInt32 value)
+        {
+            Relations.Add(relationid, value);
         }
 
         public void SetVartypeList(PVartypeList typelist)
@@ -118,6 +124,12 @@ namespace S7CommPlusDriver
             {
                 ret += o.Value.Serialize(buffer);
             }
+            foreach (var rel in Relations)
+            {
+                ret += S7p.EncodeByte(buffer, ElementID.Relation);
+                ret += S7p.EncodeUInt32Vlq(buffer, rel.Key);
+                ret += S7p.EncodeUInt32(buffer, rel.Value);
+            }
             ret += S7p.EncodeByte(buffer, ElementID.TerminatingObject);
             return ret;
         }
@@ -147,6 +159,13 @@ namespace S7CommPlusDriver
             foreach (var o in Objects)
             {
                 s += o.Value.ToString();
+            }
+            foreach (var rel in Relations)
+            {
+                s += "<Relation>" + Environment.NewLine;
+                s += "<ID>" + rel.Key.ToString() + "</ID>" + Environment.NewLine;
+                s += rel.Value.ToString();
+                s += "</Relation>" + Environment.NewLine;
             }
             s += "</Object>" + Environment.NewLine;
             return s;

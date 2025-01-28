@@ -18,49 +18,25 @@ using System.IO;
 
 namespace S7CommPlusDriver
 {
-    public class CreateObjectRequest : IS7pRequest
+    public class GetVarSubstreamedRequest : IS7pRequest
     {
-        public byte TransportFlags = 0x36;
-        public UInt32 RequestId;
-        public PValue RequestValue;
-        public PObject RequestObject;
+        public byte TransportFlags = 0x34;
+
+        public UInt32 InObjectId;
+
+        public UInt16 Address;
 
         public uint SessionId { get; set; }
         public byte ProtocolVersion { get; set; }
-        public ushort FunctionCode { get => Functioncode.CreateObject; }
+        public ushort FunctionCode { get => Functioncode.GetVarSubStreamed; }
         public ushort SequenceNumber { get; set; }
         public uint IntegrityId { get; set; }
         public bool WithIntegrityId { get; set; }
 
-        public CreateObjectRequest(byte protocolVersion, UInt16 seqNum, bool withIntegrityId)
+        public GetVarSubstreamedRequest(byte protocolVersion)
         {
             ProtocolVersion = protocolVersion;
-            SequenceNumber = seqNum;
-            WithIntegrityId = withIntegrityId;
-        }
-
-        public void SetRequestIdValue(UInt32 requestId, PValue requestValue)
-        {
-            RequestId = requestId;
-            RequestValue = requestValue;
-        }
-
-        public void SetRequestObject(PObject requestObject)
-        {
-            RequestObject = requestObject;
-        }
-
-        public void SetNullServerSessionData()
-        {
-            // Initializes the data for a Nullserver Session on connection setup.
-            // SessionId is set automatically to Ids.ObjectNullServerSession when this object is sent, if there's no session Id.
-            TransportFlags = 0x36;
-            RequestId = Ids.ObjectServerSessionContainer;
-            RequestValue = new ValueUDInt(0);
-
-            RequestObject = new PObject(RID: Ids.GetNewRIDOnServer, CLSID: Ids.ClassServerSession, AID: Ids.None);
-            RequestObject.AddAttribute(Ids.ServerSessionClientRID, new ValueRID(0x80c3c901));
-            RequestObject.AddObject(new PObject(RID: Ids.GetNewRIDOnServer, CLSID: Ids.ClassSubscriptions, AID: Ids.None));
+            WithIntegrityId = true;
         }
 
         public byte GetProtocolVersion()
@@ -72,45 +48,52 @@ namespace S7CommPlusDriver
         {
             int ret = 0;
             ret += S7p.EncodeByte(buffer, Opcode.Request);
-            ret += S7p.EncodeUInt16(buffer, 0);
+            ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
             ret += S7p.EncodeUInt16(buffer, FunctionCode);
-            ret += S7p.EncodeUInt16(buffer, 0);
+            ret += S7p.EncodeUInt16(buffer, 0);                               // Reserved
             ret += S7p.EncodeUInt16(buffer, SequenceNumber);
             ret += S7p.EncodeUInt32(buffer, SessionId);
             ret += S7p.EncodeByte(buffer, TransportFlags);
 
             // Request set
-            ret += S7p.EncodeUInt32(buffer, RequestId);
-            ret += RequestValue.Serialize(buffer);
-            ret += S7p.EncodeUInt32(buffer, 0); // Unknown value 1
+            ret += S7p.EncodeUInt32(buffer, InObjectId);
+            ret += S7p.EncodeByte(buffer, 0x20); // Addressarray
+            ret += S7p.EncodeByte(buffer, Datatype.UDInt);
+            ret += S7p.EncodeByte(buffer, 1); // Array size
+            ret += S7p.EncodeUInt32Vlq(buffer, Address);
+
+            ret += S7p.EncodeObjectQualifier(buffer);
+            // 2 Bytes unknown
+            ret += S7p.EncodeUInt16(buffer, 0x0001);
 
             if (WithIntegrityId)
             {
                 ret += S7p.EncodeUInt32Vlq(buffer, IntegrityId);
             }
 
-            // Object 
-            ret += RequestObject.Serialize(buffer);
-
             // Fill?
             ret += S7p.EncodeUInt32(buffer, 0);
+
             return ret;
         }
 
         public override string ToString()
         {
             string s = "";
-            s += "<CreateObjectRequest>" + Environment.NewLine;
+            s += "<GetVarSubstreamedRequest>" + Environment.NewLine;
             s += "<ProtocolVersion>" + ProtocolVersion.ToString() + "</ProtocolVersion>" + Environment.NewLine;
             s += "<SequenceNumber>" + SequenceNumber.ToString() + "</SequenceNumber>" + Environment.NewLine;
             s += "<SessionId>" + SessionId.ToString() + "</SessionId>" + Environment.NewLine;
             s += "<TransportFlags>" + TransportFlags.ToString() + "</TransportFlags>" + Environment.NewLine;
             s += "<RequestSet>" + Environment.NewLine;
-            s += "<RequestId>" + RequestId.ToString() + "</RequestId>" + Environment.NewLine;
-            s += "<RequestValue>" + RequestValue.ToString() + "</RequestValue>" + Environment.NewLine;
-            s += "<RequestObject>" + RequestObject.ToString() + "</RequestObject>" + Environment.NewLine;
+            s += "<InObjectId>" + InObjectId.ToString() + "</InObjectId>" + Environment.NewLine;
+            s += "<AddressList>" + Environment.NewLine;
+            s += "<Id>" + Address.ToString() + "</Id>" + Environment.NewLine;
+            s += "</AddressList>" + Environment.NewLine;
+            s += "<ValueList>" + Environment.NewLine;
+            s += "</ValueList>" + Environment.NewLine;
             s += "</RequestSet>" + Environment.NewLine;
-            s += "</CreateObjectRequest>" + Environment.NewLine;
+            s += "</GetVarSubstreamedRequest>" + Environment.NewLine;
             return s;
         }
     }

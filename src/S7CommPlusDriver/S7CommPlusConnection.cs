@@ -20,6 +20,10 @@ using System.Threading;
 using System.IO;
 using System.Linq;
 using System.Diagnostics;
+using S7CommPlusDriver.ClientApi;
+using System.Text.RegularExpressions;
+using S7CommPlusDriver.Core;
+using System.Security.Cryptography;
 
 namespace S7CommPlusDriver
 {
@@ -27,8 +31,12 @@ namespace S7CommPlusDriver
     {
         #region Private Members
         private S7Client m_client;
-        private MemoryStream m_ReceivedStream;
-        private bool m_ReceivedNeedMorePdus;
+        private MemoryStream m_ReceivedPDU;
+        private MemoryStream m_ReceivedTempPDU;
+        private Queue<MemoryStream> m_ReceivedPDUs = new Queue<MemoryStream>();
+        private Mutex m_Mutex = new Mutex();
+
+        private bool m_ReceivedNeedMoreDataForCompletePDU;
         private bool m_NewS7CommPlusReceived;
         private UInt32 m_SessionId;
         private UInt32 m_SessionId2;
@@ -42,11 +50,10 @@ namespace S7CommPlusDriver
         private UInt16 m_SequenceNumber = 0;
         private UInt32 m_IntegrityId = 0;
         private UInt32 m_IntegrityId_Set = 0;
-        // Initialize the max values to 20, 50 is possibly the lowest value.
-        // The actual supported value is read after connection setup via a ReadRequest, which returns a DInt.
-        private Int32 m_MaxTagsPerReadRequestLimit = 20;
-        private Int32 m_MaxTagsPerWriteRequestLimit = 20;
+        private CommRessources m_CommRessources = new CommRessources();
 
+        private List<DatablockInfo> dbInfoList;
+        private List<PObject> typeInfoList = new List<PObject>();
         #endregion
 
         #region Public Members
@@ -111,11 +118,27 @@ namespace S7CommPlusDriver
         {
             bool Expired = false;
             int Elapsed = Environment.TickCount;
+            bool done = false;
 
-            while (!m_NewS7CommPlusReceived && !Expired)
+            m_Mutex.WaitOne();
+            if (m_ReceivedPDUs.Count > 0)
+            {
+                m_ReceivedPDU = m_ReceivedPDUs.Dequeue();
+                done = true;
+            }
+            m_Mutex.ReleaseMutex();
+
+            while (!done && !Expired)
             {
                 Thread.Sleep(2);
                 Expired = Environment.TickCount - Elapsed > Timeout;
+                m_Mutex.WaitOne();
+                if (m_ReceivedPDUs.Count > 0)
+                {
+                    m_ReceivedPDU = m_ReceivedPDUs.Dequeue();
+                    done = true;
+                }
+                m_Mutex.ReleaseMutex();
             }
 
             if (Expired)
@@ -123,7 +146,6 @@ namespace S7CommPlusDriver
                 Console.WriteLine("S7CommPlusConnection - WaitForNewS7plusReceived: ERROR: Timeout!");
                 m_LastError = S7Consts.errTCPDataReceive;
             }
-            m_NewS7CommPlusReceived = false;
         }
 
         private int SendS7plusFunctionObject(IS7pRequest funcObj)
@@ -158,7 +180,6 @@ namespace S7CommPlusDriver
             int sourcePos = 0;
             int sendLen;
             int NegotiatedIsoPduSize = 1024;// TODO: Respect the negotiated TPDU size
-            byte[] packet = new byte[NegotiatedIsoPduSize];
 
             // 4 Byte TPKT Header
             // 3 Byte ISO-Header
@@ -166,6 +187,7 @@ namespace S7CommPlusDriver
             // 4 Byte S7CommPlus Header
             // 4 Byte S7CommPlus Trailer (must fit into last PDU)
             int MaxSize = NegotiatedIsoPduSize - 4 - 3 - 5 - 17 - 4 - 4;
+            byte[] packet = new byte[MaxSize + 4]; //max packet size is always MaxSize + PDU Header
 
             while (bytesToSend > 0)
             {
@@ -192,6 +214,7 @@ namespace S7CommPlusDriver
                 // Trailer only in last packet
                 if (bytesToSend == 0)
                 {
+                    Array.Resize(ref packet, sendLen + 4); //resize only the last package to sendLen + TrailerLen
                     packet[sendLen] = 0x72;
                     sendLen++;
                     packet[sendLen] = protoVersion;
@@ -201,7 +224,6 @@ namespace S7CommPlusDriver
                     packet[sendLen] = 0;
                     sendLen++;
                 }
-                Array.Resize(ref packet, sendLen);
                 m_client.Send(packet);
             }
             return m_LastError;
@@ -221,9 +243,14 @@ namespace S7CommPlusDriver
             // The datalength must not be written into the stream, because it's not valid on fragmented PDUs
             // for the complete length, only for the single fragment.
 
-            if (!m_ReceivedNeedMorePdus)
+            // This method is called from a different thread.
+            // If we use subscriptions or alarming, we may get new data before the last PDU was processed completely.
+            // First step we push the complete PDU to a queue.
+            // TODO: m_LastError handling would also not work as expected. This needs some more redesign.
+
+            if (!m_ReceivedNeedMoreDataForCompletePDU)
             {
-                m_ReceivedStream = new MemoryStream();
+                m_ReceivedTempPDU = new MemoryStream();
             }
             // S7comm-plus
             byte protoVersion;
@@ -232,19 +259,22 @@ namespace S7CommPlusDriver
             // Check header
             if (PDU[pos] != 0x72)
             {
+                m_ReceivedNeedMoreDataForCompletePDU = false;
                 m_LastError = S7Consts.errIsoInvalidPDU;
+                return;
             }
             pos++;
             protoVersion = PDU[pos];
             if (protoVersion != ProtocolVersion.V1 && protoVersion != ProtocolVersion.V2 && protoVersion != ProtocolVersion.V3 && protoVersion != ProtocolVersion.SystemEvent)
             {
-                // Need to disconnect
+                m_ReceivedNeedMoreDataForCompletePDU = false;
                 m_LastError = S7Consts.errIsoInvalidPDU;
+                return;
             }
             // For the first fragment, write the ProtocolVersion into the stream in advance
-            if (!m_ReceivedNeedMorePdus)
+            if (!m_ReceivedNeedMoreDataForCompletePDU)
             {
-                m_ReceivedStream.Write(PDU, pos, 1);
+                m_ReceivedTempPDU.Write(PDU, pos, 1);
             }
             pos++;
 
@@ -254,20 +284,20 @@ namespace S7CommPlusDriver
             if (s7HeaderDataLen > 0)
             {
                 // Special handling for SystemEvent 0xfe PDUs:
-                // This only confirms a few data, but also reports major protocol errors (e.g.incorrect sequence numbers).
+                // This only confirms a few data, but also reports major protocol errors (e.g. incorrect sequence numbers).
                 // The confirms can be discarded (for now), but the errors are relevant, because a connection termination is neccessary.
                 // As we don't have a trailer on this types, it's not possible that they are transmitted as fragments.
                 if (protoVersion == ProtocolVersion.SystemEvent)
                 {
                     Console.WriteLine("S7CommPlusConnection - OnDataReceived: ProtocolVersion 0xfe SystemEvent received");
-                    m_ReceivedStream.Write(PDU, pos, s7HeaderDataLen);
+                    m_ReceivedTempPDU.Write(PDU, pos, s7HeaderDataLen);
                     pos += s7HeaderDataLen;
                     // Create SystemEventObject
-                    m_ReceivedNeedMorePdus = false;
-                    m_ReceivedStream.Position = 0;
+                    m_ReceivedNeedMoreDataForCompletePDU = false;
+                    m_ReceivedTempPDU.Position = 0;
                     m_NewS7CommPlusReceived = false;
 
-                    var sysevt = SystemEvent.DeserializeFromPdu(m_ReceivedStream);
+                    var sysevt = SystemEvent.DeserializeFromPdu(m_ReceivedTempPDU);
                     if (sysevt.IsFatalError())
                     {
                         Console.WriteLine("S7CommPlusConnection - OnDataReceived: SystemEvent has fatal error");
@@ -282,20 +312,30 @@ namespace S7CommPlusDriver
                 else
                 {
                     // Copy data part to destination stream
-                    m_ReceivedStream.Write(PDU, pos, s7HeaderDataLen);
+                    m_ReceivedTempPDU.Write(PDU, pos, s7HeaderDataLen);
                     pos += s7HeaderDataLen;
                     // If this is a fragmented PDU, then at this point no trailer
                     if ((len - 4 - 4) == s7HeaderDataLen)
                     {
-                        m_ReceivedNeedMorePdus = false;
-                        m_ReceivedStream.Position = 0;    // Set position back to zero, ready for readout
+                        m_ReceivedNeedMoreDataForCompletePDU = false;
+                        m_ReceivedTempPDU.Position = 0;    // Set position back to zero, ready for readout
                         m_NewS7CommPlusReceived = true;
                     }
                     else
                     {
-                        m_ReceivedNeedMorePdus = true;
+                        m_ReceivedNeedMoreDataForCompletePDU = true;
                     }
                 }
+            }
+
+            // If a complete (usable) PDU is received, add to the queue (threadsafe) for readout
+            if (m_NewS7CommPlusReceived)
+            {
+                // Push complete PDU to the queue
+                m_Mutex.WaitOne();
+                m_ReceivedPDUs.Enqueue(m_ReceivedTempPDU);
+                m_Mutex.ReleaseMutex();
+                m_NewS7CommPlusReceived = false;
             }
         }
 
@@ -317,46 +357,6 @@ namespace S7CommPlusDriver
                 Console.Write("0x" + String.Format("{0:X02} ", b[i]));
             }
             Console.Write(Environment.NewLine);
-        }
-
-        private int ReadSystemLimits()
-        {
-            // Read SystemLimits
-            // Assumption (so far, because for all CPUs which have be seen both values were the same):
-            // 1000 = Number for Reading
-            // 1001 = Number for Writing
-            int res;
-            var readlist = new List<ItemAddress>();
-            var values = new List<object>();
-            var errors = new List<UInt64>();
-
-            var adrMaxReadTags = new ItemAddress
-            {
-                AccessArea = Ids.ObjectRoot,
-                AccessSubArea = Ids.SystemLimits
-            };
-            adrMaxReadTags.LID.Add(1000);
-            var adrMaxWriteTags = new ItemAddress
-            {
-                AccessArea = Ids.ObjectRoot,
-                AccessSubArea = Ids.SystemLimits
-            };
-            adrMaxWriteTags.LID.Add(1001);
-            readlist.Add(adrMaxReadTags);
-            readlist.Add(adrMaxWriteTags);
-
-            res = ReadValues(readlist, out values, out errors);
-            if (values[0] != null && errors[0] == 0)
-            {
-                var v = (ValueDInt)values[0];
-                m_MaxTagsPerReadRequestLimit = v.GetValue();
-            }
-            if (values[1] != null && errors[1] == 0)
-            {
-                var v = (ValueDInt)values[1];
-                m_MaxTagsPerWriteRequestLimit = v.GetValue();
-            }
-            return res;
         }
 
         private int checkResponseWithIntegrity(IS7pRequest request, IS7pResponse response)
@@ -383,8 +383,19 @@ namespace S7CommPlusDriver
         #endregion
 
         #region Public Methods
-        public int Connect(string address)
+        /// <summary>
+        /// Establishes a connection to the PLC.
+        /// </summary>
+        /// <param name="address">PLC IP address</param>
+        /// <param name="password">PLC password (if set)</param>
+        /// <param name="timeoutMs">read timeout in milliseconds (default: 5000 ms)</param>
+        /// <returns></returns>
+        public int Connect(string address, string password = "", int timeoutMs = 5000)
         {
+            if (timeoutMs > 0) {
+                m_ReadTimeout = timeoutMs;
+            }
+
             m_LastError = 0;
             int res;
             int Elapsed = Environment.TickCount;
@@ -413,7 +424,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
             InitSslResponse sslRes;
-            sslRes = InitSslResponse.DeserializeFromPdu(m_ReceivedStream);
+            sslRes = InitSslResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (sslRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: InitSslResponse with Error!");
@@ -452,7 +463,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var createObjRes = CreateObjectResponse.DeserializeFromPdu(m_ReceivedStream);
+            var createObjRes = CreateObjectResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (createObjRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: CreateObjectResponse with Error!");
@@ -489,7 +500,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+            var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (setMultiVarRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: SetMultiVariablesResponse with Error!");
@@ -500,12 +511,126 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Step 5: Read SystemLimits
-            res = ReadSystemLimits();
+            res = m_CommRessources.ReadMax(this);
             if (res != 0)
             {
                 m_client.Disconnect();
                 return res;
             }
+            #endregion
+
+            #region Step 6: Password
+            // Get current protection level
+            var getVarSubstreamedReq = new GetVarSubstreamedRequest(ProtocolVersion.V2);
+            getVarSubstreamedReq.InObjectId = m_SessionId;
+            getVarSubstreamedReq.SessionId = m_SessionId;
+            getVarSubstreamedReq.Address = Ids.EffectiveProtectionLevel;
+            res = SendS7plusFunctionObject(getVarSubstreamedReq);
+            if (res != 0)
+            {
+                m_client.Disconnect();
+                return res;
+            }
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                m_client.Disconnect();
+                return m_LastError;
+            }
+
+            var getVarSubstreamedRes = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
+            if (getVarSubstreamedRes == null)
+            {
+                Console.WriteLine("S7CommPlusConnection - Connect.Password: GetVarSubstreamedResponse with Error!");
+                m_client.Disconnect();
+                return S7Consts.errIsoInvalidPDU;
+            }
+
+            // Check access level
+            UInt32 accessLevel = (getVarSubstreamedRes.Value as ValueUDInt).GetValue();
+            if (accessLevel > AccessLevel.FullAccess && password != "")
+            {
+                // Get challenge
+                var getVarSubstreamedReq_challange = new GetVarSubstreamedRequest(ProtocolVersion.V2);
+                getVarSubstreamedReq_challange.InObjectId = m_SessionId;
+                getVarSubstreamedReq_challange.SessionId = m_SessionId;
+                getVarSubstreamedReq_challange.Address = Ids.ServerSessionRequest;
+                res = SendS7plusFunctionObject(getVarSubstreamedReq_challange);
+                if (res != 0)
+                {
+                    m_client.Disconnect();
+                    return res;
+                }
+                m_LastError = 0;
+                WaitForNewS7plusReceived(m_ReadTimeout);
+                if (m_LastError != 0)
+                {
+                    m_client.Disconnect();
+                    return m_LastError;
+                }
+
+                var getVarSubstreamedRes_challenge = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
+                if (getVarSubstreamedRes_challenge == null)
+                {
+                    Console.WriteLine("S7CommPlusConnection - Connect.Password: getVarSubstreamedRes_challenge with Error!");
+                    m_client.Disconnect();
+                    return S7Consts.errIsoInvalidPDU;
+                }
+
+                byte[] challenge = (getVarSubstreamedRes_challenge.Value as ValueUSIntArray).GetValue();
+
+                // Calculate challengeResponse [sha1(password) xor challenge]
+                byte[] challengeResponse;
+                using (SHA1Managed sha1 = new SHA1Managed())
+                {
+                    challengeResponse = sha1.ComputeHash(Encoding.UTF8.GetBytes(password));
+                }
+                if (challengeResponse.Length != challenge.Length)
+                {
+                    Console.WriteLine("S7CommPlusConnection - Connect.Password: challengeResponse.Length != challenge.Length");
+                    m_client.Disconnect();
+                    return S7Consts.errIsoInvalidPDU;
+                }
+                for (int i = 0; i < challengeResponse.Length; ++i)
+                {
+                    challengeResponse[i] = (byte)(challengeResponse[i] ^ challenge[i]);
+                }
+
+                // Send challengeResponse
+                var setVariableReq = new SetVariableRequest(ProtocolVersion.V2);
+                setVariableReq.InObjectId = m_SessionId;
+                setVariableReq.SessionId = m_SessionId;
+                setVariableReq.Address = Ids.ServerSessionResponse;
+                setVariableReq.Value = new ValueUSIntArray(challengeResponse);
+                res = SendS7plusFunctionObject(setVariableReq);
+                if (res != 0)
+                {
+                    m_client.Disconnect();
+                    return res;
+                }
+                m_LastError = 0;
+                WaitForNewS7plusReceived(m_ReadTimeout);
+                if (m_LastError != 0)
+                {
+                    m_client.Disconnect();
+                    return m_LastError;
+                }
+
+                var setVariableResponse = SetVariableResponse.DeserializeFromPdu(m_ReceivedPDU);
+                if (setVariableResponse == null)
+                {
+                    Console.WriteLine("S7CommPlusConnection - Connect.Password: setVariableResponse with Error!");
+                    m_client.Disconnect();
+                    return S7Consts.errIsoInvalidPDU;
+                }
+
+            }
+            else if (accessLevel > AccessLevel.FullAccess)
+            {
+                Console.WriteLine("S7CommPlusConnection - Connect.Password: Warning: Access level is not fullaccess but no password set!");
+            }
+
             #endregion
 
             // If everything has been error-free up to this point, then the connection has been established successfully.
@@ -542,14 +667,14 @@ namespace S7CommPlusDriver
             // the response gives no error.
             if (deleteObjectId == m_SessionId)
             {
-                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, false);
+                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedPDU, false);
                 Trace.WriteLine("S7CommPlusConnection - DeleteSession: Deleted our own Session Id object, not checking the response.");
                 m_SessionId = 0; // not valid anymore
                 m_SessionId2 = 0;
             }
             else
             {
-                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedStream, true);
+                var delObjRes = DeleteObjectResponse.DeserializeFromPdu(m_ReceivedPDU, true);
                 res = checkResponseWithIntegrity(delObjReq, delObjRes);
                 if (res != 0)
                 {
@@ -587,7 +712,7 @@ namespace S7CommPlusDriver
 
                 getMultiVarReq.AddressList.Clear();
                 count_perChunk = 0;
-                while (count_perChunk < m_MaxTagsPerReadRequestLimit && (chunk_startIndex + count_perChunk) < addresslist.Count)
+                while (count_perChunk < m_CommRessources.TagsPerReadRequestMax  && (chunk_startIndex + count_perChunk) < addresslist.Count)
                 {
                     getMultiVarReq.AddressList.Add(addresslist[chunk_startIndex + count_perChunk]);
                     count_perChunk++;
@@ -601,7 +726,7 @@ namespace S7CommPlusDriver
                     return m_LastError;
                 }
 
-                var getMultiVarRes = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+                var getMultiVarRes = GetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedPDU);
                 res = checkResponseWithIntegrity(getMultiVarReq, getMultiVarRes);
                 if (res != 0)
                 {
@@ -652,7 +777,7 @@ namespace S7CommPlusDriver
                 setMultiVarReq.AddressListVar.Clear();
                 setMultiVarReq.ValueList.Clear();
                 count_perChunk = 0;
-                while (count_perChunk < m_MaxTagsPerWriteRequestLimit && (chunk_startIndex + count_perChunk) < addresslist.Count)
+                while (count_perChunk < m_CommRessources.TagsPerWriteRequestMax && (chunk_startIndex + count_perChunk) < addresslist.Count)
                 {
                     setMultiVarReq.AddressListVar.Add(addresslist[chunk_startIndex + count_perChunk]);
                     setMultiVarReq.ValueList.Add(values[chunk_startIndex + count_perChunk]);
@@ -671,7 +796,7 @@ namespace S7CommPlusDriver
                     return m_LastError;
                 }
 
-                var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedStream);
+                var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedPDU);
                 res = checkResponseWithIntegrity(setMultiVarReq, setMultiVarRes);
                 if (res != 0)
                 {
@@ -716,7 +841,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var setVarRes = SetVariableResponse.DeserializeFromPdu(m_ReceivedStream);
+            var setVarRes = SetVariableResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (setVarRes == null)
             {
                 Console.WriteLine("S7CommPlusConnection - Connect: SetVariableResponse with Error!");
@@ -762,7 +887,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
@@ -800,8 +925,8 @@ namespace S7CommPlusDriver
 
             #region Determine the TypeInfo RID to the RelId from the first response
             // By querying LID = 1 from all DBs you get the RID back with which the type information can be queried.
-            // This is necessary because, for example, with instance DBs (e.g. TON), the type information must
-            // not be accessed via the RID of the DB but of the TON.
+            // This is neccessary because, for example, with instance DBs (e.g. TON), the type information must
+            // not be accessed via the RID of the DB, but of the RID of the TON.
             var readlist = new List<ItemAddress>();
             var values = new List<object>();
             var errors = new List<UInt64>();
@@ -846,7 +971,7 @@ namespace S7CommPlusDriver
                     exploreData[i] = data;
                 }
             }
-            // Remove elements with db_block_ti_relid == 0. This occurs e.g. on datablocks only present in load memors.
+            // Remove elements with db_block_ti_relid == 0. This occurs e.g. on datablocks only present in load memory.
             // The informations can't be used any further (at least not for variable access).
             exploreData.RemoveAll(item => item.db_block_ti_relid == 0);
 
@@ -886,7 +1011,7 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Process the response, and build the complete variables list
-            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
@@ -901,6 +1026,235 @@ namespace S7CommPlusDriver
             #endregion
 
             return 0;
+        }
+
+        /// <summary>
+        /// Gets the first level of a tag symbol string. Removes the " used to escape special chars.
+        /// </summary>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <returns>The first level of the symbol string</returns>
+        /// <exception cref="Exception">Symbol syntax error</exception>
+        private string parseSymbolLevel(ref string symbol)
+        {
+            if (symbol.StartsWith("\""))
+            {
+                int idx = symbol.IndexOf('"', 1);
+                if (idx < 0) throw new Exception("Symbol syntax error");
+                string lvl = symbol.Substring(1, idx - 1);
+                symbol = symbol.Remove(0, idx + 1);
+                if (symbol.StartsWith(".")) symbol = symbol.Remove(0, 1);
+                return lvl;
+            }
+            else
+            {
+                int idx = symbol.IndexOf('.');
+                int idx2 = symbol.IndexOf('[', 1);
+                if (idx2 >= 0 && (idx2 < idx || idx < 0)) idx = idx2;
+                if (idx >= 0)
+                {
+                    string lvl = symbol.Substring(0, idx);
+                    symbol = symbol.Remove(0, idx);
+                    if (symbol.StartsWith(".")) symbol = symbol.Remove(0, 1);
+                    return lvl;
+                }
+                else
+                {
+                    string lvl = symbol;
+                    symbol = "";
+                    return lvl;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the typeinfo by given ti relid from the internal buffer. If it's not found in the buffer
+        /// it's fetched from the PLC and stored in the buffer.
+        /// </summary>
+        /// <param name="ti_relid">type info relid</param>
+        /// <returns>type info</returns>
+        /// <exception cref="Exception">Could not get type info</exception>
+        public PObject getTypeInfoByRelId(uint ti_relid)
+        {
+            PObject pObj = typeInfoList.Find(ti => ti.RelationId == ti_relid);
+            if (pObj == null)
+            {
+                // Type info not found in list, request it from plc
+                List<PObject> newPObj = new List<PObject>();
+                if (GetTypeInformation(ti_relid, out newPObj) != 0) throw new Exception("Could not get type info");
+                typeInfoList.AddRange(newPObj);
+                // Try again
+                pObj = typeInfoList.Find(ti => ti.RelationId == ti_relid);
+            }
+            return pObj;
+        }
+
+        /// <summary>
+        /// Calculates the access sequence for 1 dimensional arrays.
+        /// </summary>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <param name="varType">Var type that holds the dim info</param>
+        /// <param name="varInfo">used to build access sequence</param>
+        /// <exception cref="Exception">Symbol syntax error</exception>
+        private void calcAccessSeqFor1DimArray(ref string symbol, PVartypeListElement varType, VarInfo varInfo)
+        {
+            Regex re = new Regex(@"^\[(-?\d+)\]");
+            Match m = re.Match(symbol);
+            if (!m.Success) throw new Exception("Symbol syntax error");
+            parseSymbolLevel(ref symbol); // remove index from symbol string
+            int arrayIndex = int.Parse(m.Groups[1].Value);
+
+            var ioit = (IOffsetInfoType_1Dim)varType.OffsetInfoType;
+            uint arrayElementCount = ioit.GetArrayElementCount();
+            int arrayLowerBounds = ioit.GetArrayLowerBounds();
+
+            if (arrayIndex - arrayLowerBounds > arrayElementCount) throw new Exception("Out of bounds");
+            if (arrayIndex < arrayLowerBounds) throw new Exception("Out of bounds");
+            varInfo.AccessSequence += "." + String.Format("{0:X}", arrayIndex - arrayLowerBounds);
+            if (varType.OffsetInfoType.HasRelation()) varInfo.AccessSequence += ".1"; // additional ".1" for array of struct
+        }
+
+        /// <summary>
+        /// Calculates the access sequence for multi-dimensional arrays.
+        /// </summary>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <param name="varType">Var type that holds the dim info</param>
+        /// <param name="varInfo">used to build access sequence</param>
+        /// <exception cref="Exception">Symbol syntax error</exception>
+        private void calcAccessSeqForMDimArray(ref string symbol, PVartypeListElement varType, VarInfo varInfo)
+        {
+            Regex re = new Regex(@"^\[( ?-?\d+ ?(, ?-?\d+ ?)+)\]");
+            Match m = re.Match(symbol);
+            if (!m.Success) throw new Exception("Symbol syntax error");
+            parseSymbolLevel(ref symbol); // remove index from symbol string
+            string idxs = m.Groups[1].Value.Replace(" ", "");
+
+            int[] indexes = Array.ConvertAll(idxs.Split(','), e => int.Parse(e));
+            var ioit = (IOffsetInfoType_MDim)varType.OffsetInfoType;
+            uint[] MdimArrayElementCount = (uint[])ioit.GetMdimArrayElementCount().Clone();
+            int[] MdimArrayLowerBounds = ioit.GetMdimArrayLowerBounds();
+
+            // check dim count
+            int dimCount = MdimArrayElementCount.Aggregate(0, (acc, act) => acc += (act > 0) ? 1 : 0);
+            if (dimCount != indexes.Count()) throw new Exception("Out of bounds");
+            // check bounds
+            for (int i = 0; i < dimCount; ++i)
+            {
+                indexes[i] = (indexes[i] - MdimArrayLowerBounds[dimCount - i - 1]);
+                if (indexes[i] > MdimArrayElementCount[dimCount - i - 1]) throw new Exception("Out of bounds");
+                if (indexes[i] < 0) throw new Exception("Out of bounds");
+            }
+
+            // calc dim size
+            if (varType.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL)
+            {
+                MdimArrayElementCount[0] += 8 - MdimArrayElementCount[0] % 8; // for bool must be a mutiple of 8!
+            }
+            uint[] dimSize = new uint[dimCount];
+            uint g = 1;
+            for (int i = 0; i < dimCount - 1; ++i)
+            {
+                dimSize[i] = g;
+                g *= MdimArrayElementCount[i];
+            }
+            dimSize[dimCount - 1] = g;
+
+            // calc id
+            int arrayIndex = 0;
+            for (int i = 0; i < dimCount; ++i)
+            {
+                arrayIndex += indexes[i] * (int)dimSize[dimCount - i - 1];
+            }
+
+            varInfo.AccessSequence += "." + String.Format("{0:X}", arrayIndex);
+            if (varType.OffsetInfoType.HasRelation()) varInfo.AccessSequence += ".1"; // additional ".1" for array of struct
+        }
+
+        /// <summary>
+        /// Browses the symbol level by level recursively. Fetches missing type info automatically from the plc.
+        /// </summary>
+        /// <param name="ti_relid">type info relid</param>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <param name="varInfo">used to build access sequence</param>
+        /// <returns>plc tag or null if not found</returns>
+        /// <exception cref="Exception">Symbol syntax error, Out of bounds</exception>
+        private PlcTag browsePlcTagBySymbol(uint ti_relid, ref string symbol, VarInfo varInfo)
+        {
+            PObject pObj = getTypeInfoByRelId(ti_relid);
+            if (pObj == null) throw new Exception("Could not get type info");
+            string levelName = parseSymbolLevel(ref symbol);
+            // find level name of symbol in var list
+            int idx = pObj.VarnameList?.Names?.IndexOf(levelName) ?? -1;
+            if (idx < 0) return null;
+            PVartypeListElement varType = pObj.VartypeList.Elements[idx];
+            varInfo.AccessSequence += "." + String.Format("{0:X}", varType.LID);
+            if (varType.OffsetInfoType.Is1Dim())
+            {
+                calcAccessSeqFor1DimArray(ref symbol, varType, varInfo);
+            }
+            if (varType.OffsetInfoType.IsMDim())
+            {
+                calcAccessSeqForMDimArray(ref symbol, varType, varInfo);
+            }
+            if (varType.OffsetInfoType.HasRelation())
+            {
+                if (symbol.Length <= 0)
+                {
+                    return null;
+                }
+                else
+                {
+                    var ioit = (IOffsetInfoType_Relation)varType.OffsetInfoType;
+                    return browsePlcTagBySymbol(ioit.GetRelationId(), ref symbol, varInfo);
+                }
+            }
+            else
+            {
+                return PlcTags.TagFactory(varInfo.Name, new ItemAddress(varInfo.AccessSequence), varType.Softdatatype);
+            }
+        }
+
+        /// <summary>
+        /// Get the plc tag for the given plc tag symbol. 
+        /// </summary>
+        /// <param name="symbol">plc tag symbol</param>
+        /// <returns>plc tag, returns null if plc tag could not be found</returns>
+        public PlcTag getPlcTagBySymbol(string symbol)
+        {
+            VarInfo varInfo = new VarInfo();
+            varInfo.Name = symbol;
+            // make sure we have the db list
+            if (dbInfoList == null)
+            {
+                if (GetListOfDatablocks(out dbInfoList) != 0) { return null; }
+            }
+            string levelName = parseSymbolLevel(ref symbol);
+            // find db by first level name of symbol
+            DatablockInfo dbInfo = dbInfoList.Find(dbi => dbi.db_name == levelName);
+            if (dbInfo != null)
+            {
+                varInfo.AccessSequence = String.Format("{0:X}", dbInfo.db_block_relid);
+                return browsePlcTagBySymbol(dbInfo.db_block_ti_relid, ref symbol, varInfo);
+            }
+            else
+            {
+                symbol = varInfo.Name;
+                // Merker
+                varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theMArea_Rid);
+                PlcTag tag = browsePlcTagBySymbol(0x90030000, ref symbol, varInfo);
+                if (tag != null) return tag;
+                symbol = varInfo.Name;
+                // Outputs
+                varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theQArea_Rid);
+                tag = browsePlcTagBySymbol(0x90020000, ref symbol, varInfo);
+                if (tag != null) return tag;
+                symbol = varInfo.Name;
+                // Inputs
+                varInfo.AccessSequence = String.Format("{0:X}", Ids.NativeObjects_theIArea_Rid);
+                tag = browsePlcTagBySymbol(0x90010000, ref symbol, varInfo);
+                if (tag != null) return tag;
+                // TODO: implement s5timers and counters... no one uses them anymore anyway
+            }
+            return null;
         }
 
         public class BrowseEntry
@@ -967,7 +1321,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
@@ -1039,7 +1393,7 @@ namespace S7CommPlusDriver
                 }
                 else
                 {
-                    // On error, set relid=0, which is then removed in the next step
+                    // On error, set relid=0, which is then removed in the next step.
                     // Should we report this for the user?
                     var data = dbInfoList[i];
                     data.db_block_ti_relid = 0;
@@ -1048,7 +1402,7 @@ namespace S7CommPlusDriver
             }
 
             // Remove elements with db_block_ti_relid == 0.
-            // This can occur on datablocks which are only in load memory, and can't be explored.
+            // This can occur on datablocks which are only in load memory and can't be explored.
             dbInfoList.RemoveAll(item => item.db_block_ti_relid == 0);
 
             return 0;
@@ -1077,7 +1431,7 @@ namespace S7CommPlusDriver
                 return m_LastError;
             }
 
-            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedStream, true);
+            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
             res = checkResponseWithIntegrity(exploreReq, exploreRes);
             if (res != 0)
             {
@@ -1085,6 +1439,89 @@ namespace S7CommPlusDriver
             }
             objList = exploreRes.Objects;
 
+            return 0;
+        }
+
+        /// <summary>
+        /// Requests the tag and block comments from the Plc, returned as XML strings.
+        /// xml_linecomment:
+        /// The returned XML format differs between between request of I/Q/M/C/T areas and datablocks:
+        /// I/Q/M/C/T: <CommentDictionary>     <TagLineComments>      <Comment RefID="ID"> <DictEntry Lanuage="de-DE"> ....
+        /// Datablock: <InterfaceLineComments> <Part Kind="Comments"> <Comment Path="ID">  <DictEntry Lanuage="de-DE"> ....
+        /// As "ID" the number for the variable identification is used.
+        /// 
+        /// xml_dbcomment:
+        /// The xml-value description generated from our own value xml-serialization for WStringSparseArray. The value key is the language id.
+        /// Example:
+        /// <Value type ="WStringSparseArray"><Value key="1032">DB Kommentar in german de-DE</Value><Value key="1034">DB comment in english en-US</Value></Value>
+        /// </summary>
+        /// <param name="relid">The relation ID for the area you want the comments for, e.g. 0x8a0e0000+db_number, or 0x52 for M-area</param>
+        /// <param name="xml_linecomment"></param>
+        /// <param name="xml_dbcomment"></param>
+        /// <returns>0 if no error</returns>
+        public int GetCommentsXml(uint relid, out string xml_linecomment, out string xml_dbcomment)
+        {
+            int res;
+            // With requesting DataInterface_InterfaceDescription, whe would be able to get all informations like the access ids and
+            // datatype informations, that we get from the other browsing method. Needs to be tested which one is more efficient on network traffic or plc load.
+            // If we keep use browsing for the comments, at least we would be able to read all information in one request.
+            xml_linecomment = String.Empty;
+            xml_dbcomment = String.Empty;
+
+            var exploreReq = new ExploreRequest(ProtocolVersion.V2);
+            exploreReq.ExploreId = relid;
+            exploreReq.ExploreRequestId = Ids.None;
+            exploreReq.ExploreChildsRecursive = 1;
+            exploreReq.ExploreParents = 0;
+
+            // We want to know the following attributes
+            exploreReq.AddressList.Add(Ids.ASObjectES_Comment);
+            exploreReq.AddressList.Add(Ids.DataInterface_LineComments);
+
+            res = SendS7plusFunctionObject(exploreReq);
+            if (res != 0)
+            {
+                return res;
+            }
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                return m_LastError;
+            }
+
+            var exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
+            res = checkResponseWithIntegrity(exploreReq, exploreRes);
+            if (res != 0)
+            {
+                return res;
+            }
+
+            foreach(var obj in exploreRes.Objects)
+            {
+                foreach(var att in obj.Attributes)
+                {
+                    switch (att.Key)
+                    {
+                        case Ids.ASObjectES_Comment:
+                            var att_comment = (ValueWStringSparseArray)att.Value;
+                            xml_dbcomment = att_comment.ToString();
+                            break;
+                        case Ids.DataInterface_LineComments:
+                            var att_linecomment = (ValueBlobSparseArray)att.Value;
+                            BlobDecompressor bd = new BlobDecompressor();
+                            var blob_sp = att_linecomment.GetValue();
+                            // In DBs we get the data with Sparsearray key = 1, in M-Area with key = 2.
+                            // For now, just take the first, don't know where the key ids are for.
+                            foreach (var key in blob_sp.Keys)
+                            {
+                                xml_linecomment = bd.decompress(blob_sp[key].value, 4); // Offset of 4, as we have a header for the zlib dictionary version
+                                break;
+                            }
+                            break;
+                    }
+                }
+            }
             return 0;
         }
     }

@@ -81,5 +81,77 @@ namespace S7CommPlusDriver
             }
             return result.ToString();
         }
-    }    
+
+        public static DateTime DtFromValueTimestamp(UInt64 value)
+        {
+            // Protocol ValueTimestamp is number of nanoseconds from 1. Jan 1970 (Unit Time).
+            // .Net DateTime tick is 100 ns based
+            ulong epochTicks = 621355968000000000; // Unix Time (UTC) on 1st January 1970.
+            return new DateTime((long)((value / 100) + epochTicks), DateTimeKind.Utc);
+        }
+
+        public static byte GetUInt8(byte[] array, uint pos)
+        {
+            return array[pos];
+        }
+
+        public static ushort GetUInt16LE(byte[] array, uint pos)
+        {
+            return (ushort)(array[pos + 1] * 256 + array[pos]);
+        }
+
+        public static ushort GetUInt16(byte[] array, uint pos)
+        {
+            return (ushort)(array[pos] * 256 + array[pos + 1]);
+        }
+
+        public static short GetInt16(byte[] array, uint pos)
+        {
+            return (short)((array[pos] << 8) | array[pos + 1]);
+        }
+
+        public static uint GetUInt32LE(byte[] array, uint pos)
+        {
+            return (uint)array[pos + 3] * 16777216 + (uint)array[pos + 2] * 65536 + (uint)array[pos + 1] * 256 + (uint)array[pos];
+        }
+
+        public static uint GetUInt32(byte[] array, uint pos)
+        {
+            return (uint)array[pos] * 16777216 + (uint)array[pos + 1] * 65536 + (uint)array[pos + 2] * 256 + (uint)array[pos + 3];
+        }
+
+        public static int GetInt32(byte[] array, uint pos)
+        {
+            return (int)((array[pos] << 24) | (array[pos + 1] << 16) | (array[pos + 2] << 8) | array[pos + 3]);
+        }
+
+        public static float GetFloat(byte[] array, uint pos)
+        {
+            byte[] v = new byte[4];
+            v[3] = array[pos];
+            v[2] = array[pos + 1];
+            v[1] = array[pos + 2];
+            v[0] = array[pos + 3];
+            return BitConverter.ToSingle(v, 0);
+        }
+
+        public static double GetDouble(byte[] array, uint pos)
+        {
+            byte[] v = new byte[8];
+            v[7] = array[pos];
+            v[6] = array[pos + 1];
+            v[5] = array[pos + 2];
+            v[4] = array[pos + 3];
+            v[3] = array[pos + 4];
+            v[2] = array[pos + 5];
+            v[1] = array[pos + 6];
+            v[0] = array[pos + 7];
+            return BitConverter.ToDouble(v, 0);
+        }
+
+        public static String GetUtfString(byte[] array, uint pos, uint len)
+        {
+            return System.Text.Encoding.UTF8.GetString(array, (int)pos, (int)len);
+        }
+    }
 }

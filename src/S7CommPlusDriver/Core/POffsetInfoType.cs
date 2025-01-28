@@ -1,7 +1,7 @@
-﻿#region License
+#region License
 /******************************************************************************
  * S7CommPlusDriver
- * 
+ *
  * Copyright (C) 2023 Thomas Wiens, th.wiens@gmx.de
  *
  * This file is part of S7CommPlusDriver.
@@ -74,7 +74,7 @@ namespace S7CommPlusDriver
                     return POffsetInfoType_FbArray.Deserialize(buffer, out length);
                 case OffsetInfoType.StructElemStd:
                 case OffsetInfoType.Std:
-                    return POffsetInfoType_Std.Deserialize(buffer, out length);
+                    return POffsetInfoType_Std.Deserialize(buffer, out length, offsetinfotype);
                 case OffsetInfoType.StructElemString:
                 case OffsetInfoType.String:
                     return POffsetInfoType_String.Deserialize(buffer, out length);
@@ -652,17 +652,26 @@ namespace S7CommPlusDriver
         public override bool Is1Dim() { return false; }
         public override bool IsMDim() { return false; }
 
-        public static POffsetInfoType_Std Deserialize(Stream buffer, out int length)
+        public static POffsetInfoType_Std Deserialize(Stream buffer, out int length, int offsetinfotype)
         {
             int ret = 0;
             POffsetInfoType_Std oi = new POffsetInfoType_Std();
-
+            // The order of addresses is swapped between old Std (8) and new (1) offsetinfotype.
             ushort v;
-            ret += S7p.DecodeUInt16LE(buffer, out v);
-            oi.OptimizedAddress = v;
-            ret += S7p.DecodeUInt16LE(buffer, out v);
-            oi.NonoptimizedAddress = v;
-
+            if ((OffsetInfoType)offsetinfotype == OffsetInfoType.Std)
+            {
+                ret += S7p.DecodeUInt16LE(buffer, out v);
+                oi.OptimizedAddress = v;
+                ret += S7p.DecodeUInt16LE(buffer, out v);
+                oi.NonoptimizedAddress = v;
+            }
+            else
+            {
+                ret += S7p.DecodeUInt16LE(buffer, out v);
+                oi.NonoptimizedAddress = v;
+                ret += S7p.DecodeUInt16LE(buffer, out v);
+                oi.OptimizedAddress = v;
+            }
             length = ret;
             return oi;
         }
@@ -748,7 +757,7 @@ namespace S7CommPlusDriver
 
             s += "<UnspecifiedOffsetinfo1>" + UnspecifiedOffsetinfo1.ToString() + "</UnspecifiedOffsetinfo1>" + Environment.NewLine;
             s += "<UnspecifiedOffsetinfo2>" + UnspecifiedOffsetinfo2.ToString() + "</UnspecifiedOffsetinfo2>" + Environment.NewLine;
-            
+
             s += "<OptimizedAddress>" + OptimizedAddress.ToString() + "</OptimizedAddress>" + Environment.NewLine;
             s += "<NonoptimizedAddress>" + NonoptimizedAddress.ToString() + "</NonoptimizedAddress>" + Environment.NewLine;
 
