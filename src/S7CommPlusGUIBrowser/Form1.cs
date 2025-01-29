@@ -354,9 +354,7 @@ namespace S7CommPlusGUIBrowser
 
             tbSymbolicAddress.Text = tag.Address.GetAccessString();
 
-            PlcTags tags = new PlcTags();
-            tags.AddTag(tag);
-            if (tags.ReadTags(conn) != 0) return;
+            if (conn.ReadTags(new[] { tag }) != 0) return;
             tbValue.Text = tag.ToString();
         }
 
