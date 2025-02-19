@@ -261,7 +261,7 @@ namespace S7CommPlusDriver
             if (PDU[pos] != 0x72)
             {
                 m_ReceivedNeedMoreDataForCompletePDU = false;
-                m_LastError = S7Consts.errIsoInvalidPDU;
+                m_LastError = S7Consts.errIsoInvalidPDU1;
                 return;
             }
             pos++;
@@ -269,7 +269,7 @@ namespace S7CommPlusDriver
             if (protoVersion != ProtocolVersion.V1 && protoVersion != ProtocolVersion.V2 && protoVersion != ProtocolVersion.V3 && protoVersion != ProtocolVersion.SystemEvent)
             {
                 m_ReceivedNeedMoreDataForCompletePDU = false;
-                m_LastError = S7Consts.errIsoInvalidPDU;
+                m_LastError = S7Consts.errIsoInvalidPDU2;
                 return;
             }
             // For the first fragment, write the ProtocolVersion into the stream in advance
@@ -303,7 +303,7 @@ namespace S7CommPlusDriver
                     {
                         Console.WriteLine("S7CommPlusConnection - OnDataReceived: SystemEvent has fatal error");
                         // Termination neccessary
-                        m_LastError = S7Consts.errIsoInvalidPDU;
+                        m_LastError = S7Consts.errIsoInvalidPDU3;
                     }
                     else
                     {
@@ -364,13 +364,13 @@ namespace S7CommPlusDriver
         {
             if (response == null)
             {
-                Console.WriteLine("checkResponseWithIntegrity: ERROR! response == null");
-                return S7Consts.errIsoInvalidPDU;
+                //Console.WriteLine("checkResponseWithIntegrity: ERROR! response == null");
+                return S7Consts.errIsoInvalidPDU4;
             }
             if (request.SequenceNumber != response.SequenceNumber)
             {
-                Console.WriteLine(String.Format("checkResponseWithIntegrity: ERROR! SeqenceNumber of Response ({0}) doesn't match Request ({1})", response.SequenceNumber, request.SequenceNumber));
-                return S7Consts.errIsoInvalidPDU;
+                //Console.WriteLine(String.Format("checkResponseWithIntegrity: ERROR! SeqenceNumber of Response ({0}) doesn't match Request ({1})", response.SequenceNumber, request.SequenceNumber));
+                return S7Consts.errIsoInvalidPDU5;
             }
             // Overflow is possible and allowed
             UInt32 reqIntegCheck = (UInt32)request.SequenceNumber + request.IntegrityId;
@@ -428,9 +428,8 @@ namespace S7CommPlusDriver
             sslRes = InitSslResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (sslRes == null)
             {
-                Console.WriteLine("S7CommPlusConnection - Connect: InitSslResponse with Error!");
                 m_client.Disconnect();
-                return m_LastError;
+                return S7Consts.errInitSslResponse;
             }
 
             #endregion
@@ -467,15 +466,15 @@ namespace S7CommPlusDriver
             var createObjRes = CreateObjectResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (createObjRes == null)
             {
-                Console.WriteLine("S7CommPlusConnection - Connect: CreateObjectResponse with Error!");
+                //Console.WriteLine("S7CommPlusConnection - Connect: CreateObjectResponse with Error!");
                 m_client.Disconnect();
-                return S7Consts.errIsoInvalidPDU;
+                return S7Consts.errIsoInvalidPDU6;
             }
             // There are (always?) at least two IDs in the response.
             // Usually the first is used for polling data, and the 2nd for jobs which use notifications, e.g. alarming, subscriptions.
             m_SessionId = createObjRes.ObjectIds[0];
             m_SessionId2 = createObjRes.ObjectIds[1];
-            Console.WriteLine("S7CommPlusConnection - Connect: Using SessionId=0x" + String.Format("{0:X04}", m_SessionId));
+            //Console.WriteLine("S7CommPlusConnection - Connect: Using SessionId=0x" + String.Format("{0:X04}", m_SessionId));
 
             // Evaluate Struct 314
             PValue sval = createObjRes.ResponseObject.GetAttribute(Ids.ServerSessionVersion);
@@ -504,9 +503,9 @@ namespace S7CommPlusDriver
             var setMultiVarRes = SetMultiVariablesResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (setMultiVarRes == null)
             {
-                Console.WriteLine("S7CommPlusConnection - Connect: SetMultiVariablesResponse with Error!");
+                //Console.WriteLine("S7CommPlusConnection - Connect: SetMultiVariablesResponse with Error!");
                 m_client.Disconnect();
-                return S7Consts.errIsoInvalidPDU;
+                return S7Consts.errIsoInvalidPDU7;
             }
 
             #endregion
@@ -543,9 +542,9 @@ namespace S7CommPlusDriver
             var getVarSubstreamedRes = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (getVarSubstreamedRes == null)
             {
-                Console.WriteLine("S7CommPlusConnection - Connect.Password: GetVarSubstreamedResponse with Error!");
+                //Console.WriteLine("S7CommPlusConnection - Connect.Password: GetVarSubstreamedResponse with Error!");
                 m_client.Disconnect();
-                return S7Consts.errIsoInvalidPDU;
+                return S7Consts.errIsoInvalidPDU8;
             }
 
             // Check access level
@@ -574,9 +573,9 @@ namespace S7CommPlusDriver
                 var getVarSubstreamedRes_challenge = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
                 if (getVarSubstreamedRes_challenge == null)
                 {
-                    Console.WriteLine("S7CommPlusConnection - Connect.Password: getVarSubstreamedRes_challenge with Error!");
+                    //Console.WriteLine("S7CommPlusConnection - Connect.Password: getVarSubstreamedRes_challenge with Error!");
                     m_client.Disconnect();
-                    return S7Consts.errIsoInvalidPDU;
+                    return S7Consts.errIsoInvalidPDU9;
                 }
 
                 byte[] challenge = (getVarSubstreamedRes_challenge.Value as ValueUSIntArray).GetValue();
@@ -589,9 +588,9 @@ namespace S7CommPlusDriver
                 }
                 if (challengeResponse.Length != challenge.Length)
                 {
-                    Console.WriteLine("S7CommPlusConnection - Connect.Password: challengeResponse.Length != challenge.Length");
+                    //Console.WriteLine("S7CommPlusConnection - Connect.Password: challengeResponse.Length != challenge.Length");
                     m_client.Disconnect();
-                    return S7Consts.errIsoInvalidPDU;
+                    return S7Consts.errIsoInvalidPDU10;
                 }
                 for (int i = 0; i < challengeResponse.Length; ++i)
                 {
@@ -623,7 +622,7 @@ namespace S7CommPlusDriver
                 {
                     Console.WriteLine("S7CommPlusConnection - Connect.Password: setVariableResponse with Error!");
                     m_client.Disconnect();
-                    return S7Consts.errIsoInvalidPDU;
+                    return S7Consts.errIsoInvalidPDU11;
                 }
 
             }
@@ -845,9 +844,9 @@ namespace S7CommPlusDriver
             var setVarRes = SetVariableResponse.DeserializeFromPdu(m_ReceivedPDU);
             if (setVarRes == null)
             {
-                Console.WriteLine("S7CommPlusConnection - Connect: SetVariableResponse with Error!");
+                //Console.WriteLine("S7CommPlusConnection - Connect: SetVariableResponse with Error!");
                 m_client.Disconnect();
-                return S7Consts.errIsoInvalidPDU;
+                return S7Consts.errIsoInvalidPDU12;
             }
 
             return 0;

@@ -35,6 +35,18 @@ namespace S7CommPlusDriver
 
 		public const int errIsoConnect = 0x00010000; // Connection error
 		public const int errIsoInvalidPDU = 0x00030000; // Bad format
+		public const int errIsoInvalidPDU1 = 0x00030001; // Bad format
+		public const int errIsoInvalidPDU2 = 0x00030002; // Bad format
+		public const int errIsoInvalidPDU3 = 0x00030003; // Bad format
+		public const int errIsoInvalidPDU4 = 0x00030004; // Bad format
+		public const int errIsoInvalidPDU5 = 0x00030005; // Bad format
+		public const int errIsoInvalidPDU6 = 0x00030006; // Bad format
+		public const int errIsoInvalidPDU7 = 0x00030007; // Bad format
+		public const int errIsoInvalidPDU8 = 0x00030008; // Bad format
+		public const int errIsoInvalidPDU9 = 0x00030009; // Bad format
+		public const int errIsoInvalidPDU10 = 0x00030010; // Bad format
+		public const int errIsoInvalidPDU11 = 0x00030011; // Bad format
+		public const int errIsoInvalidPDU12 = 0x00030012; // Bad format
 		public const int errIsoInvalidDataSize = 0x00040000; // Bad Datasize passed to send/recv : buffer is invalid
 
 		public const int errCliNegotiatingPDU = 0x00100000;
@@ -75,6 +87,7 @@ namespace S7CommPlusDriver
 		public const int errCliFunctionNotImplemented = 0x02700000;
 
 		public const int errOpenSSL = 0x03100000;
+		public const int errInitSslResponse = 0x03100001;
 		//------------------------------------------------------------------------------
 		//        PARAMS LIST FOR COMPATIBILITY WITH Snap7.net.cs           
 		//------------------------------------------------------------------------------
