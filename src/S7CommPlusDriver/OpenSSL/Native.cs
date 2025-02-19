@@ -37,26 +37,26 @@ namespace OpenSsl
             if (libraryName == DLLNAME)
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X86)
-                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x86", "libcrypto-3.dll"), assembly, searchPath);
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x86", "native", "libcrypto-3.dll"), assembly, searchPath);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X64)
-                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x64", "libcrypto-3-x64.dll"), assembly, searchPath);
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x64", "native", "libcrypto-3-x64.dll"), assembly, searchPath);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                    return NativeLibrary.Load(Path.Combine("runtimes", "win-arm64", "libcrypto-3-arm64.dll"), assembly, searchPath);
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-arm64", "native", "libcrypto-3-arm64.dll"), assembly, searchPath);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                    return NativeLibrary.Load(Path.Combine("runtimes", "osx-arm64", "libcrypto.3.dylib"), assembly, searchPath);
+                    return NativeLibrary.Load(Path.Combine("runtimes", "osx-arm64", "native", "libcrypto.3.dylib"), assembly, searchPath);
                 return IntPtr.Zero;
             }
 
             if(libraryName == SSLDLLNAME)
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X86)
-                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x86", "libssl-3.dll"), assembly, searchPath);
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x86", "native", "libssl-3.dll"), assembly, searchPath);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X64)
-                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x64", "libssl-3-x64.dll"), assembly, searchPath);
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x64", "native", "libssl-3-x64.dll"), assembly, searchPath);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                    return NativeLibrary.Load(Path.Combine("runtimes", "win-arm64", "libssl-3-arm64.dll"), assembly, searchPath);
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-arm64", "native", "libssl-3-arm64.dll"), assembly, searchPath);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                    return NativeLibrary.Load(Path.Combine("runtimes", "osx-arm64", "libssl.3.dylib"), assembly, searchPath);
+                    return NativeLibrary.Load(Path.Combine("runtimes", "osx-arm64", "native", "libssl.3.dylib"), assembly, searchPath);
                 return IntPtr.Zero;
             }
 
