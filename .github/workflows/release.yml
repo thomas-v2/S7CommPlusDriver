@@ -17,8 +17,6 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 8.0.x
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.NUGET_API_KEY }}
     - name: Restore dependencies
       run: |
         dotnet restore src/S7CommPlusDriver
@@ -40,4 +38,5 @@ jobs:
         dotnet build --configuration Release src/S7CommPlusGUIBrowser
     - name: Publish
       run: |
-        dotnet nuget push src/S7CommPlusDriver/bin/Release/*.nupkg
+        dotnet nuget push --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json src/S7CommPlusDriver/bin/Release/*.nupkg
+ 
