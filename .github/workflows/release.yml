@@ -35,9 +35,9 @@ jobs:
     
     - name: Build
       run: |
-        dotnet build src/S7CommPlusDriver
-        dotnet build src/DriverTest
-        dotnet build src/S7CommPlusGUIBrowser
+        dotnet build --configuration Release src/S7CommPlusDriver
+        dotnet build --configuration Release src/DriverTest
+        dotnet build --configuration Release src/S7CommPlusGUIBrowser
     - name: Publish
       run: |
-        dotnet publish src/S7CommPlusDriver
+        dotnet nuget push src/S7CommPlusDriver/bin/Release/*.nupkg
