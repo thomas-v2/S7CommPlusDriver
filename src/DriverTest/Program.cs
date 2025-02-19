@@ -20,11 +20,13 @@ namespace DriverTest
             List<ItemAddress> readlist = new List<ItemAddress>();
             Console.WriteLine("Main - START");
             // Als Parameter lässt sich die IP-Adresse übergeben, sonst Default-Wert von oben
-            if (args.Length >= 1) {
+            if (args.Length >= 1)
+            {
                 HostIp = args[0];
             }
             // Als Parameter lässt sich das Passwort übergeben, sonst Default-Wert von oben (kein Passwort)
-            if (args.Length >= 2) {
+            if (args.Length >= 2)
+            {
                 Password = args[1];
             }
             Console.WriteLine("Main - Versuche Verbindungsaufbau zu: " + HostIp);
@@ -48,7 +50,7 @@ namespace DriverTest
                 Console.WriteLine("Main - Lese Werte aller Variablen aus");
 
                 List<PlcTag> taglist = new List<PlcTag>();
-                PlcTags tags = new PlcTags();
+                var tags = new List<PlcTag>();
 
                 foreach (var v in vars)
                 {
@@ -56,9 +58,9 @@ namespace DriverTest
                 }
                 foreach (var t in taglist)
                 {
-                    tags.AddTag(t);
+                    tags.Add(t);
                 }
-                res = tags.ReadTags(conn);
+                res = conn.ReadTags(tags);
                 if (res == 0)
                 {
                     Console.WriteLine("====================== VARIABLENHAUSHALT ======================");
@@ -68,7 +70,7 @@ namespace DriverTest
                     for (int i = 0; i < vars.Count; i++)
                     {
                         string s;
-      
+
                         s = String.Format(formatstring, taglist[i].Name, taglist[i].Address.GetAccessString(), Softdatatype.Types[taglist[i].Datatype], taglist[i].ToString());
                         Console.WriteLine(s);
                     }
