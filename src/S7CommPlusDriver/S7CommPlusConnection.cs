@@ -116,6 +116,7 @@ namespace S7CommPlusDriver
 
         private void WaitForNewS7plusReceived(int Timeout)
         {
+            //TODO: Tickcount overflows!!!!
             bool Expired = false;
             int Elapsed = Environment.TickCount;
             bool done = false;

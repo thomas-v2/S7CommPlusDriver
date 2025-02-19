@@ -11,9 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Zlib.net\Zlib.net.csproj" />
+    <PackageReference Include="zlib.net-mutliplatform" Version="1.0.8" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="runtimes\**\*">
@@ -33,9 +31,14 @@
   <PropertyGroup>
     <AssemblyTitle>S7CommPlusDriver</AssemblyTitle>
     <Product>S7CommPlusDriver</Product>
-    <Copyright>Copyright ©  2023, Thomas Wiens</Copyright>
+    <Copyright>Copyright © 2025, DotNetProjects, Thomas Wiens</Copyright>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>DotNetProjects.$(AssemblyName)</Title>
+    <PackageId>DotNetProjects.$(AssemblyName)</PackageId>
+    <Company>DotNetProjects</Company>
+    <PackageProjectUrl>https://github.com/dotnetprojects/S7CommPlusDriver</PackageProjectUrl>
+    <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
   </PropertyGroup>
 </Project>
