@@ -21,6 +21,9 @@ namespace S7CommPlusDriver
 	// |  (at your option) any later version.                                         |
 	public class S7Client : OpenSSLConnector.IConnectorCallback
 	{
+		//TODO: better API, maybe a Callback
+		public static bool WriteSslKeyToFile;
+
 		#region [Constants and TypeDefs]
 
 		public int _LastError = 0;
@@ -120,7 +123,7 @@ namespace S7CommPlusDriver
 			{
 				ret = Native.OPENSSL_init_ssl(0, IntPtr.Zero); // returns 1 on success or 0 on error
 				if (ret != 1) 
-                {
+				{
 					return S7Consts.errOpenSSL;
 				}
 				m_ptr_ssl_method = Native.ExpectNonNull(Native.TLS_client_method());
@@ -132,20 +135,21 @@ namespace S7CommPlusDriver
 				Native.SSL_CTX_ctrl(m_ptr_ctx, Native.SSL_CTRL_SET_MIN_PROTO_VERSION, Native.TLS1_3_VERSION, IntPtr.Zero);
 				ret = Native.SSL_CTX_set_ciphersuites(m_ptr_ctx, "TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256");
 				if (ret != 1)
-                {
+				{
 					return S7Consts.errOpenSSL;
 				}
 				m_sslconn = new OpenSSLConnector(m_ptr_ctx, this);
 				m_sslconn.ExpectConnect();
 
 				// Keylog callback setzen
-				m_keylog_cb = new Native.SSL_CTX_keylog_cb_func(SSL_CTX_keylog_cb);
+				if (WriteSslKeyToFile)
+					m_keylog_cb = new Native.SSL_CTX_keylog_cb_func(SSL_CTX_keylog_cb);
 				Native.SSL_CTX_set_keylog_callback(m_ptr_ctx, m_keylog_cb);
 
 				m_SslActive = true;
 			} 
 			catch
-            {
+			{
 				return S7Consts.errOpenSSL;
 			}
 			return 0;
@@ -284,7 +288,7 @@ namespace S7CommPlusDriver
 		}
 
 		private int SendIsoPacket(byte[] Buffer)
-        {
+		{
 			// Packt die zu sendenden Daten in den Iso-Header ein.
 			int Size = Buffer.Length;
 			_LastError = 0;
