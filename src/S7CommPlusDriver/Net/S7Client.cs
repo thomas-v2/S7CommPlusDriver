@@ -23,10 +23,11 @@ namespace S7CommPlusDriver
 	{
 		//TODO: better API, maybe a Callback
 		public static bool WriteSslKeyToFile;
+		public static string WriteSslKeyPath;
 
-		#region [Constants and TypeDefs]
+        #region [Constants and TypeDefs]
 
-		public int _LastError = 0;
+        public int _LastError = 0;
 
 		#endregion
 
@@ -110,6 +111,8 @@ namespace S7CommPlusDriver
 		public void SSL_CTX_keylog_cb(IntPtr ssl, string line)
 		{
 			string filename = "key_" + m_DateTimeStarted.ToString("yyyyMMdd_HHmmss") + ".log";
+			if (WriteSslKeyPath != null)
+				filename = Path.Combine(WriteSslKeyPath, filename);
 			StreamWriter file = new StreamWriter(filename, append: true);
 			file.WriteLine(line);
 			file.Close();
