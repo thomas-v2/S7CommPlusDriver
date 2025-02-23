@@ -143,8 +143,10 @@ namespace S7CommPlusDriver
 
 				// Keylog callback setzen
 				if (WriteSslKeyToFile)
+				{
 					m_keylog_cb = new Native.SSL_CTX_keylog_cb_func(SSL_CTX_keylog_cb);
-				Native.SSL_CTX_set_keylog_callback(m_ptr_ctx, m_keylog_cb);
+					Native.SSL_CTX_set_keylog_callback(m_ptr_ctx, m_keylog_cb);
+				}
 
 				m_SslActive = true;
 			} 
