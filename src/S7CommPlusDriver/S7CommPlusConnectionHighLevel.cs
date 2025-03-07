@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace S7CommPlusDriver
 {
@@ -86,6 +87,23 @@ namespace S7CommPlusDriver
             ProDiag = 500,
             ProDiag_OB = 501,
             CEM = 600,
+        }
+
+        public enum BinaryArtifacts : uint
+        {
+            Undefined = 0u,
+            PlcFamily = 2147483649u,
+            PlcMc7plusData = 2147483650u,
+            PlcOptimizationInfoData = 2147483651u,
+            PlcClosedImmediateData = 2147483652u,
+            SimulatorFamily = 2147483665u,
+            SimulatorMc7plusData = 2147483666u,
+            SimulatorOptimizationInfoData = 2147483667u,
+            SimulatorClosedImmediateData = 2147483668u,
+            VirtualPlcFamilyKey = 2147483681u,
+            VirtualPlcMc7plusDataKey = 2147483682u,
+            VirtualPlcOptimizationInfoDataKey = 2147483683u,
+            VirtualPlcClosedImmediateDataKey = 2147483684u
         }
 
         public class BlockInfo
@@ -296,10 +314,17 @@ namespace S7CommPlusDriver
                                 var xx = (ValueBlobSparseArray)att.Value;
                                 BlobDecompressor bd3 = new BlobDecompressor();
                                 var blob_sp3 = xx.GetValue();
-                                blockBody = new string[blob_sp3.Count];
+                                blockBody = new string[blob_sp3.Where(x => x.Key < (uint)BinaryArtifacts.PlcFamily).Count()];
                                 var i = 0;
-                                foreach (var key in blob_sp3.Keys)
+                                foreach (var key in blob_sp3.Keys.Order())
                                 {
+                                    if (!(key < (uint)BinaryArtifacts.PlcFamily))
+                                    {
+                                        //TODO: what to do with binary artifacts?
+                                        var binaryArtifactType = (BinaryArtifacts)key;
+                                        continue;
+                                    }
+
                                     if (blob_sp3[key].value != null)
                                     {
                                         var code = bd3.decompress(blob_sp3[key].value, 4);
