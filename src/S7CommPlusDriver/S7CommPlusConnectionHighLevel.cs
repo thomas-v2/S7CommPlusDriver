@@ -16,7 +16,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace S7CommPlusDriver
 {
@@ -200,7 +199,7 @@ namespace S7CommPlusDriver
             return 0;
         }
 
-        public int GetBlockXml(uint relid, out string xml_linecomment, out Dictionary<uint, string> xml_comment, out string interfaceDescription, out string[] blockBody, out string fuctionalObjectCode, out string[] intRef, out string[] extRef)
+        public int GetBlockXml(uint relid, out string blockName, out ProgrammingLanguage lang, out uint blockNumber, out string xml_linecomment, out Dictionary<uint, string> xml_comment, out string interfaceDescription, out string[] blockBody, out string fuctionalObjectCode, out string[] intRef, out string[] extRef)
         {
             int res;
             // With requesting DataInterface_InterfaceDescription, whe would be able to get all informations like the access ids and
@@ -213,6 +212,9 @@ namespace S7CommPlusDriver
             fuctionalObjectCode = String.Empty;
             intRef = new string[0];
             extRef = new string[0];
+            blockName = null;
+            lang = ProgrammingLanguage.Undef;
+            blockNumber = relid & 0xffff;
 
             var exploreReq = new ExploreRequest(ProtocolVersion.V2);
             exploreReq.ExploreId = relid;
@@ -221,6 +223,10 @@ namespace S7CommPlusDriver
             exploreReq.ExploreParents = 0;
 
             // We want to know the following attributes
+            exploreReq.AddressList.Add(Ids.ObjectVariableTypeName);
+            //exploreReq.AddressList.Add(Ids.Block_BlockNumber);
+            exploreReq.AddressList.Add(Ids.Block_BlockLanguage);
+
             exploreReq.AddressList.Add(Ids.ASObjectES_Comment);
             exploreReq.AddressList.Add(Ids.DataInterface_LineComments);
             exploreReq.AddressList.Add(Ids.DataInterface_InterfaceDescription);
@@ -253,6 +259,21 @@ namespace S7CommPlusDriver
                 {
                     switch (att.Key)
                     {
+                        case Ids.ObjectVariableTypeName:
+                            {
+                                blockName = ((ValueWString)att.Value).GetValue();
+                                break;
+                            }
+                        case Ids.Block_BlockNumber:
+                            {
+                                break;
+                            }
+                        case Ids.Block_BlockLanguage:
+                            {
+                                var l = ((ValueUInt)att.Value).GetValue();
+                                lang = (ProgrammingLanguage)l;
+                                break;
+                            }
                         case Ids.FunctionalObject_extRefData:
                             {
                                 var xx = (ValueBlobSparseArray)att.Value;
