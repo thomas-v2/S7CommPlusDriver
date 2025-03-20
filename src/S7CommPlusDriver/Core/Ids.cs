@@ -18,7 +18,10 @@ namespace S7CommPlusDriver
     public static class Ids
     {
         public const int None = 0;
+        public const int NativeObjects_theASRoot_Rid = 1;
         public const int NativeObjects_thePLCProgram_Rid = 3;
+        public const int NativeObjects_theCPUProxy_Rid = 49;
+        public const int NativeObjects_theCPUCommon_Rid = 50;
         public const int NativeObjects_theCPUexecUnit_Rid = 52;
         public const int NativeObjects_theIArea_Rid = 80;
         public const int NativeObjects_theQArea_Rid = 81;
@@ -144,6 +147,8 @@ namespace S7CommPlusDriver
         public const int AlarmSubscriptionRef_AlarmTextLanguages_Rid = 8181;
         public const int AlarmSubscriptionRef_SendAlarmTexts_Rid = 8173;
         public const int ReturnValue = 40305;
+
+        public const uint ReleaseMngmtRoot_Rid = 2303328256;
 
         public const uint Constants = 0x8a110000;
 

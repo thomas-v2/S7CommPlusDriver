@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace S7CommPlusDriver
 {
@@ -187,7 +188,7 @@ namespace S7CommPlusDriver
                         };
 
                         var lang = ((ValueUInt)ob.Attributes[Ids.Block_BlockLanguage]).GetValue();
-                        data.lang = (ProgrammingLanguage) lang;
+                        data.lang = (ProgrammingLanguage)lang;
                         exploreData.Add(data);
                         break;
                 }
@@ -458,6 +459,99 @@ namespace S7CommPlusDriver
             }
 
             objects = exploreRes.Objects;
+
+            return 0;
+        }
+
+        public int RunGetVarSubstreamedRequest(uint objectId, ushort address, out PValue value)
+        {
+            int res;
+            value = null;
+           
+            var getVarSubstreamedReq = new GetVarSubstreamedRequest(ProtocolVersion.V2);
+            getVarSubstreamedReq.InObjectId = objectId;
+            getVarSubstreamedReq.SessionId = m_SessionId;
+            getVarSubstreamedReq.Address = address;
+            res = SendS7plusFunctionObject(getVarSubstreamedReq);
+            if (res != 0)
+            {
+                return res;
+            }
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                return m_LastError;
+            }
+
+
+            var getVarSubstreamedRes = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
+            if (getVarSubstreamedRes == null)
+            {
+                return S7Consts.errIsoInvalidPDU8;
+            }
+
+            value = getVarSubstreamedRes.Value;
+
+            return 0;
+        }
+
+        public class CpuInfo
+        {
+            public string PlcName { get; set; }
+            public string ProjectName { get; set; }
+
+            public Version VersionTia { get; set; }
+            public Version Version2 { get; set; }
+            public string CpuMlfb { get; set; }
+            public string CpuSerial { get; set; }
+            public Version CpuFirmware { get; set; }
+        }
+
+        public int GetCpuInfos(out CpuInfo cpuInfo)
+        {
+            cpuInfo = null;
+
+            var res = this.RunGetVarSubstreamedRequest(Ids.NativeObjects_theASRoot_Rid, 2459, out var pValueVersions);
+            if (res != 0)
+                return res;
+            var arrVersions = ((ValueUSIntArray)pValueVersions).GetValue();
+            var version1 = new Version(arrVersions[0], arrVersions[1], arrVersions[2], arrVersions[3]);
+            var version2 = new Version(arrVersions[4], arrVersions[5], arrVersions[6], arrVersions[7]);
+
+            res = this.RunGetVarSubstreamedRequest(Ids.NativeObjects_theCPUCommon_Rid, 233, out var pValuePlcName);
+            if (res != 0)
+                return res;
+            var cpuName = ((ValueWString)pValuePlcName).GetValue();
+
+            res = this.RunGetVarSubstreamedRequest(Ids.NativeObjects_theCPUProxy_Rid, 3753, out var pValueMlfbSerial);
+            if (res != 0)
+                return res;
+            var data = ((ValueBlob)pValueMlfbSerial).GetValue();
+            var mlfb = Encoding.ASCII.GetString(data[8..27]);
+            //space
+            var serial = Encoding.ASCII.GetString(data[28..44]);
+            //nulbyte
+            var hardware = data[46];
+            var firmware = new Version(data[47], data[48], data[49], data[50]);
+            //data maybe conatins more:
+            //rack (1byte), slot (1byte),
+
+            res = this.RunGetVarSubstreamedRequest(Ids.ReleaseMngmtRoot_Rid, 8342, out var pValueVersionsAndName);
+            if (res != 0)
+                return res;
+            var versionsAndName = ((ValueWStringArray)pValueVersionsAndName).GetValue();
+
+            cpuInfo = new CpuInfo()
+            {
+                PlcName = cpuName,
+                ProjectName = versionsAndName[2],
+                VersionTia = version1,
+                Version2 = version2,
+                CpuMlfb = mlfb,
+                CpuSerial = serial,
+                CpuFirmware = firmware
+            };
 
             return 0;
         }
