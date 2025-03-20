@@ -161,7 +161,6 @@ namespace S7CommPlusDriver
             #region Evaluate all data blocks that then need to be browsed
 
             var obj = exploreRes.Objects.First(o => o.ClassId == Ids.PLCProgram_Class_Rid);
-
             foreach (var ob in obj.GetObjects())
             {
                 switch (ob.ClassId)
@@ -199,7 +198,58 @@ namespace S7CommPlusDriver
             return 0;
         }
 
-        public int GetBlockXml(uint relid, out string blockName, out ProgrammingLanguage lang, out uint blockNumber, out string xml_linecomment, out Dictionary<uint, string> xml_comment, out string interfaceDescription, out string[] blockBody, out string fuctionalObjectCode, out string[] intRef, out string[] extRef)
+        public int GetPlcStructureXML(out string plcStrutureXml)
+        {
+            int res;
+            Browser vars = new Browser();
+            ExploreRequest exploreReq;
+            ExploreResponse exploreRes;
+            plcStrutureXml = null;
+
+            #region Read all objects
+
+            exploreReq = new ExploreRequest(ProtocolVersion.V2);
+            exploreReq.ExploreId = Ids.Constants | 0x0000ffff;
+            exploreReq.ExploreRequestId = Ids.None;
+            exploreReq.ExploreChildsRecursive = 1;
+            exploreReq.ExploreParents = 1;
+
+            exploreReq.AddressList.Add(Ids.ConstantsGlobal_Symbolics);
+
+            res = SendS7plusFunctionObject(exploreReq);
+            if (res != 0)
+            {
+                return res;
+            }
+            m_LastError = 0;
+            WaitForNewS7plusReceived(m_ReadTimeout);
+            if (m_LastError != 0)
+            {
+                return m_LastError;
+            }
+
+            exploreRes = ExploreResponse.DeserializeFromPdu(m_ReceivedPDU, true);
+            res = checkResponseWithIntegrity(exploreReq, exploreRes);
+            if (res != 0)
+            {
+                return res;
+            }
+
+            #endregion
+
+            var attr = exploreRes?.Objects?[0]?.Objects?.First().Value?.Objects?.First().Value?.Attributes?[Ids.ConstantsGlobal_Symbolics] as ValueBlob;
+            if (attr != null)
+            {
+                BlobDecompressor bd3 = new BlobDecompressor();
+                var v = attr.GetValue();
+                var xml = bd3.decompress(v, 0);
+                plcStrutureXml = xml;
+            }
+
+            return 0;
+        }
+
+        public int GetBlockXml(uint relid, out string blockName, out ProgrammingLanguage lang, out uint blockNumber, out BlockType blockType, out string xml_linecomment, out Dictionary<uint, string> xml_comment, out string interfaceDescription, out string[] blockBody, out string fuctionalObjectCode, out string[] intRef, out string[] extRef)
         {
             int res;
             // With requesting DataInterface_InterfaceDescription, whe would be able to get all informations like the access ids and
@@ -215,6 +265,7 @@ namespace S7CommPlusDriver
             blockName = null;
             lang = ProgrammingLanguage.Undef;
             blockNumber = relid & 0xffff;
+            blockType = BlockType.unkown;
 
             var exploreReq = new ExploreRequest(ProtocolVersion.V2);
             exploreReq.ExploreId = relid;
@@ -255,6 +306,15 @@ namespace S7CommPlusDriver
 
             foreach (var obj in exploreRes.Objects)
             {
+                blockType = obj.ClassId switch
+                {
+                    Ids.DB_Class_Rid => BlockType.DB,
+                    Ids.FB_Class_Rid => BlockType.FB,
+                    Ids.FC_Class_Rid => BlockType.FC,
+                    Ids.OB_Class_Rid => BlockType.OB,
+                };
+
+
                 foreach (var att in obj.Attributes)
                 {
                     switch (att.Key)

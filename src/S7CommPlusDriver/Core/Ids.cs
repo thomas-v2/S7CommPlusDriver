@@ -134,6 +134,7 @@ namespace S7CommPlusDriver
         public const int ControllerArea_ValueActual = 3736;
         public const int ControllerArea_RuntimeModified = 3737;
         public const int DAI_MessageType = 4079;
+        public const int ConstantsGlobal_Symbolics = 4275;
         public const int ASObjectES_Comment = 4288;
         public const int AlarmSubscriptionRef_AlarmDomain2 = 7731;
         public const int DAI_HmiInfo = 7813;
@@ -143,6 +144,8 @@ namespace S7CommPlusDriver
         public const int AlarmSubscriptionRef_AlarmTextLanguages_Rid = 8181;
         public const int AlarmSubscriptionRef_SendAlarmTexts_Rid = 8173;
         public const int ReturnValue = 40305;
+
+        public const uint Constants = 0x8a110000;
 
         public const int TI_BOOL = 0x02000000 + 1;
         public const int TI_BYTE = 0x02000000 + 2;
