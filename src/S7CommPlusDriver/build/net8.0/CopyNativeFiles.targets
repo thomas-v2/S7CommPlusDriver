@@ -1,0 +1,20 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="CopyNativeFiles" AfterTargets="Build">
+    <Copy 
+      SourceFiles="$(PackageRoot)\runtimes\osx-arm64\*.dylib"
+      DestinationFolder="$(OutDir)\runtimes\osx-arm64\"
+      SkipUnchangedFiles="true" />
+    <Copy 
+      SourceFiles="$(PackageRoot)\runtimes\win-arm64\native\*.dll"
+      DestinationFolder="$(OutDir)\runtimes\win-arm64\native\"
+      SkipUnchangedFiles="true" />
+    <Copy 
+      SourceFiles="$(PackageRoot)\runtimes\win-x64\native\*.dll"
+      DestinationFolder="$(OutDir)\runtimes\win-x64\native\"
+      SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="$(PackageRoot)\runtimes\win-x86\native\*.dll"
+      DestinationFolder="$(OutDir)\runtimes\win-x86\native\"
+      SkipUnchangedFiles="true" />
+  </Target>
+</Project>
