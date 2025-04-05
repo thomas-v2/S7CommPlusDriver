@@ -345,5 +345,16 @@ namespace OpenSsl
         {
             list.AddFirst(pBuffer);
         }
+
+        /// <summary>
+        /// Create OMS exporter secret that is needed for the legitimation with the PLC
+        /// </summary>
+        /// <returns>Secret</returns>
+        public byte[] getOMSExporterSecret()
+        {
+            byte[] secretOut = new byte[32];
+            int ret = (int)Native.SSL_export_keying_material(m_pSslConnection, secretOut, (uint)secretOut.Length, "EXPERIMENTAL_OMS".ToCharArray(), 16, IntPtr.Zero, 0, 0);
+            return secretOut;
+        }
     }
 }

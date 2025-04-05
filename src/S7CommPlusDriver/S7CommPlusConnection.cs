@@ -22,7 +22,6 @@ using System.Linq;
 using System.Diagnostics;
 using S7CommPlusDriver.ClientApi;
 using System.Text.RegularExpressions;
-using S7CommPlusDriver.Core;
 using System.Security.Cryptography;
 
 namespace S7CommPlusDriver
@@ -390,7 +389,7 @@ namespace S7CommPlusDriver
         /// <param name="password">PLC password (if set)</param>
         /// <param name="timeoutMs">read timeout in milliseconds (default: 5000 ms)</param>
         /// <returns></returns>
-        public int Connect(string address, string password = "", int timeoutMs = 5000)
+        public int Connect(string address, string password = "", string username = "", int timeoutMs = 5000)
         {
             if (timeoutMs > 0) {
                 m_ReadTimeout = timeoutMs;
@@ -520,117 +519,11 @@ namespace S7CommPlusDriver
             #endregion
 
             #region Step 6: Password
-            // Get current protection level
-            var getVarSubstreamedReq = new GetVarSubstreamedRequest(ProtocolVersion.V2);
-            getVarSubstreamedReq.InObjectId = m_SessionId;
-            getVarSubstreamedReq.SessionId = m_SessionId;
-            getVarSubstreamedReq.Address = Ids.EffectiveProtectionLevel;
-            res = SendS7plusFunctionObject(getVarSubstreamedReq);
-            if (res != 0)
-            {
+            res = legitimate(serverSession, password, username);
+            if (res != 0) {
                 m_client.Disconnect();
                 return res;
             }
-            m_LastError = 0;
-            WaitForNewS7plusReceived(m_ReadTimeout);
-            if (m_LastError != 0)
-            {
-                m_client.Disconnect();
-                return m_LastError;
-            }
-
-            var getVarSubstreamedRes = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
-            if (getVarSubstreamedRes == null)
-            {
-                Console.WriteLine("S7CommPlusConnection - Connect.Password: GetVarSubstreamedResponse with Error!");
-                m_client.Disconnect();
-                return S7Consts.errIsoInvalidPDU;
-            }
-
-            // Check access level
-            UInt32 accessLevel = (getVarSubstreamedRes.Value as ValueUDInt).GetValue();
-            if (accessLevel > AccessLevel.FullAccess && password != "")
-            {
-                // Get challenge
-                var getVarSubstreamedReq_challange = new GetVarSubstreamedRequest(ProtocolVersion.V2);
-                getVarSubstreamedReq_challange.InObjectId = m_SessionId;
-                getVarSubstreamedReq_challange.SessionId = m_SessionId;
-                getVarSubstreamedReq_challange.Address = Ids.ServerSessionRequest;
-                res = SendS7plusFunctionObject(getVarSubstreamedReq_challange);
-                if (res != 0)
-                {
-                    m_client.Disconnect();
-                    return res;
-                }
-                m_LastError = 0;
-                WaitForNewS7plusReceived(m_ReadTimeout);
-                if (m_LastError != 0)
-                {
-                    m_client.Disconnect();
-                    return m_LastError;
-                }
-
-                var getVarSubstreamedRes_challenge = GetVarSubstreamedResponse.DeserializeFromPdu(m_ReceivedPDU);
-                if (getVarSubstreamedRes_challenge == null)
-                {
-                    Console.WriteLine("S7CommPlusConnection - Connect.Password: getVarSubstreamedRes_challenge with Error!");
-                    m_client.Disconnect();
-                    return S7Consts.errIsoInvalidPDU;
-                }
-
-                byte[] challenge = (getVarSubstreamedRes_challenge.Value as ValueUSIntArray).GetValue();
-
-                // Calculate challengeResponse [sha1(password) xor challenge]
-                byte[] challengeResponse;
-                using (SHA1Managed sha1 = new SHA1Managed())
-                {
-                    challengeResponse = sha1.ComputeHash(Encoding.UTF8.GetBytes(password));
-                }
-                if (challengeResponse.Length != challenge.Length)
-                {
-                    Console.WriteLine("S7CommPlusConnection - Connect.Password: challengeResponse.Length != challenge.Length");
-                    m_client.Disconnect();
-                    return S7Consts.errIsoInvalidPDU;
-                }
-                for (int i = 0; i < challengeResponse.Length; ++i)
-                {
-                    challengeResponse[i] = (byte)(challengeResponse[i] ^ challenge[i]);
-                }
-
-                // Send challengeResponse
-                var setVariableReq = new SetVariableRequest(ProtocolVersion.V2);
-                setVariableReq.InObjectId = m_SessionId;
-                setVariableReq.SessionId = m_SessionId;
-                setVariableReq.Address = Ids.ServerSessionResponse;
-                setVariableReq.Value = new ValueUSIntArray(challengeResponse);
-                res = SendS7plusFunctionObject(setVariableReq);
-                if (res != 0)
-                {
-                    m_client.Disconnect();
-                    return res;
-                }
-                m_LastError = 0;
-                WaitForNewS7plusReceived(m_ReadTimeout);
-                if (m_LastError != 0)
-                {
-                    m_client.Disconnect();
-                    return m_LastError;
-                }
-
-                var setVariableResponse = SetVariableResponse.DeserializeFromPdu(m_ReceivedPDU);
-                if (setVariableResponse == null)
-                {
-                    Console.WriteLine("S7CommPlusConnection - Connect.Password: setVariableResponse with Error!");
-                    m_client.Disconnect();
-                    return S7Consts.errIsoInvalidPDU;
-                }
-
-            }
-            else if (accessLevel > AccessLevel.FullAccess)
-            {
-                Console.WriteLine("S7CommPlusConnection - Connect.Password: Warning: Access level is not fullaccess but no password set!");
-            }
-
             #endregion
 
             // If everything has been error-free up to this point, then the connection has been established successfully.

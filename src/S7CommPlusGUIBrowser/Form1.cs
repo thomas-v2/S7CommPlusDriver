@@ -28,6 +28,11 @@ namespace S7CommPlusGUIBrowser
             {
                 tbPassword.Text = args[2];
             }
+            // 3rd argument can be the plc username, otherwise use default (no username)
+            if (args.Length >= 4)
+            {
+                tbUser.Text = args[3];
+            }
         }
 
         private void setStatus(string status)
@@ -42,10 +47,10 @@ namespace S7CommPlusGUIBrowser
 
             if (conn != null) conn.Disconnect();
             conn = new S7CommPlusConnection();
-            int res = conn.Connect(tbIpAddress.Text, tbPassword.Text);
+            int res = conn.Connect(tbIpAddress.Text, tbPassword.Text, tbUser.Text);
             if (res != 0)
             {
-                setStatus("error");
+                setStatus("error: " + S7Client.ErrorText(res));
                 return;
             }
             setStatus("connected");
@@ -56,7 +61,7 @@ namespace S7CommPlusGUIBrowser
             res = conn.GetListOfDatablocks(out dbInfoList);
             if (res != 0)
             {
-                setStatus("error");
+                setStatus("error: " + S7Client.ErrorText(res));
                 return;
             }
             TreeNode tn;

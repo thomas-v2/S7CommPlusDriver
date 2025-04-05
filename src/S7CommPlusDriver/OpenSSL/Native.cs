@@ -226,6 +226,9 @@ namespace OpenSsl
         [DllImport(SSLDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr TLS_client_method();
 
+        [DllImport(SSLDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr SSL_export_keying_material(IntPtr ssl, byte[] outKeyMaterial, size_t outKeyMaterialLength, char[] label, size_t labelLength, IntPtr context, size_t contextLength, int useContext);
+
         #endregion
 
         #region SSL_CTX

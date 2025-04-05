@@ -38,6 +38,7 @@ namespace S7CommPlusDriver
         public const int ServerSessionRequest = 303;
         public const int ServerSessionResponse = 304;
         public const int ServerSessionVersion = 306;
+        public const int LID_SessionVersionSystemPAOMString = 319;
         public const int ClassTypeInfo = 511;
         public const int ClassOMSTypeInfoContainer = 534;
         public const int ObjectOMSTypeInfoContainer = 537;
@@ -51,6 +52,7 @@ namespace S7CommPlusDriver
         public const int SystemLimits = 1037;
         public const int SubscriptionRouteMode = 1040;
         public const int SubscriptionActive = 1041;
+        public const int Legitimate = 1846;
         public const int SubscriptionReferenceList = 1048;
         public const int SubscriptionCycleTime = 1049;
         public const int SubscriptionDelayTime = 1050;
@@ -107,6 +109,10 @@ namespace S7CommPlusDriver
         public const int AlarmSubscriptionRef_AlarmTextLanguages_Rid = 8181;
         public const int AlarmSubscriptionRef_SendAlarmTexts_Rid = 8173;
         public const int ReturnValue = 40305;
+        public const int LID_LegitimationPayloadStruct = 40400;
+        public const int LID_LegitimationPayloadType = 40401;
+        public const int LID_LegitimationPayloadUsername = 40402;
+        public const int LID_LegitimationPayloadPassword = 40403;
 
         public const int TI_BOOL = 0x02000000 + 1;
         public const int TI_BYTE = 0x02000000 + 2;
