@@ -25,7 +25,7 @@ namespace S7CommPlusDriver {
         {
             // Parse device and firmware version
             string sessionVersionPAOMString = ((ValueWString)serverSession.GetStructElement((uint)Ids.LID_SessionVersionSystemPAOMString)).GetValue();
-            Regex reVersions = new Regex("^.*;.*(1[52]\\d\\d).+;S(\\d\\.\\d)$");
+            Regex reVersions = new Regex("^.*;.*[17]\\s?([52]\\d\\d).+;[VS](\\d\\.\\d)$");
             Match m = reVersions.Match(sessionVersionPAOMString);
             if (!m.Success)
             {
@@ -39,7 +39,7 @@ namespace S7CommPlusDriver {
 
             // Check if we have to use legacy legitimation via the firmware version
             bool legacyLegitimation = false;
-            if (deviceVersion.StartsWith("15"))
+            if (deviceVersion.StartsWith("5"))
             {
                 if (fwVerNo < 209)
                 {
@@ -51,7 +51,7 @@ namespace S7CommPlusDriver {
                     legacyLegitimation = true;
                 }
             }
-            else if (deviceVersion.StartsWith("12"))
+            else if (deviceVersion.StartsWith("2"))
             {
                 if (fwVerNo < 403)
                 {
