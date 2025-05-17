@@ -73,7 +73,7 @@
     <Compile Include="ClientApi\Browser.cs" />
     <Compile Include="ClientApi\PlcTagQC.cs" />
     <Compile Include="ClientApi\PlcTags.cs" />
-    <Compile Include="Core\AccessLevel.cs" />
+    <Compile Include="Legitimation\AccessLevel.cs" />
     <Compile Include="Core\BlobDecompressor.cs" />
     <Compile Include="Core\CommRessources.cs" />
     <Compile Include="Core\IS7pResponse.cs" />
@@ -86,6 +86,9 @@
     <Compile Include="Core\SetVariableResponse.cs" />
     <Compile Include="Core\SetVariableRequest.cs" />
     <Compile Include="Core\SystemEvent.cs" />
+    <Compile Include="Legitimation\Legitimation.cs" />
+    <Compile Include="Legitimation\LegitimationCrypto.cs" />
+    <Compile Include="Legitimation\LegitimationType.cs" />
     <Compile Include="Net\MsgSocket.cs" />
     <Compile Include="Net\S7Client.cs" />
     <Compile Include="Net\S7Consts.cs" />

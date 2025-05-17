@@ -64,6 +64,7 @@ namespace S7CommPlusDriver
 		public const int errCliInvalidBlockSize = 0x01900000;
 		public const int errCliNeedPassword = 0x01D00000;
 		public const int errCliInvalidPassword = 0x01E00000;
+		public const int errCliAccessDenied = 0x01E10000;
 		public const int errCliNoPasswordToSetOrClear = 0x01F00000;
 		public const int errCliJobTimeout = 0x02000000;
 		public const int errCliPartialDataRead = 0x02100000;
@@ -73,6 +74,8 @@ namespace S7CommPlusDriver
 		public const int errCliInvalidParamNumber = 0x02500000;
 		public const int errCliCannotChangeParam = 0x02600000;
 		public const int errCliFunctionNotImplemented = 0x02700000;
+		public const int errCliFirmwareNotSupported = 0x02800000;
+		public const int errCliDeviceNotSupported = 0x02900000;
 
 		public const int errOpenSSL = 0x03100000;
 		//------------------------------------------------------------------------------
