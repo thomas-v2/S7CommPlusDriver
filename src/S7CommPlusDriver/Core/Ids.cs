@@ -136,6 +136,7 @@ namespace S7CommPlusDriver
         public const int ControllerArea_ValueInitial = 3735;
         public const int ControllerArea_ValueActual = 3736;
         public const int ControllerArea_RuntimeModified = 3737;
+        public const int UDT_Class_Rid = 3932;
         public const int DAI_MessageType = 4079;
         public const int ConstantsGlobal_Symbolics = 4275;
         public const int ASObjectES_Comment = 4288;

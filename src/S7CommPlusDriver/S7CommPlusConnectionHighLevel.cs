@@ -29,6 +29,7 @@ namespace S7CommPlusDriver
             FB,
             FC,
             OB,
+            UDT,
         }
 
         public enum ProgrammingLanguage : int
@@ -312,7 +313,30 @@ namespace S7CommPlusDriver
                     Ids.DB_Class_Rid => BlockType.DB,
                     Ids.FB_Class_Rid => BlockType.FB,
                     Ids.FC_Class_Rid => BlockType.FC,
-                    Ids.OB_Class_Rid => BlockType.OB,
+                    Ids.UDT_Class_Rid => BlockType.UDT,
+                    Ids.OB_Class_Rid => BlockType.OB, // OB
+                    2637 => BlockType.OB, // ACCcommunicationOB
+                    2639 => BlockType.OB, // CPUredundancyErrorOB
+                    2640 => BlockType.OB, // CyclicOB
+                    2641 => BlockType.OB, // DiagnosticErrorOB
+                    2642 => BlockType.OB, // IOaccessErrorOB
+                    2643 => BlockType.OB, // IOredundancyErrorOB
+                    2644 => BlockType.OB, // PeripheralAccessErrorOB
+                    2645 => BlockType.OB, // ProcessEventOB
+                    2646 => BlockType.OB, // ProfileEventOB
+                    2647 => BlockType.OB, // ProgramCycleOB (OB1)
+                    2648 => BlockType.OB, // ProgrammingErrorOB
+                    2649 => BlockType.OB, // PullPlugEventOB
+                    2650 => BlockType.OB, // RackStationFailureOB
+                    2651 => BlockType.OB, // StartupOB
+                    2652 => BlockType.OB, // StatusEventOB
+                    2653 => BlockType.OB, // SynchronousCycleOB
+                    2654 => BlockType.OB, // TechnologyEventOB
+                    2655 => BlockType.OB, // TimeDelayOB
+                    2656 => BlockType.OB, // TimeErrorOB
+                    2657 => BlockType.OB, // TimeOfDayOB
+                    2658 => BlockType.OB, // UpdateEventOB
+                    8440 => BlockType.OB, // LookAheadOB
                 };
 
 
