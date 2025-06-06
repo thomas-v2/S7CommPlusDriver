@@ -422,7 +422,7 @@ namespace S7CommPlusDriver
                                 var blob_sp3 = xx.GetValue();
                                 blockBody = new string[blob_sp3.Where(x => x.Key < (uint)BinaryArtifacts.PlcFamily).Count()];
                                 var i = 0;
-                                foreach (var key in blob_sp3.Keys.Order())
+                                foreach (var key in blob_sp3.Keys.OrderBy(x => x))
                                 {
                                     if (!(key < (uint)BinaryArtifacts.PlcFamily))
                                     {
