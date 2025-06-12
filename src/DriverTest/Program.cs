@@ -16,6 +16,7 @@ namespace DriverTest
         {
             string HostIp = "10.0.98.100";
             string Password = "";
+            string Username = "";
             int res;
             List<ItemAddress> readlist = new List<ItemAddress>();
             Console.WriteLine("Main - START");
@@ -29,10 +30,15 @@ namespace DriverTest
             {
                 Password = args[1];
             }
+            // Als Parameter lässt sich der Username übergeben, sonst Default-Wert von oben (kein Username)
+            if (args.Length >= 3)
+            {
+                Username = args[2];
+            }
             Console.WriteLine("Main - Versuche Verbindungsaufbau zu: " + HostIp);
 
             S7CommPlusConnection conn = new S7CommPlusConnection();
-            res = conn.Connect(HostIp, Password);
+            res = conn.Connect(HostIp, Password, Username);
             if (res == 0)
             {
                 Console.WriteLine("Main - Connect fertig");

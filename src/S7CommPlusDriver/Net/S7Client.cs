@@ -395,6 +395,12 @@ namespace S7CommPlusDriver
 			return _LastError;
 		}
 
+		public byte[] getOMSExporterSecret()
+		{
+			if (m_sslconn == null) return null;
+			return m_sslconn.getOMSExporterSecret();
+		}
+
 		#endregion
 
 		#region [Class Control]
@@ -542,7 +548,7 @@ namespace S7CommPlusDriver
 
 		#region [Info Functions / Properties]
 
-		public string ErrorText(int Error)
+		public static string ErrorText(int Error)
 		{
 			switch (Error)
 			{
@@ -587,6 +593,7 @@ namespace S7CommPlusDriver
 				case S7Consts.errCliInvalidBlockSize: return "CLI : Invalid block size";
 				case S7Consts.errCliNeedPassword: return "CPU : Function not authorized for current protection level";
 				case S7Consts.errCliInvalidPassword: return "CPU : Invalid password";
+				case S7Consts.errCliAccessDenied: return "CPU : Access denied";
 				case S7Consts.errCliNoPasswordToSetOrClear: return "CPU : No password to set or clear";
 				case S7Consts.errCliJobTimeout: return "CLI : Job Timeout";
 				case S7Consts.errCliFunctionRefused: return "CLI : function refused by CPU (Unknown error)";
@@ -596,6 +603,8 @@ namespace S7CommPlusDriver
 				case S7Consts.errCliInvalidParamNumber: return "CLI : Invalid Param Number";
 				case S7Consts.errCliCannotChangeParam: return "CLI : Cannot change this param now";
 				case S7Consts.errCliFunctionNotImplemented: return "CLI : Function not implemented";
+				case S7Consts.errCliFirmwareNotSupported: return "CLI : Firmware not supported";
+				case S7Consts.errCliDeviceNotSupported: return "CLI : Device type not supported";
 				default: return "CLI : Unknown error (0x" + Convert.ToString(Error, 16) + ")";
 			};
 		}
