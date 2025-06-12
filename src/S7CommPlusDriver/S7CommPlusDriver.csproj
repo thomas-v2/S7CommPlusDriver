@@ -1,148 +1,44 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{781951D8-80DE-4E2F-92CA-A5FEF0059415}</ProjectGuid>
+    <TargetFrameworks>net6.0;net8.0;net9.0</TargetFrameworks>
     <OutputType>Library</OutputType>
-    <RootNamespace>S7CommPlusDriver</RootNamespace>
-    <AssemblyName>S7CommPlusDriver</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Deterministic>true</Deterministic>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <LangVersion>10.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;_WIN64</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE;_WIN64</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;_WIN32</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>bin\x86\Release\</OutputPath>
-    <DefineConstants>TRACE;_WIN32</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="zlib.net-mutliplatform" Version="1.0.8" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Alarming\AlarmsAlarmTexts.cs" />
-    <Compile Include="Alarming\AlarmsAsCgs.cs" />
-    <Compile Include="Alarming\AlarmsAssociatedValues.cs" />
-    <Compile Include="Alarming\AlarmsDai.cs" />
-    <Compile Include="Alarming\AlarmsHandler.cs" />
-    <Compile Include="Alarming\AlarmsHmiInfo.cs" />
-    <Compile Include="Alarming\AlarmsMultipleStai.cs" />
-    <Compile Include="ClientApi\Browser.cs" />
-    <Compile Include="ClientApi\PlcTagQC.cs" />
-    <Compile Include="ClientApi\PlcTags.cs" />
-    <Compile Include="Legitimation\AccessLevel.cs" />
-    <Compile Include="Core\BlobDecompressor.cs" />
-    <Compile Include="Core\CommRessources.cs" />
-    <Compile Include="Core\IS7pResponse.cs" />
-    <Compile Include="Core\IS7pSerialize.cs" />
-    <Compile Include="ClientApi\PlcTag.cs" />
-    <Compile Include="Core\Notification.cs" />
-    <Compile Include="Core\ProtocolVersion.cs" />
-    <Compile Include="Core\GetVarSubstreamedRequest.cs" />
-    <Compile Include="Core\GetVarSubstreamedResponse.cs" />
-    <Compile Include="Core\SetVariableResponse.cs" />
-    <Compile Include="Core\SetVariableRequest.cs" />
-    <Compile Include="Core\SystemEvent.cs" />
-    <Compile Include="Legitimation\Legitimation.cs" />
-    <Compile Include="Legitimation\LegitimationCrypto.cs" />
-    <Compile Include="Legitimation\LegitimationType.cs" />
-    <Compile Include="Net\MsgSocket.cs" />
-    <Compile Include="Net\S7Client.cs" />
-    <Compile Include="Net\S7Consts.cs" />
-    <Compile Include="OpenSSL\Native.cs" />
-    <Compile Include="OpenSSL\OpenSSLConnector.cs" />
-    <Compile Include="Alarming\BrowseAlarms.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Core\Ids.cs" />
-    <Compile Include="Core\CreateObjectRequest.cs" />
-    <Compile Include="Core\CreateObjectResponse.cs" />
-    <Compile Include="Core\Datatype.cs" />
-    <Compile Include="Core\DeleteObjectRequest.cs" />
-    <Compile Include="Core\DeleteObjectResponse.cs" />
-    <Compile Include="Core\ElementID.cs" />
-    <Compile Include="Core\ExploreRequest.cs" />
-    <Compile Include="Core\ExploreResponse.cs" />
-    <Compile Include="Core\Functioncode.cs" />
-    <Compile Include="Core\GetMultiVariablesRequest.cs" />
-    <Compile Include="Core\GetMultiVariablesResponse.cs" />
-    <Compile Include="Core\InitSslRequest.cs" />
-    <Compile Include="Core\InitSslResponse.cs" />
-    <Compile Include="Core\IS7pRequest.cs" />
-    <Compile Include="ClientApi\ItemAddress.cs" />
-    <Compile Include="Core\Opcode.cs" />
-    <Compile Include="Core\PObject.cs" />
-    <Compile Include="Core\POffsetInfoType.cs" />
-    <Compile Include="Core\PValue.cs" />
-    <Compile Include="Core\PVarnameList.cs" />
-    <Compile Include="Core\PVartypeList.cs" />
-    <Compile Include="Core\S7p.cs" />
-    <Compile Include="Core\SetMultiVariablesRequest.cs" />
-    <Compile Include="Core\SetMultiVariablesResponse.cs" />
-    <Compile Include="Core\Softdatatype.cs" />
-    <Compile Include="Core\Utils.cs" />
-    <Compile Include="S7CommPlusConnection.cs" />
-    <Compile Include="Subscriptions\Subscription.cs" />
+    <Content Include="runtimes\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>runtimes/</PackagePath>
+    </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="OpenSSL-dll-x86\libcrypto-3.dll" />
-    <None Include="OpenSSL-dll-x86\libssl-3.dll" />
+    <Content Remove="runtimes\info.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Zlib.net\Zlib.net.csproj">
-      <Project>{0c89b7a2-a218-49e4-b545-5b044a45f977}</Project>
-      <Name>Zlib.net</Name>
-    </ProjectReference>
+    <None Include="build\net8.0\CopyNativeFiles.targets" Pack="true" PackagePath="build\net8.0\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="OpenSSL-dll-x64\libcrypto-3-x64.dll" />
-    <Content Include="OpenSSL-dll-x64\libssl-3-x64.dll" />
+    <Folder Include="runtimes\linux-x64\" />
+    <Folder Include="runtimes\osx-x64\" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /y /d  "$(ProjectDir)OpenSSL-dll-$(PlatformName)\*.dll" "$(ProjectDir)$(OutDir)"</PostBuildEvent>
+    <AssemblyTitle>S7CommPlusDriver</AssemblyTitle>
+    <Product>S7CommPlusDriver</Product>
+    <Copyright>Copyright © 2025, DotNetProjects, Thomas Wiens</Copyright>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>DotNetProjects.$(AssemblyName)</Title>
+    <PackageId>DotNetProjects.$(AssemblyName)</PackageId>
+    <Company>DotNetProjects</Company>
+    <PackageProjectUrl>https://github.com/dotnetprojects/S7CommPlusDriver</PackageProjectUrl>
+    <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
   </PropertyGroup>
 </Project>

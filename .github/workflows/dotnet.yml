@@ -1,0 +1,36 @@
+name: .NET
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Fetch history
+      run: git fetch --prune --unshallow
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: |
+           9.0.x
+    - name: Restore dependencies
+      run: |
+        dotnet restore src/S7CommPlusDriver
+        dotnet restore src/DriverTest
+        dotnet restore src/S7CommPlusGUIBrowser
+    
+    - name: Build
+      run: |
+        dotnet build src/S7CommPlusDriver
+        dotnet build src/DriverTest
+        dotnet build src/S7CommPlusGUIBrowser
+    - uses: actions/upload-artifact@v4
+      with:
+        path: src/S7CommPlusDriver/bin/Debug/*.nupkg

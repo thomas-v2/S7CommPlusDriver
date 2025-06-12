@@ -160,6 +160,8 @@ namespace S7CommPlusDriver
             }
             else
             {
+                retstring = System.Text.Encoding.UTF8.GetString(uncompressed_blob, 0, uncomp_length);
+                //TODO: error!!!
                 Console.WriteLine(String.Format("BlobDecompressor: Blob decompression failed! Zlib retcode={0} msg={1} ", retcode, z.msg));
             }
             z.inflateEnd();
