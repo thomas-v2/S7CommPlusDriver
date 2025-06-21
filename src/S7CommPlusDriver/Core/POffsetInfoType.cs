@@ -62,6 +62,9 @@ namespace S7CommPlusDriver
             FbSfb = 15
         }
 
+        public UInt32 OptimizedAddress;
+        public UInt32 NonoptimizedAddress;
+
         public abstract bool HasRelation();
         public abstract bool Is1Dim();
         public abstract bool IsMDim();
@@ -105,8 +108,6 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-        public UInt32 OptimizedAddress;
-        public UInt32 NonoptimizedAddress;
         public UInt32 RelationId;
         public UInt32 Info4;
         public UInt32 Info5;
@@ -176,8 +177,6 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-        public UInt32 OptimizedAddress;
-        public UInt32 NonoptimizedAddress;
         public Int32 ArrayLowerBounds;
         public UInt32 ArrayElementCount;
         public Int32[] MdimArrayLowerBounds = new Int32[6];
@@ -296,8 +295,6 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-        public UInt32 OptimizedAddress;
-        public UInt32 NonoptimizedAddress;
         public Int32 ArrayLowerBounds;
         public UInt32 ArrayElementCount;
         public UInt32 NonoptimizedStructSize;
@@ -387,8 +384,6 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-        public UInt32 OptimizedAddress;
-        public UInt32 NonoptimizedAddress;
         public UInt32 RelationId;
         public UInt32 StructInfo4;
         public UInt32 StructInfo5;
@@ -452,8 +447,6 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-        public UInt32 OptimizedAddress;
-        public UInt32 NonoptimizedAddress;
         public Int32 ArrayLowerBounds;
         public UInt32 ArrayElementCount;
         public Int32[] MdimArrayLowerBounds = new Int32[6];
@@ -543,8 +536,6 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-        public UInt32 OptimizedAddress;
-        public UInt32 NonoptimizedAddress;
         public Int32 ArrayLowerBounds;
         public UInt32 ArrayElementCount;
 
@@ -604,8 +595,6 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;   // This is the max. length of the string
         public UInt16 UnspecifiedOffsetinfo2;   // max. lengh plus 2 bytes stringheader
-        public UInt32 OptimizedAddress;
-        public UInt32 NonoptimizedAddress;
 
         public override bool HasRelation() { return false; }
         public override bool Is1Dim() { return false; }
@@ -645,9 +634,6 @@ namespace S7CommPlusDriver
 
     public class POffsetInfoType_Std: POffsetInfoType
     {
-        public UInt32 OptimizedAddress;
-        public UInt32 NonoptimizedAddress;
-
         public override bool HasRelation() { return false; }
         public override bool Is1Dim() { return false; }
         public override bool IsMDim() { return false; }
@@ -694,8 +680,6 @@ namespace S7CommPlusDriver
     {
         public UInt16 UnspecifiedOffsetinfo1;
         public UInt16 UnspecifiedOffsetinfo2;
-        public UInt32 OptimizedAddress;
-        public UInt32 NonoptimizedAddress;
         public UInt32 RelationId;
         public UInt32 Info4;
         public UInt32 Info5;
