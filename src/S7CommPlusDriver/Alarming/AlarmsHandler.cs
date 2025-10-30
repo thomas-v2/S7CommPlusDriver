@@ -13,8 +13,9 @@
  /****************************************************************************/
 #endregion
 
-using System;
 using S7CommPlusDriver.Alarming;
+using System;
+using System.Collections.Generic;
 
 namespace S7CommPlusDriver
 {
@@ -38,7 +39,7 @@ namespace S7CommPlusDriver
         short m_AlarmNextCreditLimit;
         uint m_AlarmSubscriptionObjectId;
 
-        public int AlarmSubscriptionCreate()
+        public int AlarmSubscriptionCreate(uint[] languageIds)
         {
             int res;
             PObject subsobj = new PObject();
@@ -72,7 +73,7 @@ namespace S7CommPlusDriver
             asrefsobj.AddAttribute(Ids.AlarmSubscriptionRef_AlarmDomain2, new ValueUIntArray(new ushort[1] { 65535 }, 0x20)); // 0x20 = Adressarray
             // OPTION: 
             // Send text informations with the message, we don't need to browse them in advance.
-            asrefsobj.AddAttribute(Ids.AlarmSubscriptionRef_AlarmTextLanguages_Rid, new ValueUDIntArray(new uint[0], 0x20)); // Empty for all languanges? Otherwise e.g. 1031 for de-de or what you need.
+            asrefsobj.AddAttribute(Ids.AlarmSubscriptionRef_AlarmTextLanguages_Rid, new ValueUDIntArray(languageIds, 0x20)); // Empty for all languanges? Otherwise e.g. 1031 for de-de or what you need.
             asrefsobj.AddAttribute(Ids.AlarmSubscriptionRef_SendAlarmTexts_Rid, new ValueBool(true));
 
             asrefsobj.AddRelation(Ids.AlarmSubscriptionRef_itsAlarmSubsystem, 0x00000008);
@@ -122,41 +123,73 @@ namespace S7CommPlusDriver
             return res;
         }
 
-        public int TestWaitForAlarmNotifications(int waitTimeout, int untilNumberOfAlarms, int alarmTextsLanguageId)
+        //public int TestWaitForAlarmNotifications(int waitTimeout, int untilNumberOfAlarms, int alarmTextsLanguageId, out List<Notification> notifications)
+        //{
+        //    int res = 0;
+        //    short creditLimitStep = 5;
+
+        //    for (int i = 1; i <= untilNumberOfAlarms; i++)
+        //    {
+        //        Console.WriteLine(Environment.NewLine + "WaitForAlarmNotifications(): *** Loop #" + i.ToString() + " ***");
+        //        m_LastError = 0;
+        //        WaitForNewS7plusReceived(waitTimeout);
+        //        if (m_LastError != 0)
+        //        {
+        //            return m_LastError;
+        //        }
+
+        //        var noti = Notification.DeserializeFromPdu(m_ReceivedPDU);
+        //        if (noti == null)
+        //        {
+        //            Console.WriteLine("Notification == null!");
+        //            return S7Consts.errIsoInvalidPDU;
+        //        }
+        //        else
+        //        {
+        //            Console.Write("Notification: CreditTick=" + noti.NotificationCreditTick + " SequenceNumber=" + noti.NotificationSequenceNumber);
+        //            Console.WriteLine(String.Format(" PLC-Timestamp={0}.{1:D03}", noti.Add1Timestamp.ToString(), noti.Add1Timestamp.Millisecond));
+
+        //            var dai = AlarmsDai.FromNotificationObject(noti.P2Objects[0], alarmTextsLanguageId);
+        //            Console.WriteLine(dai.ToString());
+        //            if (noti.NotificationCreditTick >= m_AlarmNextCreditLimit - 1) // Set new limit one tick before it expires, to get a constant flow of data
+        //            {
+        //                // CreditTick in Notification is only one byte
+        //                m_AlarmNextCreditLimit = (short)((m_AlarmNextCreditLimit + creditLimitStep) % 255);
+        //                Console.WriteLine("--> Credit limit of " + noti.NotificationCreditTick + " reached. SetCreditLimit to " + m_AlarmNextCreditLimit.ToString());
+        //                SubscriptionSetCreditLimit(m_AlarmNextCreditLimit);
+        //            }
+        //        }
+        //    }
+        //    return res;
+        //}
+
+        public int WaitForAlarmNotifications(int waitTimeout, out List<Notification> notifications)
         {
             int res = 0;
             short creditLimitStep = 5;
+            notifications = new List<Notification>();
 
-            for (int i = 1; i <= untilNumberOfAlarms; i++)
+            m_LastError = 0;
+            WaitForNewS7plusReceived(waitTimeout);
+            if (m_LastError != 0)
             {
-                Console.WriteLine(Environment.NewLine + "WaitForAlarmNotifications(): *** Loop #" + i.ToString() + " ***");
-                m_LastError = 0;
-                WaitForNewS7plusReceived(waitTimeout);
-                if (m_LastError != 0)
-                {
-                    return m_LastError;
-                }
+                return m_LastError;
+            }
 
-                var noti = Notification.DeserializeFromPdu(m_ReceivedPDU);
-                if (noti == null)
-                {
-                    Console.WriteLine("Notification == null!");
-                    return S7Consts.errIsoInvalidPDU;
-                }
-                else
-                {
-                    Console.Write("Notification: CreditTick=" + noti.NotificationCreditTick + " SequenceNumber=" + noti.NotificationSequenceNumber);
-                    Console.WriteLine(String.Format(" PLC-Timestamp={0}.{1:D03}", noti.Add1Timestamp.ToString(), noti.Add1Timestamp.Millisecond));
+            var noti = Notification.DeserializeFromPdu(m_ReceivedPDU);
+            if (noti == null)
+            {
+                return S7Consts.errIsoInvalidPDU;
+            }
+            else
+            {
+                notifications.Add(noti);
 
-                    var dai = AlarmsDai.FromNotificationObject(noti.P2Objects[0], alarmTextsLanguageId);
-                    Console.WriteLine(dai.ToString());
-                    if (noti.NotificationCreditTick >= m_AlarmNextCreditLimit - 1) // Set new limit one tick before it expires, to get a constant flow of data
-                    {
-                        // CreditTick in Notification is only one byte
-                        m_AlarmNextCreditLimit = (short)((m_AlarmNextCreditLimit + creditLimitStep) % 255);
-                        Console.WriteLine("--> Credit limit of " + noti.NotificationCreditTick + " reached. SetCreditLimit to " + m_AlarmNextCreditLimit.ToString());
-                        SubscriptionSetCreditLimit(m_AlarmNextCreditLimit);
-                    }
+                if (noti.NotificationCreditTick >= m_AlarmNextCreditLimit - 1) // Set new limit one tick before it expires, to get a constant flow of data
+                {
+                    // CreditTick in Notification is only one byte
+                    m_AlarmNextCreditLimit = (short)((m_AlarmNextCreditLimit + creditLimitStep) % 255);
+                    SubscriptionSetCreditLimit(m_AlarmNextCreditLimit);
                 }
             }
             return res;
