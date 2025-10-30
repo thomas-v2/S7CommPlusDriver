@@ -60,12 +60,14 @@ namespace S7CommPlusDriver
                 // Skip empty lists in any area like marker or timers.
                 if (node.Childs.Count > 0)
                 {
-                    AddFlatSubnodes(node, String.Empty, String.Empty);
+                    uint OptOffset = 0;                   
+                    uint NonOptOffset = 0;
+                    AddFlatSubnodes(node, String.Empty, String.Empty, OptOffset, NonOptOffset);
                 }
             }
         }
 
-        private void AddFlatSubnodes(Node node, string names, string accessIds)
+        private void AddFlatSubnodes(Node node, string names, string accessIds, uint OptOffset, uint NonOptOffset)
         {
             switch (node.NodeType)
             {
@@ -97,16 +99,85 @@ namespace S7CommPlusDriver
                     {
                         Name = names,
                         AccessSequence = accessIds,
-                        Softdatatype = node.Softdatatype
+                        Softdatatype = node.Softdatatype,
                     };
+                    // If an Array element of basic datatype, the Vte is here from the parent array base element and offsets not valid here.
+                    if (node.NodeType == eNodeType.Array)
+                    {
+                        info.OptAddress = OptOffset;
+                        info.NonOptAddress = NonOptOffset;
+                    }
+                    else
+                    {
+                        info.OptAddress = OptOffset + node.Vte.OffsetInfoType.OptimizedAddress;
+                        info.NonOptAddress = NonOptOffset + node.Vte.OffsetInfoType.NonoptimizedAddress;
+                    }
+                    // Special case #1:
+                    // There is a strange behaviour when transmitting bitoffsets in not-optmized DBs.
+                    // If a bool is inside a struct, the offsetinformation is in the attributes (last 3 bits.
+                    // Bitoffsetinfo bit classic is false in this case.
+                    // Don't know if this a bug in Plcsim (where I tested with) or intentional.
+                    //
+                    // Special case #2:
+                    // System datatypes like IEC_COUNTER, etc. have Bools with Bitoffsets, even when they are locates in optimized DBs.
+                    // The bitoffset is then located in the Attributes and not in the bitoffset
+                    if (node.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_BOOL)
+                    {
+                        info.OptBitoffset = node.Vte.GetAttributeBitoffset();
+                        if (node.Vte.GetBitoffsetinfoFlagClassic())
+                        {
+                            info.NonOptBitoffset = node.Vte.GetBitoffsetinfoNonoptimizedBitoffset();
+                        }
+                        else
+                        {
+                            info.NonOptBitoffset = node.Vte.GetAttributeBitoffset();
+                        }
+                    }
+                    else if (node.Softdatatype == Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL)
+                    {
+                        info.OptBitoffset = node.Vte.GetBitoffsetinfoOptimizedBitoffset();
+                    }
+                    else
+                    {
+                        info.OptBitoffset = 0;
+                        info.NonOptBitoffset = 0;
+                    }
+
                     m_varInfoList.Add(info);
                 }
             }
             else
             {
+                // root node (the DB itself) has no VarTypeListElement, but we don't need it here.
+                if (node.Vte != null)
+                {
+                    switch (node.NodeType)
+                    {
+                        case eNodeType.Array:
+                            // This is an array element of basic datatype. Offset comes from fixed size multiplied by array index.
+                            OptOffset = node.Vte.OffsetInfoType.OptimizedAddress;
+                            NonOptOffset = node.Vte.OffsetInfoType.NonoptimizedAddress;
+                            break;
+                        case eNodeType.StructArray:
+                            OptOffset += node.ArrayAdrOffsetOpt;
+                            NonOptOffset += node.ArrayAdrOffsetNonOpt;
+                            break;
+                        default:
+                            OptOffset += node.Vte.OffsetInfoType.OptimizedAddress;
+                            NonOptOffset += node.Vte.OffsetInfoType.NonoptimizedAddress;
+                            break;
+                    }
+                }
                 foreach (var sub in node.Childs)
                 {
-                    AddFlatSubnodes(sub, names, accessIds);
+                    if (sub.NodeType == eNodeType.Array)
+                    {
+                        AddFlatSubnodes(sub, names, accessIds, OptOffset + sub.ArrayAdrOffsetOpt, NonOptOffset + sub.ArrayAdrOffsetNonOpt);
+                    }
+                    else
+                    {
+                        AddFlatSubnodes(sub, names, accessIds, OptOffset, NonOptOffset);
+                    }
                 }
             }
         }
@@ -135,6 +206,8 @@ namespace S7CommPlusDriver
             int[] MdimArrayLowerBounds;
 
             int element_index = 0;
+            uint TComSize;
+
             // If there are no variables at all in an area, then this list does not exist (no error).
             if (o.VartypeList != null)
             {
@@ -144,8 +217,10 @@ namespace S7CommPlusDriver
                     {
                         Name = o.VarnameList.Names[element_index],
                         Softdatatype = vte.Softdatatype,
-                        AccessId = vte.LID
+                        AccessId = vte.LID,
+                        Vte = vte,
                     };
+
                     node.Childs.Add(subnode);
                     // Process arrays. TODO: Put the processing to separate methods, to shorten this method.
                     if (vte.OffsetInfoType.Is1Dim())
@@ -166,7 +241,8 @@ namespace S7CommPlusDriver
                                     NodeType = eNodeType.StructArray,
                                     Name = "[" + (i + ArrayLowerBounds) + "]",
                                     Softdatatype = vte.Softdatatype,
-                                    AccessId = i
+                                    AccessId = i,
+                                    Vte = vte,
                                 };
                                 subnode.Childs.Add(arraynode);
 
@@ -177,6 +253,11 @@ namespace S7CommPlusDriver
                                 {
                                     if (ob.RelationId == ioit2.GetRelationId())
                                     {
+                                        // Get the size of a struct element
+                                        TComSize = ((ValueUDInt)ob.GetAttribute(Ids.TI_TComSize)).GetValue();
+                                        arraynode.ArrayAdrOffsetOpt = i * TComSize;
+                                        arraynode.ArrayAdrOffsetNonOpt = i * TComSize;
+
                                         AddSubNodes(ref arraynode, ob);
                                         break;
                                     }
@@ -189,8 +270,14 @@ namespace S7CommPlusDriver
                                     NodeType = eNodeType.Array,
                                     Name = "[" + (i + ArrayLowerBounds) + "]",
                                     Softdatatype = vte.Softdatatype,
-                                    AccessId = i
+                                    AccessId = i,
+                                    Vte = vte,
                                 };
+                                // Get the size of the basic datatype
+                                TComSize = GetSizeOfDatatype(vte);
+                                arraynode.ArrayAdrOffsetOpt = i * TComSize;
+                                arraynode.ArrayAdrOffsetNonOpt = i * TComSize;
+
                                 subnode.Childs.Add(arraynode);
                             }
                         }
@@ -216,7 +303,7 @@ namespace S7CommPlusDriver
                         }
 
                         string aname = "";
-                        int n = 1;
+                        uint n = 1;
                         uint id = 0;
                         uint[] xx = new uint[6] { 0, 0, 0, 0, 0, 0 };
                         do
@@ -242,7 +329,8 @@ namespace S7CommPlusDriver
                                     NodeType = eNodeType.StructArray,
                                     Name = aname,
                                     Softdatatype = vte.Softdatatype,
-                                    AccessId = id
+                                    AccessId = id,
+                                    Vte = vte,
                                 };
                                 subnode.Childs.Add(arraynode);
 
@@ -253,6 +341,11 @@ namespace S7CommPlusDriver
                                 {
                                     if (ob.RelationId == ioit2.GetRelationId())
                                     {
+                                        // Get the size of a struct element
+                                        TComSize = ((ValueUDInt)ob.GetAttribute(Ids.TI_TComSize)).GetValue();
+                                        arraynode.ArrayAdrOffsetOpt = (n - 1) * TComSize;
+                                        arraynode.ArrayAdrOffsetNonOpt = (n - 1) * TComSize;
+
                                         AddSubNodes(ref arraynode, ob);
                                         break;
                                     }
@@ -265,8 +358,13 @@ namespace S7CommPlusDriver
                                     NodeType = eNodeType.Array,
                                     Name = aname,
                                     Softdatatype = vte.Softdatatype,
-                                    AccessId = id
+                                    AccessId = id,
+                                    Vte = vte,
                                 };
+                                TComSize = GetSizeOfDatatype(vte);
+                                arraynode.ArrayAdrOffsetOpt = (n - 1) * TComSize;
+                                arraynode.ArrayAdrOffsetNonOpt = (n - 1) * TComSize;
+                                
                                 subnode.Childs.Add(arraynode);
                             }
                             xx[0]++;
@@ -309,6 +407,165 @@ namespace S7CommPlusDriver
                     }
                     element_index++;
                 }
+            }
+        }
+
+        private uint GetSizeOfDatatype(PVartypeListElement vte)
+        {
+            // Returns the size of an element if stored as an array
+            switch (vte.Softdatatype)
+            {
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BOOL:
+                    // TODO: Bit Bool?
+                    return 1;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BYTE:
+                    return 1;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CHAR:
+                    return 1;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_WORD:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_INT:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DWORD:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DINT:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_REAL:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DATE:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_TIMEOFDAY:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_TIME:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_S5TIME:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DATEANDTIME:
+                    return 8;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_STRING:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_WSTRING:
+                    // TODO:
+                    // If an array of String or WString, offsetinfo1 is the string length.
+                    // First though was, that offsetinfo2 is length including header of 2 bytes.
+                    // but with an Multidim Array [0..2, 0..1] of String[5] offsetinfo is 8, which is not
+                    // correct when you look at the data.
+                    // Tested only with Plcsim, which may be a bug in Plcsim?
+                    if (vte.OffsetInfoType.Is1Dim())
+                    {
+                        return ((POffsetInfoType_Array1Dim)(vte.OffsetInfoType)).UnspecifiedOffsetinfo1 + (uint)2;
+                    }
+                    else
+                    {
+                        return ((POffsetInfoType_ArrayMDim)(vte.OffsetInfoType)).UnspecifiedOffsetinfo1 + (uint)2;
+                    }
+                case Softdatatype.S7COMMP_SOFTDATATYPE_POINTER:
+                    return 6;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_ANY:
+                    return 10;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BLOCKFB:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BLOCKFC:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_COUNTER:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_TIMER:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL:
+                    return 1; // Bool of size 1 byte here
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LREAL:
+                    return 8;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_ULINT:
+                    return 8;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LINT:
+                    return 8;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LWORD:
+                    return 8;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_USINT:
+                    return 1;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_UINT:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_UDINT:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_SINT:
+                    return 1;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_WCHAR:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LTIME:
+                    return 8;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LTOD:
+                    return 8;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_LDT:
+                    return 8;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DTL:
+                    return 12; // In most cases as a struct of system type
+                case Softdatatype.S7COMMP_SOFTDATATYPE_REMOTE:
+                    return 10;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMIDENT:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTANY:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTATT:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMAID:
+                    // TODO: Not possible to define this type
+                    return 0;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_AOMLINK:
+                    // TODO: Not possible to define this type
+                    return 0;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_EVENTHWINT:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWIOSYSTEM:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWDPMASTER:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWDEVICE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWDPSLAVE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWIO:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWMODULE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWSUBMODULE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWHSC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWPWM:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWPTO:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWINTERFACE:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_HWIEPORT:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBANY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBDELAY:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBTOD:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBCYCLIC:
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBATT:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNANY:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNPRG:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNOUC:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_CONNRID:
+                    return 4;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_PORT:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_RTM:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_PIP:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBPCYCLE:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBHWINT:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBDIAG:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBTIMEERROR:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_OBSTARTUP:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DBANY:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DBWWW:
+                    return 2;
+                case Softdatatype.S7COMMP_SOFTDATATYPE_DBDYN:
+                    return 2;
+                default:
+                    return 0;
             }
         }
 
@@ -404,6 +661,10 @@ namespace S7CommPlusDriver
             public UInt32 AccessId;
             public UInt32 Softdatatype;
             public UInt32 RelationId;
+            public PVartypeListElement Vte;
+            public UInt32 ArrayAdrOffsetOpt;    // Offset of an Element when it's an array, optimized
+            public UInt32 ArrayAdrOffsetNonOpt; // Offset of an Element when it's an array, not-optimized
+
             public List<Node> Childs = new List<Node>();
 
             public Node()
@@ -423,6 +684,10 @@ namespace S7CommPlusDriver
         public string Name;
         public string AccessSequence;
         public UInt32 Softdatatype;
+        public UInt32 OptAddress;       // Optimized access: Byte-Offset where the value is located when reading a complete DB content.
+        public int OptBitoffset;        // Optimized access: Bit-Offset where the value is located when reading a complete DB content. 
+        public UInt32 NonOptAddress;    // NonOptimized access: Byte-Offset where the value is located when reading a complete DB content.
+        public int NonOptBitoffset;     // NonOptimized access: Bit-Offset where the value is located when reading a complete DB content.
     }
 
     public enum eNodeType
