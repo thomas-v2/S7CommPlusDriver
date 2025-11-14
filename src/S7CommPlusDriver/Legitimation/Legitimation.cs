@@ -51,6 +51,10 @@ namespace S7CommPlusDriver {
                     legacyLegitimation = true;
                 }
             }
+            else if (sessionVersionPAOMString.Contains("50-0XB0") && deviceVersion.StartsWith('2'))   //New S7-1200 G2 (example: "1;6ES7 212-1HG50-0XB0;V1.0")
+            {
+                legacyLegitimation = false;
+            }
             else if (deviceVersion.StartsWith("2"))
             {
                 if (fwVerNo < 403)
