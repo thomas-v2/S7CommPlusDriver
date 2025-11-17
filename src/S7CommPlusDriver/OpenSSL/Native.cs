@@ -14,26 +14,55 @@
 #endregion
 
 using System;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace OpenSsl
 {
-#if _WIN64
-    using size_t = UInt64;
-#else
-    using size_t = UInt32;
-#endif
+
 
     public class Native
     {
-#if _WIN64
-        const string DLLNAME = "libcrypto-3-x64.dll";
-        const string SSLDLLNAME = "libssl-3-x64.dll";
-#else
-        const string DLLNAME = "libcrypto-3.dll";
-        const string SSLDLLNAME = "libssl-3.dll";
-#endif
+        const string DLLNAME = "libcrypto-3";
+        const string SSLDLLNAME = "libssl-3";
+        static Native()
+        {
+            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), DllImportResolver);
+        }
+
+        private static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            if (libraryName == DLLNAME)
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X86)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x86", "native", "libcrypto-3.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x64", "native", "libcrypto-3-x64.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-arm64", "native", "libcrypto-3-arm64.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                    return NativeLibrary.Load("libcrypto.3.dylib", assembly, searchPath);
+                return IntPtr.Zero;
+            }
+
+            if(libraryName == SSLDLLNAME)
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X86)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x86", "native", "libssl-3.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-x64", "native", "libssl-3-x64.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                    return NativeLibrary.Load(Path.Combine("runtimes", "win-arm64", "native", "libssl-3-arm64.dll"), assembly, searchPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                    return NativeLibrary.Load("libssl.3.dylib", assembly, searchPath);
+                return IntPtr.Zero;
+            }
+
+            // Otherwise, fallback to default import resolver.
+            return IntPtr.Zero;
+        }
 
         #region Delegates
 
@@ -227,7 +256,7 @@ namespace OpenSsl
         public static extern IntPtr TLS_client_method();
 
         [DllImport(SSLDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr SSL_export_keying_material(IntPtr ssl, byte[] outKeyMaterial, size_t outKeyMaterialLength, char[] label, size_t labelLength, IntPtr context, size_t contextLength, int useContext);
+        public static extern IntPtr SSL_export_keying_material(IntPtr ssl, byte[] outKeyMaterial, nint outKeyMaterialLength, char[] label, nint labelLength, IntPtr context, nint contextLength, int useContext);
 
         #endregion
 
@@ -264,7 +293,7 @@ namespace OpenSsl
 
         // size_t BIO_ctrl_pending(BIO *b);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern size_t BIO_ctrl_pending(IntPtr bio);
+        public static extern nint BIO_ctrl_pending(IntPtr bio);
 
         // void BIO_free_all(BIO *a);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -323,7 +352,7 @@ namespace OpenSsl
         // void ERR_error_string_n(unsigned long e, char *buf, size_t len);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         //public static extern void ERR_error_string_n(ulong e, IntPtr buf, size_t len);
-        public static extern void ERR_error_string_n(ulong e, byte[] buf, size_t len);
+        public static extern void ERR_error_string_n(ulong e, byte[] buf, nint len);
 
         // unsigned long ERR_get_error(void);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

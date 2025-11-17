@@ -18,7 +18,10 @@ namespace S7CommPlusDriver
     public static class Ids
     {
         public const int None = 0;
+        public const int NativeObjects_theASRoot_Rid = 1;
         public const int NativeObjects_thePLCProgram_Rid = 3;
+        public const int NativeObjects_theCPUProxy_Rid = 49;
+        public const int NativeObjects_theCPUCommon_Rid = 50;
         public const int NativeObjects_theCPUexecUnit_Rid = 52;
         public const int NativeObjects_theIArea_Rid = 80;
         public const int NativeObjects_theQArea_Rid = 81;
@@ -75,14 +78,50 @@ namespace S7CommPlusDriver
         public const int EffectiveProtectionLevel = 1842;
         public const int ActiveProtectionLevel = 1843;
         public const int CPUexecUnit_operatingStateReq = 2167;
+        public const int ASRoot_ItsFolders = 2468;
         public const int PLCProgram_Class_Rid = 2520;
         public const int Block_BlockNumber = 2521;
+        public const int Block_AutoNumbering = 2522;
+        public const int Block_BlockLanguage = 2523;
+        public const int Block_KnowhowProtected = 2524;
+        public const int Block_Unlinked = 2527;
+        public const int Block_LowLatency = 2528;
+        public const int Block_RuntimeModified = 2529;
+        public const int Block_Dirty = 2531;
+        public const int Block_CRC = 2532;
+        public const int Block_Binding = 3151;
+        public const int Block_OptimizeInfo = 2537;
+        public const int Block_TOblockSetNumber = 3619;
+        public const int Block_TypeInfo = 4578;
+        public const int Block_FunctionalSignature = 7589;
+        public const int Block_AdditionalMAC = 7831;
+        public const int Block_FailsafeBlockInfo = 7843;
+        public const int Block_FailsafeIFRHash = 7955;
+        public const int ASObjectES_IdentES = 2449;
+        public const int Block_BodyDescription = 2533;
         public const int DataInterface_InterfaceDescription = 2544;
         public const int DataInterface_LineComments = 2546;
         public const int DB_ValueInitial = 2548;
         public const int DB_ValueActual = 2550;
         public const int DB_InitialChanged = 2551;
         public const int DB_Class_Rid = 2574;
+        public const int FB_Class_Rid = 2578;
+        public const int FC_Class_Rid = 2579;
+        public const int FunctionalObject_Code = 2580;
+        public const int FunctionalObject_ParameterModified = 2581;
+        public const int FunctionalObject_extRefData = 2582;
+        public const int FunctionalObject_intRefData = 2583;
+        public const int FunctionalObject_NetworkComments = 2584;
+        public const int FunctionalObject_NetworkTitles = 2585;
+        public const int FunctionalObject_CalleeList = 2586;
+        public const int FunctionalObject_InterfaceSignature = 2587;
+        public const int FunctionalObject_DisplayInfo = 2588;
+        public const int FunctionalObject_DebugInfo = 2589;
+        public const int FunctionalObject_LocalErrorhandling = 2590;
+        public const int FunctionalObject_LongConstants = 2591;
+        public const int FunctionalObject_Class_Rid = 2592;
+        public const int OB_StartInfoType = 2607;
+        public const int OB_Class_Rid = 2610;
         public const int AlarmSubscriptionRef_AlarmDomain = 2659;
         public const int AlarmSubscriptionRef_itsAlarmSubsystem = 2660;
         public const int AlarmSubscriptionRef_Class_Rid = 2662;
@@ -100,7 +139,9 @@ namespace S7CommPlusDriver
         public const int ControllerArea_ValueInitial = 3735;
         public const int ControllerArea_ValueActual = 3736;
         public const int ControllerArea_RuntimeModified = 3737;
+        public const int UDT_Class_Rid = 3932;
         public const int DAI_MessageType = 4079;
+        public const int ConstantsGlobal_Symbolics = 4275;
         public const int ASObjectES_Comment = 4288;
         public const int AlarmSubscriptionRef_AlarmDomain2 = 7731;
         public const int DAI_HmiInfo = 7813;
@@ -114,6 +155,10 @@ namespace S7CommPlusDriver
         public const int LID_LegitimationPayloadType = 40401;
         public const int LID_LegitimationPayloadUsername = 40402;
         public const int LID_LegitimationPayloadPassword = 40403;
+
+        public const uint ReleaseMngmtRoot_Rid = 2303328256;
+
+        public const uint Constants = 0x8a110000;
 
         public const int TI_BOOL = 0x02000000 + 1;
         public const int TI_BYTE = 0x02000000 + 2;

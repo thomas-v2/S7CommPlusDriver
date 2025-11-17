@@ -14,7 +14,7 @@ namespace DriverTest
     {
         static void Main(string[] args)
         {
-            string HostIp = "192.168.1.30";
+            string HostIp = "10.0.98.100";
             string Password = "";
             string Username = "";
             int res;
