@@ -69,25 +69,39 @@ namespace S7CommPlusDriver.ClientApi
             return res;
         }
 
-        public static PlcTag TagFactory(string name, ItemAddress address, uint softdatatype)
+        public static PlcTag TagFactory(string name, ItemAddress address, uint softdatatype, bool Is1Dim = false)
         {
             switch (softdatatype)
             {
                 case Softdatatype.S7COMMP_SOFTDATATYPE_BOOL:
+                    if (Is1Dim)
+                        return new PlcTagBoolArray(name, address, softdatatype);
                     return new PlcTagBool(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_BYTE:
+                    if (Is1Dim)
+                        return new PlcTagByteArray(name, address, softdatatype);
                     return new PlcTagByte(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_CHAR:
                     return new PlcTagChar(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_WORD:
+                    if (Is1Dim)
+                        return new PlcTagWordArray(name, address, softdatatype);
                     return new PlcTagWord(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_INT:
+                    if (Is1Dim)
+                        return new PlcTagIntArray(name, address, softdatatype);
                     return new PlcTagInt(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_DWORD:
+                    if (Is1Dim)
+                        return new PlcTagDWordArray(name, address, softdatatype);
                     return new PlcTagDWord(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_DINT:
+                    if (Is1Dim)
+                        return new PlcTagDIntArray(name, address, softdatatype);
                     return new PlcTagDInt(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_REAL:
+                    if (Is1Dim)
+                        return new PlcTagRealArray(name, address, softdatatype);
                     return new PlcTagReal(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_DATE:
                     return new PlcTagDate(name, address, softdatatype);
@@ -98,9 +112,13 @@ namespace S7CommPlusDriver.ClientApi
                 case Softdatatype.S7COMMP_SOFTDATATYPE_S5TIME:
                     return new PlcTagS5Time(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_DATEANDTIME:
+                    if (Is1Dim)
+                        return new PlcTagDateAndTimeArray(name, address, softdatatype);
                     return new PlcTagDateAndTime(name, address, softdatatype);
 
                 case Softdatatype.S7COMMP_SOFTDATATYPE_STRING:
+                    if (Is1Dim)
+                        return new PlcTagStringArray(name, address, softdatatype);
                     return new PlcTagString(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_POINTER:
                     return new PlcTagPointer(name, address, softdatatype);
@@ -118,6 +136,8 @@ namespace S7CommPlusDriver.ClientApi
                     return new PlcTagUInt(name, address, softdatatype);
 
                 case Softdatatype.S7COMMP_SOFTDATATYPE_BBOOL:
+                    if (Is1Dim)
+                        return new PlcTagBoolArray(name, address, softdatatype);
                     return new PlcTagBool(name, address, softdatatype);
 
                 case Softdatatype.S7COMMP_SOFTDATATYPE_LREAL:
@@ -129,12 +149,20 @@ namespace S7CommPlusDriver.ClientApi
                 case Softdatatype.S7COMMP_SOFTDATATYPE_LWORD:
                     return new PlcTagLWord(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_USINT:
+                    if (Is1Dim)
+                        return new PlcTagUSIntArray(name, address, softdatatype);
                     return new PlcTagUSInt(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_UINT:
+                    if (Is1Dim)
+                        return new PlcTagUIntArray(name, address, softdatatype);
                     return new PlcTagUInt(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_UDINT:
+                    if (Is1Dim)
+                        return new PlcTagUDIntArray(name, address, softdatatype);
                     return new PlcTagUDInt(name, address, softdatatype);
                 case Softdatatype.S7COMMP_SOFTDATATYPE_SINT:
+                    if (Is1Dim)
+                        return new PlcTagSIntArray(name, address, softdatatype);
                     return new PlcTagSInt(name, address, softdatatype);
 
                 case Softdatatype.S7COMMP_SOFTDATATYPE_WCHAR:
