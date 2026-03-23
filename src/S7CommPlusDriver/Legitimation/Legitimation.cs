@@ -23,55 +23,23 @@ namespace S7CommPlusDriver {
         /// <returns>error code (0 = ok)</returns>
         private int legitimate(ValueStruct serverSession, string password, string username = "")
         {
-            // S7-1214C  (6ES7 214-1AG40-0XB0)           1;6ES7 214-1AG40-0XB0 ;V4.5
-            // S7-1510SP (6ES7 510-1DJ01-0AB0)           1;6ES7 510-1DJ01-0AB0;V2.9
-            // S7-1507SF (6ES7 672-7FC01-0YA0)           1;6ES7 672-7FC01-0YA0;V21.9
-
             // Parse device and firmware version
-            // doc: https://cache.industry.siemens.com/dl/files/068/109769068/att_1329908/v4/109769068_UsingCertificatesWithTIAPortal_DOC_V2_1_en.pdf
-            // Certificates in the scope of PG/PC and HMI communication
-            //  Starting with TIA Portal V17, PG / PC and HMI communication is secured with TLS, protecting the data exchanged between
-            //  Field PGs and HMIs with SIMATIC CPUs. 
-            //  The CPU families that support Secure PG / HMI communication are:
-            //      • S7 - 1500 controllers as of firmware version V2.9.
-            //      • S7 - 1200 controllers as of firmware version V4.5.
-            //      • Software controllers as of firmware version V21.9.
-            //      • SIMATIC Drive controllers as of firmware version V2.9.
-            //      • PLCSim and PLCSim Advanced Version V4.0.
-            //  HMI components that support Secure PG/ HMI communication, as of image version V17, are:
-            //      • Panels or PCs configured with WinCC Basic, Comfort and Advanced.
-            //      • PCs with WinCC RT Professional.
-            //      • WinCC Unified PCs and Comfort Panels.
-            //  In addition, SINAMICS RT SW, as of version V6.1, and STARTDRIVE, as of version V17, support secure communication
             string sessionVersionPAOMString = ((ValueWString)serverSession.GetStructElement((uint)Ids.LID_SessionVersionSystemPAOMString)).GetValue();
-            var reVersions = new Regex(
-                @"^[^;]*;[^;]*[17]\s?(\d{3}).*;[VS](\d{1,2}\.\d+)$",
-                RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
-            );
+            Regex reVersions = new Regex("^.*;.*[17]\\s?([52]\\d\\d).+;[VS](\\d\\.\\d)$");
             Match m = reVersions.Match(sessionVersionPAOMString);
             if (!m.Success)
             {
                 Console.WriteLine("S7CommPlusConnection - Legitimate: Could not extract firmware version!");
                 return S7Consts.errCliFirmwareNotSupported;
             }
-            string deviceVersion = m.Groups[1].Value;   // e.g., "672"
-            string firmwareVersion = m.Groups[2].Value; // e.g., "21.9"
-
-            // Compute fwVerNo = major*100 + minor (e.g., "21.9" -> 2109)
-            int fwVerNo;
-            {
-                var parts = firmwareVersion.Split('.');
-                if (parts.Length < 2 || !int.TryParse(parts[0], out var major) || !int.TryParse(parts[1], out var minor))
-                {
-                    Console.WriteLine($"S7CommPlusConnection - Legitimate: Invalid firmware format: {firmwareVersion}");
-                    return S7Consts.errCliFirmwareNotSupported;
-                }
-                fwVerNo = (major * 100) + minor;
-            }
+            string deviceVersion = m.Groups[1].Value;
+            string firmwareVersion = m.Groups[2].Value;
+            int fwVerNo = int.Parse(firmwareVersion.Split('.')[0]) * 100;
+            fwVerNo += int.Parse(firmwareVersion.Split('.')[1]);
 
             // Check if we have to use legacy legitimation via the firmware version
             bool legacyLegitimation = false;
-            if (deviceVersion.StartsWith("5"))  // S7-1500 (5xx)
+            if (deviceVersion.StartsWith("5"))
             {
                 if (fwVerNo < 209)
                 {
@@ -87,7 +55,7 @@ namespace S7CommPlusDriver {
             {
                 legacyLegitimation = false;
             }
-            else if (deviceVersion.StartsWith("2")) // S7-1200 (2xx)
+            else if (deviceVersion.StartsWith("2"))
             {
                 if (fwVerNo < 403)
                 {
@@ -98,15 +66,6 @@ namespace S7CommPlusDriver {
                 {
                     legacyLegitimation = true;
                 }
-            }
-            else if (deviceVersion.StartsWith("6")) // S7-1507S (6xx)
-            {
-                if (fwVerNo < 2109)
-                {
-                    Console.WriteLine("S7CommPlusConnection - Legitimate: Firmware version is not supported!");
-                    return S7Consts.errCliFirmwareNotSupported;
-                }
-                legacyLegitimation = true;
             }
             else
             {
