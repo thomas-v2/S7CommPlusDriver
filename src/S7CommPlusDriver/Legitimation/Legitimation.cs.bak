@@ -54,8 +54,8 @@ namespace S7CommPlusDriver {
                 Console.WriteLine("S7CommPlusConnection - Legitimate: Could not extract firmware version!");
                 return S7Consts.errCliFirmwareNotSupported;
             }
-            string deviceVersion = m.Groups[1].Value;   // e.g., "672"
-            string firmwareVersion = m.Groups[2].Value; // e.g., "21.9"
+            string deviceVersion = m.Groups[1].Value;
+            string firmwareVersion = m.Groups[2].Value;
 
             // Compute fwVerNo = major*100 + minor (e.g., "21.9" -> 2109)
             int fwVerNo;
@@ -71,7 +71,7 @@ namespace S7CommPlusDriver {
 
             // Check if we have to use legacy legitimation via the firmware version
             bool legacyLegitimation = false;
-            if (deviceVersion.StartsWith("5"))  // S7-1500 (5xx)
+            if (deviceVersion.StartsWith("5"))
             {
                 if (fwVerNo < 209)
                 {
@@ -87,7 +87,7 @@ namespace S7CommPlusDriver {
             {
                 legacyLegitimation = false;
             }
-            else if (deviceVersion.StartsWith("2")) // S7-1200 (2xx)
+            else if (deviceVersion.StartsWith("2"))
             {
                 if (fwVerNo < 403)
                 {
